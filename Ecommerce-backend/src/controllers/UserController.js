@@ -4,6 +4,8 @@ const MailService = require("../services/MailService");
 
 const User = require("../models/UserModel");
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const createUser = async (req, res) => {
   try {
     const { username, email, password, phone, dob } = req.body;
@@ -14,13 +16,15 @@ const createUser = async (req, res) => {
         .json({ message: "Tất cả các trường đều bắt buộc!" });
     }
 
-    // Kiểm tra xem email đã tồn tại hay chưa
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Email không hợp lệ!" });
+    }
+
     const userExists = await UserService.checkUserExistsByEmail(email);
     if (userExists) {
       return res.status(400).json({ message: "Email đã tồn tại!" });
     }
 
-    // Tạo người dùng mới
     const newUser = await UserService.createUser({
       username,
       email,
@@ -46,18 +50,21 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Kiểm tra xem email và password có được truyền lên hay không
     if (!email || !password) {
       return res
         .status(400)
         .json({ status: "ERROR", message: "Email và mật khẩu là bắt buộc" });
     }
 
-    // Kiểm tra thông tin người dùng
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ status: "ERROR", message: "Email không hợp lệ!" });
+    }
+
     const checkUser = await UserService.loginUser({ email, password });
 
     if (checkUser.status === "OK") {
-      // Đăng nhập thành công, trả về token
       return res.status(200).json({
         status: "OK",
         message: "Đăng nhập thành công!",
@@ -66,7 +73,6 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Nếu đăng nhập không thành công, trả về lỗi
     return res.status(400).json({
       status: "ERROR",
       message: "Email hoặc mật khẩu không đúng",
