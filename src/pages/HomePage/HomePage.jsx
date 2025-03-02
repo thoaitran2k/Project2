@@ -30,7 +30,6 @@ export default function Home() {
         Khách hàng luôn là ưu tiên của chúng tôi
         <br /> Hãy lựa chọn theo sở thích của bạn!
       </Title>
-
       <Row gutter={[16, 16]} justify="center">
         {collections.map((collection, index) => (
           <Col key={index} xs={12} sm={12} md={8} lg={6} xl={6}>

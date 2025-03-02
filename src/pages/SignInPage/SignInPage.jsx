@@ -17,6 +17,11 @@ export default function SignInPage() {
   const [vertification, setVertification] = useState();
   const [step, setStep] = useState(1);
 
+  const [resetPassword, setResetPassword] = useState({
+    newPassword: "",
+    confirmNewPassword: "",
+  });
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -24,6 +29,8 @@ export default function SignInPage() {
     confirmPassword: "",
     phone: "",
     birthDate: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
 
   const toggleMode = () => {
@@ -32,45 +39,65 @@ export default function SignInPage() {
     setStep(1);
   };
 
+  const handleUpdatePassword = async (email, newPassword, confirmPassword) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3002/api/user/forgot-password",
+        {
+          email,
+          newPassword,
+          confirmPassword,
+        }
+      );
+
+      alert(response.data.message || "Mật khẩu đã được cập nhật thành công!");
+
+      // Chuyển về màn hình đăng nhập
+      setIsForgot(false);
+      setIsLogin(true);
+      setStep(1);
+      setFormData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        username: "",
+        phone: "",
+        birthDate: "",
+      });
+      setResetPassword({ newPassword: "", confirmNewPassword: "" });
+    } catch (error) {
+      alert(
+        error.response?.data?.message || "Có lỗi xảy ra khi cập nhật mật khẩu!"
+      );
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Kiểm tra thông tin đăng nhập (email và mật khẩu)
     if (!formData.email || !formData.password) {
       alert("Vui lòng nhập đầy đủ email và mật khẩu!");
       return;
     }
 
     try {
-      // Gửi yêu cầu đăng nhập
       const response = await axios.post(
-        "http://localhost:3002/api/user/sign-in", // Địa chỉ API đăng nhập
-        {
-          email: formData.email,
-          password: formData.password,
-        }
+        "http://localhost:3002/api/user/sign-in",
+        { email: formData.email, password: formData.password }
       );
-      console.log("Response from server:", response);
 
-      // Kiểm tra kết quả trả về
       if (response.data.status === "OK") {
         localStorage.setItem("token", response.data.accessToken);
-        console.log("localStorage", localStorage);
+
         alert("Đăng nhập thành công!");
-
         window.location.href = "/home";
-
-        // Chuyển hướng người dùng hoặc lưu token ở đây
-        // Ví dụ: localStorage.setItem("token", response.data.token);
-
-        // Nếu cần chuyển hướng người dùng
-        // window.location.href = "/dashboard"; // Hoặc sử dụng react-router-dom để điều hướng
-      } else {
-        alert(response.data.message || "Đăng nhập thất bại, vui lòng thử lại!");
       }
     } catch (error) {
-      console.error(error);
-      alert("Đã có lỗi xảy ra. Vui lòng thử lại!");
+      if (error.response && error.response.data.message) {
+        alert(error.response.data.message); // Hiển thị thông báo từ backend
+      } else {
+        alert("Đã có lỗi xảy ra. Vui lòng thử lại!");
+      }
     }
   };
 
@@ -79,19 +106,29 @@ export default function SignInPage() {
   };
 
   const handleNext = async () => {
-    if (step === 1 && !isLogin) {
+    if (step === 1) {
       try {
-        const response = await fetch(
-          "http://localhost:3002/api/user/send-verification-code",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: formData.email }),
-          }
+        const endpoint = isForgot
+          ? "http://localhost:3002/api/user/send-forgot-password-code"
+          : "http://localhost:3002/api/user/send-register-code";
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: formData.email }),
+        });
+
+        console.log("isForgot:", isForgot);
+        console.log("Sending request to:", endpoint);
+        console.log(
+          "Request body:",
+          JSON.stringify({
+            email: formData.email,
+            type: isForgot ? "forgot" : "register",
+          })
         );
 
         const data = await response.json();
-        // console.log("Mã xác nhận nhận được:", data.verificationCode);
 
         if (response.ok) {
           alert(`Mã xác nhận đã được gửi!`);
@@ -105,8 +142,8 @@ export default function SignInPage() {
         console.error(error);
       }
     } else if (step === 2) {
-      // Kiểm tra mã xác nhận
-      if (vertification === code.toString()) {
+      if (vertification?.trim() === String(code)) {
+        alert("Xác nhận Email thành công!");
         setStep(3);
       } else {
         alert("Mã xác nhận không chính xác!");
@@ -120,19 +157,53 @@ export default function SignInPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isLogin) {
+
+    if (isForgot) {
+      // Xử lý cập nhật mật khẩu khi quên mật khẩu
+      if (resetPassword.newPassword !== resetPassword.confirmNewPassword) {
+        alert("Mật khẩu xác nhận không khớp!");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "http://localhost:3002/api/user/reset-password",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: formData.email,
+              newPassword: formData.newPassword,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert("Cập nhật mật khẩu thành công!");
+          setIsForgot(false);
+          setIsLogin(true);
+          setStep(1);
+          setFormData({ email: "", newPassword: "", confirmNewPassword: "" });
+        } else {
+          alert(data.message || "Lỗi khi cập nhật mật khẩu!");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Đã có lỗi xảy ra, vui lòng thử lại!");
+      }
+    } else if (!isLogin) {
+      // Xử lý đăng ký tài khoản
       if (formData.password !== formData.confirmPassword) {
         alert("Mật khẩu xác nhận không khớp!");
         return;
       }
 
-      // Gửi yêu cầu đăng ký đến server
       try {
         const response = await fetch("http://localhost:3002/api/user/sign-up", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             username: formData.username,
             email: formData.email,
@@ -146,7 +217,8 @@ export default function SignInPage() {
 
         if (response.ok) {
           alert("Đăng ký thành công!");
-          // Reset form sau khi đăng ký thành công
+          setIsLogin(true);
+          setStep(1);
           setFormData({
             username: "",
             email: "",
@@ -155,11 +227,8 @@ export default function SignInPage() {
             phone: "",
             birthDate: "",
           });
-          // Chuyển về form đăng nhập
-          setIsLogin(true); // Chuyển sang trang đăng nhập
-          setStep(1); // Reset lại bước trong quy trình
         } else {
-          alert(data.message || "Đăng ký thất bại, vui lòng thử lại!");
+          alert(data.message || "Đăng ký thất bại!");
         }
       } catch (error) {
         console.error(error);
@@ -168,11 +237,11 @@ export default function SignInPage() {
     }
   };
 
-  useEffect(() => {
-    if (step === 3 && !isLogin) {
-      alert("Vui lòng kiểm tra các thông tin bạn đã nhập!");
-    }
-  }, [step]);
+  // useEffect(() => {
+  //   if (step === 3 && !isLogin) {
+  //     alert("Xác nhận Email thành công!");
+  //   }
+  // }, [step]);
 
   return (
     <LoginContainer>
@@ -261,10 +330,15 @@ export default function SignInPage() {
                       <LockOutlined />
                       <Input
                         type="password"
-                        name="password"
+                        name="newPassword"
                         placeholder="Mật khẩu mới"
-                        value={formData.password}
-                        onChange={handleChange}
+                        //value={resetPassword.newPassword}
+                        onChange={(e) =>
+                          setResetPassword({
+                            ...resetPassword,
+                            newPassword: e.target.value,
+                          })
+                        }
                         required
                       />
                     </InputWrapper>
@@ -272,10 +346,15 @@ export default function SignInPage() {
                       <LockOutlined />
                       <Input
                         type="password"
-                        name="confirmPassword"
-                        placeholder="Xác nhận mật khẩu"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
+                        name="confirmNewPassword"
+                        placeholder="Xác nhận mật khẩu mới"
+                        //value={resetPassword.confirmNewPassword}
+                        onChange={(e) =>
+                          setResetPassword({
+                            ...resetPassword,
+                            confirmNewPassword: e.target.value,
+                          })
+                        }
                         required
                       />
                     </InputWrapper>
@@ -295,6 +374,12 @@ export default function SignInPage() {
                       placeholder="Email"
                       value={formData.email}
                       onChange={handleChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault(); // Chặn form submit
+                          handleNext(); // Chuyển bước
+                        }
+                      }}
                       required
                     />
                   </InputWrapper>
@@ -398,25 +483,35 @@ export default function SignInPage() {
                 setStep(1);
               }}
             >
-              {" "}
               Quay lại đăng nhập
             </ToggleButton>
-          ) : (
+          ) : isLogin && step === 1 ? (
             <ToggleButton
               type="button"
               onClick={() => {
                 setIsForgot(true);
                 setStep(1);
+                setFormData({ email: "" }); // Reset lại email
               }}
             >
-              {" "}
               Quên mật khẩu?
             </ToggleButton>
-          )}
+          ) : null}
 
           {isForgot ? (
             step === 3 ? (
-              <SubmitButton type="button">Cập nhập mật khẩu</SubmitButton>
+              <SubmitButton
+                type="button"
+                onClick={() =>
+                  handleUpdatePassword(
+                    formData.email,
+                    resetPassword.newPassword,
+                    resetPassword.confirmNewPassword
+                  )
+                }
+              >
+                Cập nhật mật khẩu
+              </SubmitButton>
             ) : (
               " "
             )

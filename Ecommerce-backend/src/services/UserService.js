@@ -22,6 +22,42 @@ const checkUserExistsByEmail = async (email) => {
   const user = await User.findOne({ email });
   return user != null;
 };
+
+const forgotPassword = async (email, newPassword, confirmPassword) => {
+  try {
+    // Kiểm tra xem email có trong hệ thống không
+    const user = await User.findOne({ email });
+    if (!user) {
+      return {
+        status: "ERROR",
+        message: "Email không tồn tại trong hệ thống!",
+      };
+    }
+
+    // Kiểm tra mật khẩu nhập vào có trùng khớp không
+    if (newPassword !== confirmPassword) {
+      return {
+        status: "ERROR",
+        message: "Mật khẩu mới và xác nhận mật khẩu không khớp!",
+      };
+    }
+
+    // Hash mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Cập nhật mật khẩu mới vào database
+    user.password = hashedPassword;
+    await user.save();
+
+    return {
+      status: "OK",
+      message: "Mật khẩu đã được cập nhật thành công!",
+    };
+  } catch (e) {
+    throw new Error("Có lỗi xảy ra khi đặt lại mật khẩu: " + e.message);
+  }
+};
+
 const loginUser = async ({ email, password }) => {
   try {
     const checkUser = await User.findOne({ email });
@@ -130,4 +166,5 @@ module.exports = {
   getAllUser,
   getDetailsUser,
   checkUserExistsByEmail,
+  forgotPassword,
 };

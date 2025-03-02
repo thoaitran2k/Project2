@@ -17,6 +17,11 @@ router.get(
   userController.getDetailsUser
 );
 router.post("/refresh-token", userController.refreshToken);
-router.post("/send-verification-code", userController.sendVerificationCode);
+router.post("/send-register-code", userController.sendRegisterVerificationCode);
+router.post(
+  "/send-forgot-password-code",
+  userController.sendForgotPasswordCode
+);
+router.post("/forgot-password", userController.forgotPassword);
 
 module.exports = router;

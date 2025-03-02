@@ -1,6 +1,7 @@
 const UserService = require("../services/UserService");
 const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
+const bcrypt = require("bcrypt");
 
 const User = require("../models/UserModel");
 
@@ -44,7 +45,56 @@ const createUser = async (req, res) => {
   }
 };
 
-module.exports = { createUser };
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Email, mật khẩu mới và xác nhận mật khẩu là bắt buộc!",
+      });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Email không hợp lệ!",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Mật khẩu mới và xác nhận mật khẩu không khớp!",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        status: "ERROR",
+        message: "Người dùng không tồn tại!",
+      });
+    }
+
+    // Hash mật khẩu mới trước khi cập nhật
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await User.updateOne({ email }, { password: hashedPassword });
+
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: "Cập nhật mật khẩu thành công!",
+    });
+  } catch (e) {
+    return res.status(500).json({
+      message: "Có lỗi xảy ra khi đặt lại mật khẩu!",
+      error: e.message,
+    });
+  }
+};
 
 const loginUser = async (req, res) => {
   try {
@@ -87,7 +137,7 @@ const loginUser = async (req, res) => {
 
 const verificationCodes = {}; // Lưu mã xác minh theo email
 
-const sendVerificationCode = async (req, res) => {
+const sendRegisterVerificationCode = async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res
@@ -95,7 +145,6 @@ const sendVerificationCode = async (req, res) => {
       .json({ status: "ERROR", message: "Email là bắt buộc" });
   }
 
-  // Kiểm tra xem email đã tồn tại hay chưa
   const userExists = await UserService.checkUserExistsByEmail(email);
   if (userExists) {
     return res
@@ -103,27 +152,64 @@ const sendVerificationCode = async (req, res) => {
       .json({ status: "ERROR", message: "Email này đã được sử dụng!" });
   }
 
-  // Tạo mã xác minh
-  const verificationCode = Math.floor(100000 + Math.random() * 900000); // Mã 6 chữ số
-  verificationCodes[email] = verificationCode; // Lưu mã xác minh theo email
+  const verificationCode = Math.floor(100000 + Math.random() * 900000);
+  verificationCodes[email] = verificationCode;
+  console.log("Generated code for:", email, verificationCode);
 
-  // Gửi mã xác minh qua email
   const response = await MailService.sendVerificationCode(
     email,
     verificationCode
+  );
+  if (response.status === "SUCCESS") {
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: "Mã xác minh đăng ký đã được gửi",
+      verificationCode,
+    });
+  } else {
+    return res
+      .status(500)
+      .json({ status: "ERROR", message: "Không thể gửi mã xác minh!" });
+  }
+};
+
+// Gửi mã xác nhận quên mật khẩu
+const sendForgotPasswordCode = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res
+      .status(400)
+      .json({ status: "ERROR", message: "Email là bắt buộc" });
+  }
+
+  const userExists = await UserService.checkUserExistsByEmail(email);
+  if (!userExists) {
+    return res.status(400).json({
+      status: "ERROR",
+      message: "Email không tồn tại trong hệ thống!",
+    });
+  }
+
+  const verificationCode = Math.floor(100000 + Math.random() * 900000);
+  verificationCodes[email] = verificationCode;
+  console.log("Generated code for:", email, verificationCode);
+
+  const response = await MailService.sendVerificationCode(
+    email,
+    verificationCode,
+    "forgot-password"
   );
 
   if (response.status === "SUCCESS") {
     return res.status(200).json({
       status: "SUCCESS",
-      message: "Mã xác minh đã được gửi",
-      verificationCode, // Bổ sung mã xác nhận vào response
+      message: "Mã xác minh quên mật khẩu đã được gửi",
+      verificationCode,
     });
   } else {
-    return res.status(500).json({
-      status: "ERROR",
-      message: "Vui lòng nhập đúng định dạng email!",
-    });
+    return res
+      .status(500)
+      .json({ status: "ERROR", message: "Không thể gửi mã xác minh!" });
   }
 };
 
@@ -225,5 +311,7 @@ module.exports = {
   getAllUser,
   getDetailsUser,
   refreshToken,
-  sendVerificationCode,
+  sendRegisterVerificationCode,
+  forgotPassword,
+  sendForgotPasswordCode,
 };
