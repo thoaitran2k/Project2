@@ -52,13 +52,13 @@ const forgotPassword = async (req, res) => {
     if (!email || !newPassword || !confirmPassword) {
       return res.status(400).json({
         status: "ERROR",
-        message: "Email, mật khẩu mới và xác nhận mật khẩu là bắt buộc!",
+        message: "Vui lòng nhập mật khẩu mới và mật khẩu xác nhận!",
       });
     }
 
     if (!emailRegex.test(email)) {
       return res.status(400).json({
-        status: "ERROR",
+        status: "WARNING",
         message: "Email không hợp lệ!",
       });
     }
@@ -101,15 +101,16 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "Email và mật khẩu là bắt buộc" });
+      return res.status(400).json({
+        status: "WARNING",
+        message: "Vui lòng nhập đầy đủ email và mật khẩu!",
+      });
     }
 
     if (!emailRegex.test(email)) {
       return res
         .status(400)
-        .json({ status: "ERROR", message: "Email không hợp lệ!" });
+        .json({ status: "WARNING", message: "Email không hợp lệ!" });
     }
 
     const checkUser = await UserService.loginUser({ email, password });
@@ -142,7 +143,7 @@ const sendRegisterVerificationCode = async (req, res) => {
   if (!email) {
     return res
       .status(400)
-      .json({ status: "ERROR", message: "Email là bắt buộc" });
+      .json({ status: "ERROR", message: "Vui lòng nhập email!" });
   }
 
   const userExists = await UserService.checkUserExistsByEmail(email);
@@ -179,7 +180,13 @@ const sendForgotPasswordCode = async (req, res) => {
   if (!email) {
     return res
       .status(400)
-      .json({ status: "ERROR", message: "Email là bắt buộc" });
+      .json({ status: "WARNING", message: "Vui lòng nhập email!" });
+  }
+
+  if (!emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ status: "WARNING", message: "Email không hợp lệ!" });
   }
 
   const userExists = await UserService.checkUserExistsByEmail(email);

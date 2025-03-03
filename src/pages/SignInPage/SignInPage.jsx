@@ -9,6 +9,7 @@ import {
 } from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
+import * as message from "../../components/Message/Message";
 
 export default function SignInPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -32,6 +33,8 @@ export default function SignInPage() {
     newPassword: "",
     confirmNewPassword: "",
   });
+
+  useEffect(() => {});
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
@@ -75,10 +78,11 @@ export default function SignInPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      alert("Vui lòng nhập đầy đủ email và mật khẩu!");
-      return;
-    }
+    // if (!formData.email || !formData.password) {
+    //   //alert("Vui lòng nhập đầy đủ email và mật khẩu!");
+    //   message.warning("Vui lòng nhập đầy đủ email và mật khẩu!");
+    //   return;
+    // }
 
     try {
       const response = await axios.post(
@@ -89,14 +93,25 @@ export default function SignInPage() {
       if (response.data.status === "OK") {
         localStorage.setItem("token", response.data.accessToken);
 
-        alert("Đăng nhập thành công!");
-        window.location.href = "/home";
+        message.success("Đăng nhập thành công!");
+        // useEffect(() => {
+        //   if (query) {
+        //     console.log("Message:", query.message);
+        //   }
+        // }, [query]);
+        setTimeout(() => {
+          window.location.href = "/home";
+        }, 1500); // Tăng thời gian lên 2 giây
       }
     } catch (error) {
-      if (error.response && error.response.data.message) {
-        alert(error.response.data.message); // Hiển thị thông báo từ backend
+      if (error.response && error.response.data) {
+        if (error.response.data.status === "ERROR") {
+          message.error(error.response.data.message);
+        } else {
+          message.warning(error.response.data.message);
+        }
       } else {
-        alert("Đã có lỗi xảy ra. Vui lòng thử lại!");
+        message.error("Đã có lỗi xảy ra. Vui lòng thử lại!");
       }
     }
   };
@@ -118,24 +133,33 @@ export default function SignInPage() {
           body: JSON.stringify({ email: formData.email }),
         });
 
-        console.log("isForgot:", isForgot);
-        console.log("Sending request to:", endpoint);
-        console.log(
-          "Request body:",
-          JSON.stringify({
-            email: formData.email,
-            type: isForgot ? "forgot" : "register",
-          })
-        );
+        //console.log("isForgot:", isForgot);
+        // console.log("Sending request to:", endpoint);
+        // //console.log(
+        //   "Request body:",
+        //   JSON.stringify({
+        //     email: formData.email,
+        //     type: isForgot ? "forgot" : "register",
+        //   })
+        // );
 
         const data = await response.json();
 
         if (response.ok) {
-          alert(`Mã xác nhận đã được gửi!`);
+          // alert(`Mã xác nhận đã được gửi!`);
+          message.success("Mã xác nhận đã được gửi!");
           setCode(data.verificationCode); // Lưu mã xác nhận
           setStep(2);
+        }
+        // else {
+        //   alert(data.message || "Gửi mã thất bại, vui lòng thử lại!");
+        // }
+        else if (data.status === "WARNING") {
+          message.warning(data.message);
+        } else if (data.status === "ERROR") {
+          alert(data.message);
         } else {
-          alert(data.message || "Gửi mã thất bại, vui lòng thử lại!");
+          alert("Có lỗi không xác định, vui lòng thử lại sau!");
         }
       } catch (error) {
         alert("Lỗi kết nối, vui lòng thử lại!");
@@ -143,10 +167,12 @@ export default function SignInPage() {
       }
     } else if (step === 2) {
       if (vertification?.trim() === String(code)) {
-        alert("Xác nhận Email thành công!");
+        //alert("Xác nhận Email thành công!");
+        message.success("Xác nhận email thành công!");
         setStep(3);
       } else {
-        alert("Mã xác nhận không chính xác!");
+        //alert("Mã xác nhận không chính xác!");
+        message.error("Mã xác nhận không chính xác!");
       }
     }
   };
