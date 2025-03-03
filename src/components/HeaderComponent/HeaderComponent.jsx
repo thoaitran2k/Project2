@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Col, Drawer, Grid } from "antd";
-import { WrapperHeader } from "./style";
-import { MenuOutlined, CloseOutlined, SearchOutlined } from "@ant-design/icons";
-import { WrapperLogo, LoginButton, StyledLink } from "./style";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Grid, Col, Drawer } from "antd";
+import { SearchOutlined, MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { WrapperHeader, WrapperLogo, LoginButton, StyledLink } from "./style";
 import NavbarComponent from "../../components/NavbarComponent/NavbarComponent";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, setUser } from "../../redux/slices/userSlice";
 
 const { useBreakpoint } = Grid;
 
@@ -88,40 +89,51 @@ const HeaderComponent = () => {
   const screens = useBreakpoint();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isAtTop, setIsAtTop] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const dispatch = useDispatch();
+  const { isAuthenticated, accessToken } = useSelector((state) => state.user);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsAtTop(window.scrollY === 0);
-    };
+  // Kiểm tra xem token có hết hạn không
+  const checkTokenExpiration = () => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const decodedToken = JSON.parse(atob(token.split(".")[1])); // Giải mã JWT
+      const currentTime = Date.now() / 1000; // Thời gian hiện tại tính bằng giây
 
-    window.addEventListener("scroll", handleScroll);
-
-    // Kiểm tra trạng thái đăng nhập khi component được mount
-    if (localStorage.getItem("token")) {
-      setIsAuthenticated(true);
+      if (decodedToken.exp < currentTime) {
+        handleLogout(); // Nếu token hết hạn, thực hiện logout và hiển thị thông báo
+      } else {
+        dispatch(setUser(token)); // Token còn hiệu lực, setUser trong Redux
+      }
+    } else {
+      dispatch(logoutUser()); // Nếu không có token, logout
     }
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const handleLogoClick = () => {
-    if (location.pathname !== "/home") {
-      navigate("/home");
-    }
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   };
 
+  // Hàm logout
   const handleLogout = () => {
-    // Xóa accessToken khỏi localStorage
-    localStorage.removeItem("token");
+    alert("Bạn đã hết phiên đăng nhập");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    dispatch(logoutUser()); // Dispatch logout action
+    navigate("/sign-in", { replace: true });
+  };
 
-    // Cập nhật trạng thái đăng xuất
-    setIsAuthenticated(false);
+  useEffect(() => {
+    checkTokenExpiration(); // Kiểm tra khi component mount
 
-    // Chuyển hướng về trang đăng nhập
-    navigate("/sign-in");
+    // Kiểm tra lại khi token thay đổi trong localStorage
+    const intervalId = setInterval(() => {
+      checkTokenExpiration(); // Kiểm tra định kỳ
+    }, 1000 * 5); // Kiểm tra mỗi phút
+
+    return () => {
+      clearInterval(intervalId); // Dọn dẹp khi component unmount
+    };
+  }, [dispatch]);
+
+  const handleLogoClick = () => {
+    if (location.pathname !== "/home") navigate("/home");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -132,8 +144,7 @@ const HeaderComponent = () => {
             <div
               onClick={handleLogoClick}
               style={{
-                cursor:
-                  isAtTop && location.pathname === "/" ? "default" : "pointer",
+                cursor: "pointer",
                 transition: "opacity 0.3s",
                 display: "inline-block",
               }}
@@ -166,10 +177,7 @@ const HeaderComponent = () => {
               <div
                 onClick={handleLogoClick}
                 style={{
-                  cursor:
-                    isAtTop && location.pathname === "/home"
-                      ? "default"
-                      : "pointer",
+                  cursor: location.pathname === "/home" ? "default" : "pointer",
                   transition: "opacity 0.3s",
                   display: "inline-block",
                 }}
@@ -185,9 +193,6 @@ const HeaderComponent = () => {
                   LOGIN
                 </LoginButton>
               )}
-            </Col>
-            <Col style={{ textAlign: "center" }} span={screens.xs ? 4 : 2}>
-              col-8
             </Col>
           </>
         )}

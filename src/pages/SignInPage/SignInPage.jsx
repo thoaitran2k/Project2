@@ -10,6 +10,7 @@ import {
 import styled from "styled-components";
 import axios from "axios";
 import * as message from "../../components/Message/Message";
+import { useNavigate } from "react-router-dom";
 
 export default function SignInPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,8 @@ export default function SignInPage() {
   const [code, setCode] = useState();
   const [vertification, setVertification] = useState();
   const [step, setStep] = useState(1);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [resetPassword, setResetPassword] = useState({
     newPassword: "",
@@ -33,6 +36,8 @@ export default function SignInPage() {
     newPassword: "",
     confirmNewPassword: "",
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {});
 
@@ -75,44 +80,36 @@ export default function SignInPage() {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e, formData, setIsLogin, setIsAuthenticated) => {
     e.preventDefault();
+    console.log("formData:", formData); // Kiểm tra giá trị formData
 
-    // if (!formData.email || !formData.password) {
-    //   //alert("Vui lòng nhập đầy đủ email và mật khẩu!");
-    //   message.warning("Vui lòng nhập đầy đủ email và mật khẩu!");
-    //   return;
-    // }
+    if (!formData.email || !formData.password) {
+      message.warning("Vui lòng nhập đầy đủ email và mật khẩu!");
+      return;
+    }
 
     try {
       const response = await axios.post(
-        "http://localhost:3002/api/user/sign-in",
+        `${import.meta.env.VITE_URL_BACKEND}/user/sign-in`,
         { email: formData.email, password: formData.password }
       );
 
       if (response.data.status === "OK") {
-        localStorage.setItem("token", response.data.accessToken);
+        const { accessToken, refreshToken } = response.data;
+
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+        setIsLogin(true);
+        setIsAuthenticated(true); // Cập nhật trạng thái đăng nhập
 
         message.success("Đăng nhập thành công!");
-        // useEffect(() => {
-        //   if (query) {
-        //     console.log("Message:", query.message);
-        //   }
-        // }, [query]);
-        setTimeout(() => {
-          window.location.href = "/home";
-        }, 1500); // Tăng thời gian lên 2 giây
+        setTimeout(() => navigate("/home"), 1500);
       }
     } catch (error) {
-      if (error.response && error.response.data) {
-        if (error.response.data.status === "ERROR") {
-          message.error(error.response.data.message);
-        } else {
-          message.warning(error.response.data.message);
-        }
-      } else {
-        message.error("Đã có lỗi xảy ra. Vui lòng thử lại!");
-      }
+      const errorMsg =
+        error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại!";
+      message.error(errorMsg);
     }
   };
 
@@ -542,7 +539,12 @@ export default function SignInPage() {
               " "
             )
           ) : isLogin ? (
-            <SubmitButton onClick={handleLogin} type="submit">
+            <SubmitButton
+              onClick={(e) =>
+                handleLogin(e, formData, setIsLogin, setIsAuthenticated)
+              }
+              type="submit"
+            >
               Đăng nhập
             </SubmitButton>
           ) : step === 3 ? (

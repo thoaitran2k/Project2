@@ -4,6 +4,32 @@ const dotenv = require("dotenv");
 // Load environment variables from .env file
 dotenv.config(); // Only call dotenv.config() once
 
+const isAccessTokenExpired = (token) => {
+  if (!token) {
+    console.log("TOKEN HẾT HẠN");
+    return true;
+  }
+
+  try {
+    const decoded = jwt.verify(token);
+    if (!decoded || !decoded.exp) {
+      console.log("Token không hợp lệ hoặc không có `exp`");
+      return true;
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (decoded.exp < currentTime) {
+      console.log("Access Token đã hết hạn!");
+      return true;
+    }
+
+    return false; // Token vẫn còn hiệu lực
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra token:", error);
+    return true;
+  }
+};
+
 // Function to generate a JWT token for general user authentication (7 days expiration)
 const generateToken = (user) => {
   return jwt.sign(
@@ -15,7 +41,7 @@ const generateToken = (user) => {
 
 // Function to generate Access Token (30 minutes expiration)
 const generateAccessToken = (payload) => {
-  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "30m" }); // Increased expiry to 30 minutes
+  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "10s" }); // Increased expiry to 30 minutes
 };
 
 // Function to generate Refresh Token (365 days expiration)
@@ -60,4 +86,5 @@ module.exports = {
   generateAccessToken,
   generateRefreshToken,
   refreshTokenJwtService,
+  isAccessTokenExpired,
 };

@@ -1,6 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/UserController");
+
+const jwt = require("jsonwebtoken");
+
+router.post("/check-token", (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.json({ expired: true });
+  }
+
+  try {
+    const decoded = jwt.decode(token);
+    const expired =
+      !decoded || !decoded.exp || decoded.exp < Math.floor(Date.now() / 1000);
+    res.json({ expired });
+  } catch (error) {
+    res.json({ expired: true });
+  }
+});
 const {
   authMiddleware,
   authUserMiddleware,
