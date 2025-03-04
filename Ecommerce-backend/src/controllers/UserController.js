@@ -155,7 +155,6 @@ const sendRegisterVerificationCode = async (req, res) => {
 
   const verificationCode = Math.floor(100000 + Math.random() * 900000);
   verificationCodes[email] = verificationCode;
-  console.log("Generated code for:", email, verificationCode);
 
   const response = await MailService.sendVerificationCode(
     email,
@@ -199,7 +198,6 @@ const sendForgotPasswordCode = async (req, res) => {
 
   const verificationCode = Math.floor(100000 + Math.random() * 900000);
   verificationCodes[email] = verificationCode;
-  console.log("Generated code for:", email, verificationCode);
 
   const response = await MailService.sendVerificationCode(
     email,
@@ -294,19 +292,23 @@ const getDetailsUser = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   try {
-    const token = req.headers.token.split(" ")[1];
-    if (!token) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "The Token is required" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "The Token is required",
+      });
     }
 
+    const token = authHeader.split(" ")[1];
     const response = await JwtService.refreshTokenJwtService(token);
+
     return res.status(200).json(response);
   } catch (e) {
-    return res
-      .status(500)
-      .json({ status: "OK", message: "POST REFRESH TOKEN SUCCESS" });
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Server error when refreshing token",
+    });
   }
 };
 

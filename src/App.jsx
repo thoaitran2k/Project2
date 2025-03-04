@@ -12,8 +12,21 @@ import FooterComponent from "./components/FooterComponent/FooterComponent";
 import styled from "styled-components";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { startTokenRefresh, stopTokenRefresh } from "./utils/TokenManager";
 
 function App() {
+  const user = useSelector((state) => state.user);
+
+  useEffect(() => {
+    if (user?.accessToken) {
+      startTokenRefresh();
+    } else {
+      stopTokenRefresh();
+    }
+  }, [user]);
+
   const fetchAPI = async () => {
     try {
       const res = await axios.get(

@@ -6,6 +6,8 @@ import { WrapperHeader, WrapperLogo, LoginButton, StyledLink } from "./style";
 import NavbarComponent from "../../components/NavbarComponent/NavbarComponent";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser, setUser } from "../../redux/slices/userSlice";
+import swal from "sweetalert";
+import refreshTokenApi from "../../utils/jwtService";
 
 const { useBreakpoint } = Grid;
 
@@ -93,21 +95,27 @@ const HeaderComponent = () => {
   const { isAuthenticated, accessToken } = useSelector((state) => state.user);
 
   // Kiểm tra xem token có hết hạn không
-  const checkTokenExpiration = () => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      const decodedToken = JSON.parse(atob(token.split(".")[1])); // Giải mã JWT
-      const currentTime = Date.now() / 1000; // Thời gian hiện tại tính bằng giây
+  const checkTokenExpiration = async () => {
+    let token = localStorage.getItem("accessToken");
+    if (!token) {
+      dispatch(logoutUser());
+      return;
+    }
 
-      if (decodedToken.exp < currentTime) {
-        AutoLogoutTokenExpired(); // Nếu token hết hạn, thực hiện logout và hiển thị thông báo
+    const decodedToken = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Date.now() / 1000;
+
+    if (decodedToken.exp < currentTime) {
+      const newToken = await refreshTokenApi(); // Thử refresh token
+      if (!newToken) {
+        AutoLogoutTokenExpired(); // Nếu không refresh được, logout
       } else {
-        dispatch(setUser(token)); // Token còn hiệu lực, setUser trong Redux
+        dispatch(setUser(newToken)); // Cập nhật user với token mới
       }
-    } else {
-      dispatch(logoutUser()); // Nếu không có token, logout
     }
   };
+
+  //Refresh Token khi hết hạn
 
   //Hàm tự động Logout khi Token hết hạn
   const AutoLogoutTokenExpired = () => {
@@ -120,11 +128,28 @@ const HeaderComponent = () => {
 
   // Hàm logout
   const handleLogout = () => {
-    alert("Bạn muốn thoát khỏi ứng dụng đúng không?");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    dispatch(logoutUser()); // Dispatch logout action
-    navigate("/sign-in", { replace: true });
+    swal({
+      title: "Bạn muốn đăng xuất?",
+      icon: "",
+      buttons: {
+        cancel: "Hủy",
+        confirm: {
+          text: "OK",
+          value: true,
+          visible: true,
+          className: "",
+          closeModal: true,
+        },
+      },
+      dangerMode: true,
+    }).then((willLogout) => {
+      if (willLogout) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        dispatch(logoutUser()); // Dispatch logout action
+        navigate("/sign-in", { replace: true });
+      }
+    });
   };
 
   useEffect(() => {

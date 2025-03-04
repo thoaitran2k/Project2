@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 
-// Load environment variables from .env file
-dotenv.config(); // Only call dotenv.config() once
+dotenv.config(); // Load environment variables
 
 const isAccessTokenExpired = (token) => {
   if (!token) {
@@ -11,7 +10,7 @@ const isAccessTokenExpired = (token) => {
   }
 
   try {
-    const decoded = jwt.verify(token);
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN);
     if (!decoded || !decoded.exp) {
       console.log("Token không hợp lệ hoặc không có `exp`");
       return true;
@@ -30,7 +29,6 @@ const isAccessTokenExpired = (token) => {
   }
 };
 
-// Function to generate a JWT token for general user authentication (7 days expiration)
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, isAdmin: user.isAdmin },
@@ -39,28 +37,32 @@ const generateToken = (user) => {
   );
 };
 
-// Function to generate Access Token (30 minutes expiration)
 const generateAccessToken = (payload) => {
-  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "10s" }); // Increased expiry to 30 minutes
+  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "30m" });
 };
 
-// Function to generate Refresh Token (365 days expiration)
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "365d" });
+  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
 };
 
-// Function to handle Refresh Token and issue a new Access Token
 const refreshTokenJwtService = async (token) => {
   console.log("Received refresh token:", token);
 
   try {
-    // Verifying the refresh token
-    const decoded = await jwt.verify(token, process.env.REFRESH_TOKEN);
-    if (!decoded) {
-      throw new Error("Invalid or expired refresh token.");
+    if (!process.env.REFRESH_TOKEN) {
+      console.error("REFRESH_TOKEN is not set in environment variables.");
+      return {
+        status: "ERROR",
+        message: "Server error: Missing refresh token secret",
+      };
     }
 
-    // Generate new access token using decoded data from refresh token
+    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN);
+    if (!decoded) {
+      console.error("Invalid or expired refresh token.");
+      return { status: "ERROR", message: "Invalid or expired refresh token" };
+    }
+
     const access_token = generateAccessToken({
       id: decoded.id,
       isAdmin: decoded.isAdmin,
@@ -73,7 +75,7 @@ const refreshTokenJwtService = async (token) => {
       access_token,
     };
   } catch (err) {
-    console.error("Error refreshing token:", err);
+    console.error("Error refreshing token:", err.message);
     return {
       status: "ERROR",
       message: "Authentication failed. Please log in again.",

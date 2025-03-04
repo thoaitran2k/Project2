@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const routes = require("./routes");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 
 dotenv.config();
 
@@ -14,10 +15,16 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-app.use(cors());
-
 app.use(express.json());
 app.use(bodyParser.json());
+app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Chỉ định origin frontend (không dùng "*")
+    credentials: true, // Cho phép gửi cookies/token
+  })
+);
 
 routes(app);
 

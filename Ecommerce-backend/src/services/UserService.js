@@ -65,9 +65,6 @@ const loginUser = async ({ email, password }) => {
       return { status: "ERROR", message: "Người dùng không tồn tại" };
     }
 
-    console.log("Password from client:", password);
-    console.log("Stored password hash:", checkUser.password);
-
     const isMatch = bcrypt.compareSync(password, checkUser.password);
     if (!isMatch) {
       return { status: "ERROR", message: "Mật khẩu không chính xác" };
@@ -91,16 +88,6 @@ const loginUser = async ({ email, password }) => {
   } catch (e) {
     throw e;
   }
-};
-
-module.exports = {
-  createUser,
-  loginUser,
-};
-
-module.exports = {
-  createUser,
-  loginUser,
 };
 
 const updateUser = async (id, data) => {
