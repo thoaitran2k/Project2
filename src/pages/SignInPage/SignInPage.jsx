@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 
 import {
   UserOutlined,
@@ -82,7 +83,6 @@ export default function SignInPage() {
 
   const handleLogin = async (e, formData, setIsLogin, setIsAuthenticated) => {
     e.preventDefault();
-    console.log("formData:", formData); // Kiểm tra giá trị formData
 
     if (!formData.email || !formData.password) {
       message.warning("Vui lòng nhập đầy đủ email và mật khẩu!");
@@ -90,6 +90,7 @@ export default function SignInPage() {
     }
 
     try {
+      // Gửi yêu cầu đăng nhập
       const response = await axios.post(
         `${import.meta.env.VITE_URL_BACKEND}/user/sign-in`,
         { email: formData.email, password: formData.password }
@@ -98,8 +99,32 @@ export default function SignInPage() {
       if (response.data.status === "OK") {
         const { accessToken, refreshToken } = response.data;
 
+        // Lưu token vào localStorage
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
+
+        // Giải mã JWT để lấy thông tin người dùng (ví dụ: id)
+        const decodedToken = jwtDecode(accessToken); // Giải mã JWT
+        const userId = decodedToken.id; // Giả sử bạn lưu `id` trong payload của JWT
+
+        // Gọi API lấy thông tin người dùng
+        const userResponse = await axios.get(
+          `${import.meta.env.VITE_URL_BACKEND}/user/get-details/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`, // Gửi token trong header
+            },
+          }
+        );
+
+        // Lưu thông tin người dùng vào Redux state
+        const userDetails = userResponse.data.data;
+
+        console.log("Thông tin người dùng:", userDetails);
+
+        const username = userDetails.username;
+        console.log("Username người dùng:", username);
+
         setIsLogin(true);
         setIsAuthenticated(true); // Cập nhật trạng thái đăng nhập
 

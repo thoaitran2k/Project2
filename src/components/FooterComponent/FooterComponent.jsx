@@ -66,7 +66,7 @@ const FooterComponent = () => {
               </StyledLink>
             </FooterText>
             <FooterText>
-              <StyledLink onClick={() => handleScrollToTop("/sign-in")}>
+              <StyledLink onClick={() => handleScrollToTop("/profile")}>
                 Tài khoản
               </StyledLink>
             </FooterText>

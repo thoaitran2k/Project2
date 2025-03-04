@@ -4,8 +4,6 @@ dotenv.config();
 
 // Middleware xác thực token (không bắt buộc phải là admin)
 const authMiddleware = (req, res, next) => {
-  console.log("🔹 Middleware executed");
-
   try {
     const authHeader = req.headers.authorization || req.headers.token;
 
@@ -16,7 +14,6 @@ const authMiddleware = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1]; // Lấy token sau 'Bearer '
-    console.log("🔹 Extracted token:", token);
 
     jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
       if (err) {
@@ -26,7 +23,6 @@ const authMiddleware = (req, res, next) => {
           .json({ message: "Token is not valid", status: "ERROR" });
       }
 
-      console.log("🔹 Decoded user:", user);
       req.user = user; // Gán user vào request
       next(); // Tiếp tục xử lý
     });
@@ -38,8 +34,6 @@ const authMiddleware = (req, res, next) => {
 
 // Middleware xác thực user hoặc admin
 const authUserMiddleware = (req, res, next) => {
-  console.log("🔹 Middleware executed");
-
   try {
     const authHeader = req.headers.authorization || req.headers.token;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -49,7 +43,6 @@ const authUserMiddleware = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1]; // Lấy token sau 'Bearer '
-    console.log("🔹 Extracted token:", token);
 
     jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
       if (err) {
@@ -59,7 +52,6 @@ const authUserMiddleware = (req, res, next) => {
           .json({ message: "Token is not valid", status: "ERROR" });
       }
 
-      console.log("🔹 Decoded user:", user);
       req.user = user; // Gán user vào request
 
       const userId = req.params.id;
@@ -71,7 +63,6 @@ const authUserMiddleware = (req, res, next) => {
           .json({ message: "You are not authorized", status: "ERROR" });
       }
 
-      console.log("🔹 Authorization passed, calling next()");
       next();
     });
   } catch (error) {

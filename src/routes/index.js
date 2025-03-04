@@ -5,6 +5,7 @@ import NotFoundPage from "../pages/NotFoundPage/NotFoundPage";
 import ProductDetailsPage from "../pages/ProductDetailsPage/ProductDetailsPage";
 import SignInPage from "../pages/SignInPage/SignInPage";
 import SearchPage from "../pages/SearchPage/SearchPage";
+import ProfilePage from "../pages/ProfilePage/ProfilePage";
 
 export const routes = [
   // {
@@ -40,6 +41,11 @@ export const routes = [
   {
     path: "/search",
     page: SearchPage,
+    isShowHeader: true,
+  },
+  {
+    path: "/profile",
+    page: ProfilePage,
     isShowHeader: true,
   },
   {

@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logoutUser, setUser } from "../../redux/slices/userSlice";
 import swal from "sweetalert";
 import refreshTokenApi from "../../utils/jwtService";
+import axios from "axios";
 
 const { useBreakpoint } = Grid;
 
@@ -92,13 +93,15 @@ const HeaderComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated, accessToken } = useSelector((state) => state.user);
+  const { isAuthenticated, accessToken, email, username } = useSelector(
+    (state) => state.user
+  );
 
-  // Kiểm tra xem token có hết hạn không
+  // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
-    let token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
-      dispatch(logoutUser());
+      dispatch(logoutUser()); // Đảm bảo logout nếu không có token
       return;
     }
 
@@ -115,15 +118,54 @@ const HeaderComponent = () => {
     }
   };
 
-  //Refresh Token khi hết hạn
-
-  //Hàm tự động Logout khi Token hết hạn
+  // Hàm tự động logout khi token hết hạn
   const AutoLogoutTokenExpired = () => {
     alert("Bạn đã hết phiên đăng nhập");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     dispatch(logoutUser()); // Dispatch logout action
     navigate("/sign-in", { replace: true });
+  };
+
+  // Hàm lấy thông tin người dùng từ server
+  const fetchUserDetails = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (token && !isAuthenticated) {
+        const decodedToken = JSON.parse(atob(token.split(".")[1]));
+        const userId = decodedToken.id;
+
+        // Gửi yêu cầu API để lấy thông tin người dùng
+        const response = await axios.get(
+          `http://localhost:3002/api/user/get-details/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const { email, phone, dob, username } = response.data.data;
+        console.log("Data", response.data.data);
+
+        // Lưu thông tin người dùng vào Redux
+        dispatch(
+          setUser({
+            accessToken: token,
+            refreshToken: localStorage.getItem("refreshToken"),
+            isAuthenticated: true,
+            username,
+            email,
+            phone,
+            dob,
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      AutoLogoutTokenExpired(); // Nếu có lỗi, tự động logout
+    }
   };
 
   // Hàm logout
@@ -153,17 +195,20 @@ const HeaderComponent = () => {
   };
 
   useEffect(() => {
-    checkTokenExpiration(); // Kiểm tra khi component mount
+    if (!isAuthenticated) {
+      fetchUserDetails();
+    } // Lấy thông tin người dùng khi component mount
+    checkTokenExpiration(); // Kiểm tra token hết hạn
 
-    // Kiểm tra lại khi token thay đổi trong localStorage
+    // Kiểm tra lại token mỗi phút
     const intervalId = setInterval(() => {
-      checkTokenExpiration(); // Kiểm tra định kỳ
-    }, 1000 * 5); // Kiểm tra mỗi phút
+      checkTokenExpiration();
+    }, 1000 * 60); // 1 phút
 
     return () => {
       clearInterval(intervalId); // Dọn dẹp khi component unmount
     };
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   const handleLogoClick = () => {
     if (location.pathname !== "/home") navigate("/home");
@@ -211,7 +256,10 @@ const HeaderComponent = () => {
               <div
                 onClick={handleLogoClick}
                 style={{
-                  cursor: location.pathname === "/home" ? "default" : "pointer",
+                  cursor:
+                    location.pathname === "/home" && window.scrollY === 0
+                      ? "default"
+                      : "pointer",
                   transition: "opacity 0.3s",
                   display: "inline-block",
                 }}
@@ -221,7 +269,36 @@ const HeaderComponent = () => {
             </Col>
             <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
               {isAuthenticated ? (
-                <LoginButton onClick={handleLogout}>LOGOUT</LoginButton>
+                <div
+                  style={{
+                    display: "flex", // Đặt chế độ hiển thị flex
+                    justifyContent: "center", // Canh giữa theo chiều ngang
+                    alignItems: "center", // Canh giữa theo chiều dọc
+                    gap: "10px", // Khoảng cách giữa các phần tử
+                  }}
+                >
+                  <LoginButton
+                    onClick={handleLogout}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ fontSize: "11px", textAlign: "center" }}>
+                      Xin chào,
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "17px",
+                        textAlign: "center",
+                        color: "red",
+                      }}
+                    >
+                      {username}
+                    </span>
+                  </LoginButton>
+                </div>
               ) : (
                 <LoginButton onClick={() => navigate("/sign-in")}>
                   LOGIN

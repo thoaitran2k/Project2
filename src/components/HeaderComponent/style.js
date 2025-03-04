@@ -38,8 +38,8 @@ export const LoginButton = styled.div`
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
   border: 2px solid #005d9c;
   transition: 0.3s;
-  height: 20px;
-  width: 100px;
+  height: 30px;
+  width: 190px;
 
   &:hover {
     opacity: 0.8;
