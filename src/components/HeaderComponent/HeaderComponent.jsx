@@ -100,7 +100,7 @@ const HeaderComponent = () => {
       const currentTime = Date.now() / 1000; // Thời gian hiện tại tính bằng giây
 
       if (decodedToken.exp < currentTime) {
-        handleLogout(); // Nếu token hết hạn, thực hiện logout và hiển thị thông báo
+        AutoLogoutTokenExpired(); // Nếu token hết hạn, thực hiện logout và hiển thị thông báo
       } else {
         dispatch(setUser(token)); // Token còn hiệu lực, setUser trong Redux
       }
@@ -109,9 +109,18 @@ const HeaderComponent = () => {
     }
   };
 
+  //Hàm tự động Logout khi Token hết hạn
+  const AutoLogoutTokenExpired = () => {
+    alert("Bạn đã hết phiên đăng nhập");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    dispatch(logoutUser()); // Dispatch logout action
+    navigate("/sign-in", { replace: true });
+  };
+
   // Hàm logout
   const handleLogout = () => {
-    alert("Bạn đã hết phiên đăng nhập");
+    alert("Bạn muốn thoát khỏi ứng dụng đúng không?");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     dispatch(logoutUser()); // Dispatch logout action
