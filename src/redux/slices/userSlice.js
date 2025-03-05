@@ -9,6 +9,7 @@ const initialState = {
   email: null,
   phone: null,
   dob: null,
+  gender: null, // Thêm gender vào state
   isLoggingOut: false, // Thêm trạng thái loading logout
 };
 
@@ -17,7 +18,7 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      const { accessToken, refreshToken, email, phone, dob, username } =
+      const { accessToken, refreshToken, email, phone, dob, username, gender } =
         action.payload;
       state.isAuthenticated = true;
       state.accessToken = accessToken;
@@ -26,6 +27,7 @@ const userSlice = createSlice({
       state.email = email;
       state.phone = phone;
       state.dob = dob;
+      state.gender = gender; // Cập nhật giới tính vào state
     },
     logoutUser: (state) => {
       state.isAuthenticated = false;
@@ -35,6 +37,7 @@ const userSlice = createSlice({
       state.email = null;
       state.phone = null;
       state.dob = null;
+      state.gender = null; // Reset gender khi logout
       state.isLoggingOut = false;
     },
     setLoggingOut: (state, action) => {

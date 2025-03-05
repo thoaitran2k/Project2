@@ -9,9 +9,9 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const createUser = async (req, res) => {
   try {
-    const { username, email, password, phone, dob } = req.body;
+    const { username, email, password, phone, dob, gender } = req.body;
 
-    if (!username || !email || !password || !phone || !dob) {
+    if (!username || !email || !password || !phone || !dob || !gender) {
       return res
         .status(400)
         .json({ message: "Tất cả các trường đều bắt buộc!" });
@@ -32,6 +32,7 @@ const createUser = async (req, res) => {
       password,
       phone,
       dob,
+      gender,
     });
 
     res

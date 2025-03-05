@@ -3,7 +3,14 @@ const bcrypt = require("bcrypt");
 const { generateAccessToken, generateRefreshToken } = require("./jwtService");
 const moment = require("moment");
 
-const createUser = async ({ username, email, password, phone, dob }) => {
+const createUser = async ({
+  username,
+  email,
+  password,
+  phone,
+  dob,
+  gender,
+}) => {
   const hashedPassword = bcrypt.hashSync(password, 10); // Mã hóa mật khẩu
 
   const newUser = new User({
@@ -12,6 +19,7 @@ const createUser = async ({ username, email, password, phone, dob }) => {
     password: hashedPassword,
     phone,
     dob,
+    gender,
   });
 
   await newUser.save();
@@ -130,16 +138,20 @@ const getDetailsUser = async (id) => {
   try {
     const user = await User.findOne({
       _id: id,
-    });
+    }).select("-password");
 
     if (user === null) {
       return {
         status: "OK",
-        message: "The user is not defined",
+        message: "Người dùng không tồn tại",
       };
     }
 
-    return { status: "OK", message: "SUCESSS GET DETAILS USER", data: user };
+    return {
+      status: "OK",
+      message: "Lấy thông tin người dùng thành công",
+      data: user,
+    };
   } catch (e) {
     throw e;
   }

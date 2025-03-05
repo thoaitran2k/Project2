@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
 
 import {
   UserOutlined,
@@ -48,6 +50,7 @@ export default function SignInPage() {
     confirmPassword: "",
     phone: "",
     birthDate: "",
+    gender: "",
     newPassword: "",
     confirmNewPassword: "",
   });
@@ -116,6 +119,10 @@ export default function SignInPage() {
       }
     } catch (errorMsg) {
       message.error(errorMsg);
+    } finally {
+      setTimeout(() => {
+        dispatch(setLoading(false)); // Tắt trạng thái loading
+      }, 1500); // Đảm bảo loading luôn được tắt, kể cả khi lỗi
     }
   };
 
@@ -192,6 +199,7 @@ export default function SignInPage() {
           confirmPassword: "",
           phone: "",
           birthDate: "",
+          gender: "",
         });
       } catch (errorMsg) {
         message.error(errorMsg);
@@ -307,18 +315,71 @@ export default function SignInPage() {
                   {step === 3 && (
                     <>
                       <InputWrapper>
+                        <UserOutlined />
+                        <Input
+                          type="text"
+                          name="username"
+                          placeholder="Tên người dùng"
+                          value={formData.username}
+                          onChange={handleChange}
+                          autoComplete="off"
+                          required
+                        />
+                      </InputWrapper>
+                      <InputWrapper>
+                        <PhoneOutlined />
+                        <Input
+                          type="text"
+                          name="phone"
+                          placeholder="Số điện thoại"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          autoComplete="off"
+                          required
+                        />
+                      </InputWrapper>
+                      <InputWrapper>
+                        <CalendarOutlined />
+                        <Input
+                          type="date"
+                          name="birthDate"
+                          value={formData.birthDate}
+                          onChange={handleChange}
+                          required
+                        />
+                      </InputWrapper>
+
+                      {/* Thêm trường chọn giới tính */}
+                      <InputWrapper>
+                        <UserOutlined />
+                        <select
+                          name="gender"
+                          value={formData.gender}
+                          onChange={handleChange}
+                          required
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            borderRadius: "5px",
+                            border: "1px solid #ccc",
+                            background: "#fff",
+                          }}
+                        >
+                          <option value="">Chọn giới tính</option>
+                          <option value="male">Nam</option>
+                          <option value="female">Nữ</option>
+                        </select>
+                      </InputWrapper>
+
+                      <InputWrapper>
                         <LockOutlined />
                         <Input
                           type="password"
-                          name="newPassword"
-                          placeholder="Mật khẩu mới"
-                          //value={resetPassword.newPassword}
-                          onChange={(e) =>
-                            setResetPassword({
-                              ...resetPassword,
-                              newPassword: e.target.value,
-                            })
-                          }
+                          name="password"
+                          placeholder="Mật khẩu"
+                          value={formData.password}
+                          onChange={handleChange}
+                          autoComplete="new-password"
                           required
                         />
                       </InputWrapper>
@@ -326,15 +387,11 @@ export default function SignInPage() {
                         <LockOutlined />
                         <Input
                           type="password"
-                          name="confirmNewPassword"
-                          placeholder="Xác nhận mật khẩu mới"
-                          //value={resetPassword.confirmNewPassword}
-                          onChange={(e) =>
-                            setResetPassword({
-                              ...resetPassword,
-                              confirmNewPassword: e.target.value,
-                            })
-                          }
+                          name="confirmPassword"
+                          placeholder="Xác nhận mật khẩu"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          autoComplete="new-password"
                           required
                         />
                       </InputWrapper>
@@ -436,6 +493,28 @@ export default function SignInPage() {
                         onChange={handleChange}
                         required
                       />
+                    </InputWrapper>
+                    {/* Thêm trường chọn giới tính */}
+                    <InputWrapper>
+                      <UserOutlined />
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        required
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          border: "none",
+                          outline: "none",
+                          boxShadow: "none",
+                          background: "#fff",
+                        }}
+                      >
+                        <option value="">Chọn giới tính</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                      </select>
                     </InputWrapper>
                     <InputWrapper>
                       <LockOutlined />

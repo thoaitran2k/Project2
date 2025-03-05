@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Form,
   Input,
@@ -15,11 +15,37 @@ import {
   PhoneOutlined,
   LockOutlined,
 } from "@ant-design/icons";
+import { useSelector } from "react-redux";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 
 const ProfileForm = () => {
   const [form] = Form.useForm();
+
+  // Lấy dữ liệu từ Redux
+  const user = useSelector((state) => state.user.u);
+  const state = useSelector((state) => state);
+  console.log("Redux State:", state);
+
+  useEffect(() => {
+    console.log("Dữ liệu user từ Redux:", user);
+  }, [user]);
+
+  // Cập nhật dữ liệu khi Redux thay đổi
+  useEffect(() => {
+    if (user) {
+      form.setFieldsValue({
+        fullName: user.fullName || "",
+        nickname: user.nickname || "",
+        phone: user.phone || "",
+        email: user.email || "",
+        dob: user.dob ? dayjs(user.dob, "YYYY-MM-DD") : null,
+        gender: user.gender || undefined,
+        nationality: user.nationality || undefined,
+      });
+    }
+  }, [user, form]);
 
   const onFinish = (values) => {
     console.log("Thông tin đã cập nhật:", values);
@@ -31,6 +57,15 @@ const ProfileForm = () => {
       form={form}
       onFinish={onFinish}
       layout="vertical"
+      initialValues={{
+        userName: user?.userName || "",
+        nickname: user?.nickname || "",
+        phone: user?.phone || "",
+        email: user?.email || "",
+        dob: user?.dob ? dayjs(user.dob, "YYYY-MM-DD") : null,
+        gender: user?.gender || undefined,
+        nationality: user?.nationality || undefined,
+      }}
       style={{ background: "white", padding: "15px", marginBottom: "30px" }}
     >
       <Row gutter={24}>
@@ -38,7 +73,7 @@ const ProfileForm = () => {
         <Col span={12}>
           <h2>Thông tin cá nhân</h2>
           <Form.Item
-            name="fullName"
+            name="username"
             label="Họ & Tên"
             rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
           >
@@ -61,12 +96,7 @@ const ProfileForm = () => {
               <Option value="other">Khác</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="nationality" label="Quốc tịch">
-            <Select placeholder="Chọn quốc tịch">
-              <Option value="vietnam">Việt Nam</Option>
-              <Option value="other">Khác</Option>
-            </Select>
-          </Form.Item>
+
           {/* Nút Lưu thay đổi - Canh giữa */}
           <Form.Item style={{ textAlign: "center", marginTop: 20 }}>
             <Button type="primary" htmlType="submit">
@@ -78,21 +108,12 @@ const ProfileForm = () => {
         {/* Cột bên phải - Số điện thoại và Email */}
         <Col span={12}>
           <h2>Số điện thoại và Email</h2>
-          <Form.Item name="phone" label="Số điện thoại">
-            <Input
-              prefix={<PhoneOutlined />}
-              defaultValue="0794330648"
-              disabled
-            />
-          </Form.Item>
-          <Button type="primary">Cập nhật</Button>
-
           <Form.Item name="email" label="Địa chỉ email">
-            <Input
-              prefix={<MailOutlined />}
-              defaultValue="thoaitran007x@gmail.com"
-              disabled
-            />
+            <Input prefix={<MailOutlined />} disabled />
+          </Form.Item>
+
+          <Form.Item name="phone" label="Số điện thoại">
+            <Input prefix={<PhoneOutlined />} />
           </Form.Item>
           <Button type="primary">Cập nhật</Button>
 

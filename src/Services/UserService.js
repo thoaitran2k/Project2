@@ -101,6 +101,7 @@ export const signUpUser = async (formData) => {
       password: formData.password,
       phone: formData.phone,
       dob: formData.birthDate,
+      gender: formData.gender,
     });
     return response.data;
   } catch (error) {

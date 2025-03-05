@@ -21,7 +21,7 @@ const sendVerificationCode = async (email, code, type = "register") => {
         <p>Chào bạn,</p>
         <p>Mã xác minh của bạn để đăng ký tài khoản là: <strong>${code}</strong></p>
         <p>Vui lòng nhập mã này để hoàn tất quá trình đăng ký.</p>
-        <p>Kính mong bạn sẽ có trải nghiệm thật tuyệt vời khi sử dụng dịch vụ của chúng tôi!</p>
+        <p>Kính chúc bạn sẽ có trải nghiệm thật tuyệt vời khi sử dụng dịch vụ của chúng tôi!</p>
       `;
     } else if (type === "forgot-password") {
       subject = "Yêu cầu thay đổi mật khẩu";

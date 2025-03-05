@@ -157,7 +157,7 @@ const HeaderComponent = () => {
           }
         );
 
-        const { email, phone, dob, username } = response.data.data;
+        const { email, phone, dob, username, gender } = response.data.data;
         console.log("Data", response.data.data);
 
         // Lưu thông tin người dùng vào Redux
@@ -170,6 +170,7 @@ const HeaderComponent = () => {
             email,
             phone,
             dob,
+            gender,
           })
         );
       }
