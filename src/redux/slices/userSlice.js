@@ -9,6 +9,7 @@ const initialState = {
   email: null,
   phone: null,
   dob: null,
+  isLoggingOut: false, // Thêm trạng thái loading logout
 };
 
 const userSlice = createSlice({
@@ -34,10 +35,14 @@ const userSlice = createSlice({
       state.email = null;
       state.phone = null;
       state.dob = null;
+      state.isLoggingOut = false;
+    },
+    setLoggingOut: (state, action) => {
+      state.isLoggingOut = action.payload;
     },
   },
 });
 
-export const { setUser, logoutUser } = userSlice.actions;
+export const { setUser, logoutUser, setLoggingOut } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -11,10 +11,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { WrapperHeader, WrapperLogo, LoginButton, StyledLink } from "./style";
 import NavbarComponent from "../../components/NavbarComponent/NavbarComponent";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser, setUser } from "../../redux/slices/userSlice";
+import {
+  logoutUser,
+  setUser,
+  setLoggingOut,
+} from "../../redux/slices/userSlice";
 import swal from "sweetalert";
 import refreshTokenApi from "../../utils/jwtService";
 import axios from "axios";
+import Loading from "../LoadingComponent/Loading";
 
 const { useBreakpoint } = Grid;
 
@@ -99,9 +104,9 @@ const HeaderComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated, accessToken, email, username } = useSelector(
-    (state) => state.user
-  );
+
+  const { isLoggingOut, isAuthenticated, accessToken, email, username } =
+    useSelector((state) => state.user);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -192,10 +197,14 @@ const HeaderComponent = () => {
       dangerMode: true,
     }).then((willLogout) => {
       if (willLogout) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        dispatch(logoutUser()); // Dispatch logout action
-        navigate("/sign-in", { replace: true });
+        dispatch(setLoggingOut(true)); // Bật trạng thái loading
+        setTimeout(() => {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          dispatch(logoutUser()); // Đăng xuất
+          dispatch(setLoggingOut(false)); // Tắt trạng thái loading
+          navigate("/sign-in", { replace: true });
+        }, 1500);
       }
     });
   };
@@ -238,50 +247,15 @@ const HeaderComponent = () => {
   );
 
   return (
-    <div style={{ height: screens.xs ? "4rem" : "7rem" }}>
-      <WrapperHeader>
-        {location.pathname === "/sign-in" ? (
-          <Col span={24} style={{ textAlign: "center" }}>
-            <div
-              onClick={handleLogoClick}
-              style={{
-                cursor: "pointer",
-                transition: "opacity 0.3s",
-                display: "inline-block",
-              }}
-            >
-              <WrapperLogo>LOGO</WrapperLogo>
-            </div>
-          </Col>
-        ) : (
-          <>
-            <Col style={{ textAlign: "center" }} span={screens.xs ? 4 : 2}>
-              <Sidebar />
-            </Col>
-            <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
-              <div className="Search">
-                <StyledLink to="/search">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                    }}
-                  >
-                    <SearchOutlined />
-                    <div style={{ margin: "0 5px" }}>Tìm kiếm</div>
-                  </div>
-                </StyledLink>
-              </div>
-            </Col>
-            <Col span={screens.xs ? 16 : 16} style={{ textAlign: "center" }}>
+    <Loading>
+      <div style={{ height: screens.xs ? "4rem" : "7rem" }}>
+        <WrapperHeader>
+          {location.pathname === "/sign-in" ? (
+            <Col span={24} style={{ textAlign: "center" }}>
               <div
                 onClick={handleLogoClick}
                 style={{
-                  cursor:
-                    location.pathname === "/home" && window.scrollY === 0
-                      ? "default"
-                      : "pointer",
+                  cursor: "pointer",
                   transition: "opacity 0.3s",
                   display: "inline-block",
                 }}
@@ -289,50 +263,92 @@ const HeaderComponent = () => {
                 <WrapperLogo>LOGO</WrapperLogo>
               </div>
             </Col>
-            <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
-              {isAuthenticated ? (
-                <Dropdown overlay={menu} trigger={["click"]}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: "10px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <LoginButton
+          ) : (
+            <>
+              <Col style={{ textAlign: "center" }} span={screens.xs ? 4 : 2}>
+                <Sidebar />
+              </Col>
+              <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
+                <div className="Search">
+                  <StyledLink to="/search">
+                    <div
                       style={{
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
+                        gap: "5px",
                       }}
                     >
-                      <span style={{ fontSize: "11px", textAlign: "center" }}>
-                        Xin chào,
-                      </span>
-                      <span
+                      <SearchOutlined />
+                      <div style={{ margin: "0 5px" }}>Tìm kiếm</div>
+                    </div>
+                  </StyledLink>
+                </div>
+              </Col>
+              <Col span={screens.xs ? 16 : 16} style={{ textAlign: "center" }}>
+                <div
+                  onClick={handleLogoClick}
+                  style={{
+                    cursor:
+                      location.pathname === "/home" && window.scrollY === 0
+                        ? "default"
+                        : "pointer",
+                    transition: "opacity 0.3s",
+                    display: "inline-block",
+                  }}
+                >
+                  <WrapperLogo>LOGO</WrapperLogo>
+                </div>
+              </Col>
+              <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
+                {isAuthenticated ? (
+                  <Dropdown overlay={menu} trigger={["click"]}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <LoginButton
                         style={{
-                          fontSize: "17px",
-                          textAlign: "center",
-                          color: "red",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          padding: "8px",
+                          minWidth: "80px", // Đảm bảo không quá nhỏ
+                          width: "auto", // Tự động điều chỉnh chiều rộng theo nội dung
+                          height: "auto", // Tự động điều chỉnh chiều cao theo nội dung
+                          whiteSpace: "nowrap", // Đảm bảo chữ không bị xuống dòng
                         }}
                       >
-                        {username}
-                      </span>
-                    </LoginButton>
-                  </div>
-                </Dropdown>
-              ) : (
-                <LoginButton onClick={() => navigate("/sign-in")}>
-                  LOGIN
-                </LoginButton>
-              )}
-            </Col>
-          </>
-        )}
-      </WrapperHeader>
-    </div>
+                        <span style={{ fontSize: "11px", textAlign: "center" }}>
+                          Xin chào,
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "17px",
+                            textAlign: "center",
+                            color: "red",
+                          }}
+                        >
+                          {username}
+                        </span>
+                      </LoginButton>
+                    </div>
+                  </Dropdown>
+                ) : (
+                  <LoginButton onClick={() => navigate("/sign-in")}>
+                    LOGIN
+                  </LoginButton>
+                )}
+              </Col>
+            </>
+          )}
+        </WrapperHeader>
+      </div>
+    </Loading>
   );
 };
 

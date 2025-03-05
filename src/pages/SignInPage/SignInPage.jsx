@@ -12,6 +12,17 @@ import styled from "styled-components";
 import axios from "axios";
 import * as message from "../../components/Message/Message";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setLoading } from "../../redux/slices/loadingSlice";
+import {
+  loginUser,
+  forgotPasswordUser,
+  getUserDetails,
+  sendVerificationCode,
+  resetPasswordUser,
+  signUpUser,
+} from "../../Services/UserService";
+import Loading from "../../components/LoadingComponent/Loading";
 
 export default function SignInPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -26,6 +37,9 @@ export default function SignInPage() {
     newPassword: "",
     confirmNewPassword: "",
   });
+
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.loading.isLoading);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -46,94 +60,61 @@ export default function SignInPage() {
     setIsLogin(!isLogin);
     setIsForgot(false);
     setStep(1);
+    setFormData({ Email: "" });
   };
 
-  const handleUpdatePassword = async (email, newPassword, confirmPassword) => {
+  const handleUpdatePassword = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:3002/api/user/forgot-password",
-        {
-          email,
-          newPassword,
-          confirmPassword,
-        }
+      const response = await forgotPasswordUser(
+        formData.email,
+        resetPassword.newPassword,
+        resetPassword.confirmNewPassword
       );
-
-      alert(response.data.message || "Mật khẩu đã được cập nhật thành công!");
-
-      // Chuyển về màn hình đăng nhập
+      message.success(
+        response.message || "Mật khẩu đã được cập nhật thành công!"
+      );
       setIsForgot(false);
       setIsLogin(true);
       setStep(1);
-      setFormData({
-        email: "",
-        password: "",
-        confirmPassword: "",
-        username: "",
-        phone: "",
-        birthDate: "",
-      });
       setResetPassword({ newPassword: "", confirmNewPassword: "" });
-    } catch (error) {
-      alert(
-        error.response?.data?.message || "Có lỗi xảy ra khi cập nhật mật khẩu!"
-      );
+    } catch (errorMsg) {
+      message.error(errorMsg);
     }
   };
 
-  const handleLogin = async (e, formData, setIsLogin, setIsAuthenticated) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!formData.email || !formData.password) {
       message.warning("Vui lòng nhập đầy đủ email và mật khẩu!");
       return;
     }
 
+    dispatch(setLoading(true)); // Bật trạng thái loading
+
     try {
-      // Gửi yêu cầu đăng nhập
-      const response = await axios.post(
-        `${import.meta.env.VITE_URL_BACKEND}/user/sign-in`,
-        { email: formData.email, password: formData.password }
-      );
+      const response = await loginUser(formData.email, formData.password);
 
-      if (response.data.status === "OK") {
-        const { accessToken, refreshToken } = response.data;
+      if (response.status === "OK") {
+        const { accessToken, refreshToken } = response;
 
-        // Lưu token vào localStorage
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
 
-        // Giải mã JWT để lấy thông tin người dùng (ví dụ: id)
-        const decodedToken = jwtDecode(accessToken); // Giải mã JWT
-        const userId = decodedToken.id; // Giả sử bạn lưu `id` trong payload của JWT
+        const decodedToken = jwtDecode(accessToken);
+        const userId = decodedToken.id;
 
-        // Gọi API lấy thông tin người dùng
-        const userResponse = await axios.get(
-          `${import.meta.env.VITE_URL_BACKEND}/user/get-details/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`, // Gửi token trong header
-            },
-          }
-        );
-
-        // Lưu thông tin người dùng vào Redux state
-        const userDetails = userResponse.data.data;
-
+        const userDetails = await getUserDetails(userId, accessToken);
         console.log("Thông tin người dùng:", userDetails);
 
-        const username = userDetails.username;
-        console.log("Username người dùng:", username);
-
         setIsLogin(true);
-        setIsAuthenticated(true); // Cập nhật trạng thái đăng nhập
-
+        setIsAuthenticated(true);
         message.success("Đăng nhập thành công!");
-        setTimeout(() => navigate("/home"), 1500);
+        setTimeout(() => {
+          dispatch(setLoading(false)); // Tắt trạng thái loading
+          navigate("/home");
+        }, 1500); // Chờ 500ms rồi chuyển trang
       }
-    } catch (error) {
-      const errorMsg =
-        error.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại!";
+    } catch (errorMsg) {
       message.error(errorMsg);
     }
   };
@@ -143,57 +124,23 @@ export default function SignInPage() {
   };
 
   const handleNext = async () => {
+    //e.preventDefault();
+
     if (step === 1) {
       try {
-        const endpoint = isForgot
-          ? "http://localhost:3002/api/user/send-forgot-password-code"
-          : "http://localhost:3002/api/user/send-register-code";
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: formData.email }),
-        });
-
-        //console.log("isForgot:", isForgot);
-        // console.log("Sending request to:", endpoint);
-        // //console.log(
-        //   "Request body:",
-        //   JSON.stringify({
-        //     email: formData.email,
-        //     type: isForgot ? "forgot" : "register",
-        //   })
-        // );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          // alert(`Mã xác nhận đã được gửi!`);
-          message.success("Mã xác nhận đã được gửi!");
-          setCode(data.verificationCode); // Lưu mã xác nhận
-          setStep(2);
-        }
-        // else {
-        //   alert(data.message || "Gửi mã thất bại, vui lòng thử lại!");
-        // }
-        else if (data.status === "WARNING") {
-          message.warning(data.message);
-        } else if (data.status === "ERROR") {
-          alert(data.message);
-        } else {
-          alert("Có lỗi không xác định, vui lòng thử lại sau!");
-        }
-      } catch (error) {
-        alert("Lỗi kết nối, vui lòng thử lại!");
-        console.error(error);
+        const type = isForgot ? "forgot-password" : "register";
+        const response = await sendVerificationCode(formData.email, type);
+        message.success("Mã xác nhận đã được gửi!");
+        setCode(response.verificationCode);
+        setStep(2);
+      } catch (errorMsg) {
+        message.error(errorMsg);
       }
     } else if (step === 2) {
       if (vertification?.trim() === String(code)) {
-        //alert("Xác nhận Email thành công!");
         message.success("Xác nhận email thành công!");
         setStep(3);
       } else {
-        //alert("Mã xác nhận không chính xác!");
         message.error("Mã xác nhận không chính xác!");
       }
     }
@@ -209,78 +156,45 @@ export default function SignInPage() {
     if (isForgot) {
       // Xử lý cập nhật mật khẩu khi quên mật khẩu
       if (resetPassword.newPassword !== resetPassword.confirmNewPassword) {
-        alert("Mật khẩu xác nhận không khớp!");
+        message.warning("Mật khẩu xác nhận không khớp!");
         return;
       }
 
       try {
-        const response = await fetch(
-          "http://localhost:3002/api/user/reset-password",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: formData.email,
-              newPassword: formData.newPassword,
-            }),
-          }
+        const response = await resetPasswordUser(
+          formData.email,
+          resetPassword.newPassword
         );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert("Cập nhật mật khẩu thành công!");
-          setIsForgot(false);
-          setIsLogin(true);
-          setStep(1);
-          setFormData({ email: "", newPassword: "", confirmNewPassword: "" });
-        } else {
-          alert(data.message || "Lỗi khi cập nhật mật khẩu!");
-        }
-      } catch (error) {
-        console.error(error);
-        alert("Đã có lỗi xảy ra, vui lòng thử lại!");
+        message.success(response.message || "Cập nhật mật khẩu thành công!");
+        setIsForgot(false);
+        setIsLogin(true);
+        setStep(1);
+        setFormData({ email: "", newPassword: "", confirmNewPassword: "" });
+      } catch (errorMsg) {
+        message.error(errorMsg);
       }
     } else if (!isLogin) {
       // Xử lý đăng ký tài khoản
       if (formData.password !== formData.confirmPassword) {
-        alert("Mật khẩu xác nhận không khớp!");
+        message.warning("Mật khẩu xác nhận không khớp!");
         return;
       }
 
       try {
-        const response = await fetch("http://localhost:3002/api/user/sign-up", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-            phone: formData.phone,
-            dob: formData.birthDate,
-          }),
+        const response = await signUpUser(formData);
+        message.success(response.message || "Đăng ký thành công!");
+        setIsLogin(true);
+        setStep(1);
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          phone: "",
+          birthDate: "",
         });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert("Đăng ký thành công!");
-          setIsLogin(true);
-          setStep(1);
-          setFormData({
-            username: "",
-            email: "",
-            password: "",
-            confirmPassword: "",
-            phone: "",
-            birthDate: "",
-          });
-        } else {
-          alert(data.message || "Đăng ký thất bại!");
-        }
-      } catch (error) {
-        console.error(error);
-        alert("Đã có lỗi xảy ra. Vui lòng thử lại!");
+      } catch (errorMsg) {
+        message.error(errorMsg);
       }
     }
   };
@@ -293,38 +207,141 @@ export default function SignInPage() {
 
   return (
     <LoginContainer>
-      <FormWrapper>
-        <Title>
-          {isLogin ? (isForgot ? "Quên mật khẩu" : "Đăng Nhập") : "Đăng Ký"}
-        </Title>
-        <form onSubmit={handleSubmit}>
-          {isLogin ? (
-            !isForgot ? (
-              <div>
-                {" "}
-                <InputWrapper>
-                  <MailOutlined />
-                  <Input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </InputWrapper>
-                <InputWrapper>
-                  <LockOutlined />
-                  <Input
-                    type="password"
-                    name="password"
-                    placeholder="Mật khẩu"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </InputWrapper>
-              </div>
+      <Loading>
+        <FormWrapper>
+          <Title>
+            {isLogin ? (isForgot ? "Quên mật khẩu" : "Đăng Nhập") : "Đăng Ký"}
+          </Title>
+          <form onSubmit={handleSubmit}>
+            {isLogin ? (
+              !isForgot ? (
+                <div>
+                  {" "}
+                  <InputWrapper>
+                    <MailOutlined />
+                    <Input
+                      type="email"
+                      name="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                        }
+                      }}
+                      required
+                    />
+                  </InputWrapper>
+                  <InputWrapper>
+                    <LockOutlined />
+                    <Input
+                      type="password"
+                      name="password"
+                      placeholder="Mật khẩu"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                    />
+                  </InputWrapper>
+                </div>
+              ) : (
+                <>
+                  {step === 1 && (
+                    <>
+                      <InputWrapper>
+                        <MailOutlined />
+                        <Input
+                          type="email"
+                          name="email"
+                          placeholder="Email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleNext();
+                            }
+                          }}
+                          required
+                        />
+                      </InputWrapper>
+                      <StyledButton
+                        onClick={handleNext}
+                        type="button"
+                        style={{ display: "flex", justifySelf: "flex-end" }}
+                      >
+                        Tiếp theo
+                      </StyledButton>
+                    </>
+                  )}
+
+                  {step === 2 && (
+                    <>
+                      <InputWrapper>
+                        <Input
+                          type="text"
+                          name="verificationCode"
+                          placeholder="Mã xác nhận"
+                          onChange={(e) => setVertification(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleNext();
+                            }
+                          }}
+                          required
+                        />
+                      </InputWrapper>
+                      <ButtonGroup>
+                        <StyledButton type="button" onClick={handleBack}>
+                          Quay lại
+                        </StyledButton>
+                        <StyledButton type="button" onClick={handleNext}>
+                          Tiếp theo
+                        </StyledButton>
+                      </ButtonGroup>
+                    </>
+                  )}
+
+                  {step === 3 && (
+                    <>
+                      <InputWrapper>
+                        <LockOutlined />
+                        <Input
+                          type="password"
+                          name="newPassword"
+                          placeholder="Mật khẩu mới"
+                          //value={resetPassword.newPassword}
+                          onChange={(e) =>
+                            setResetPassword({
+                              ...resetPassword,
+                              newPassword: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </InputWrapper>
+                      <InputWrapper>
+                        <LockOutlined />
+                        <Input
+                          type="password"
+                          name="confirmNewPassword"
+                          placeholder="Xác nhận mật khẩu mới"
+                          //value={resetPassword.confirmNewPassword}
+                          onChange={(e) =>
+                            setResetPassword({
+                              ...resetPassword,
+                              confirmNewPassword: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </InputWrapper>
+                    </>
+                  )}
+                </>
+              )
             ) : (
               <>
                 {step === 1 && (
@@ -337,6 +354,12 @@ export default function SignInPage() {
                         placeholder="Email"
                         value={formData.email}
                         onChange={handleChange}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault(); // Chặn form submit
+                            handleNext(); // Chuyển bước
+                          }
+                        }}
                         required
                       />
                     </InputWrapper>
@@ -358,6 +381,12 @@ export default function SignInPage() {
                         name="verificationCode"
                         placeholder="Mã xác nhận"
                         onChange={(e) => setVertification(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleNext();
+                          }
+                        }}
                         required
                       />
                     </InputWrapper>
@@ -375,18 +404,36 @@ export default function SignInPage() {
                 {step === 3 && (
                   <>
                     <InputWrapper>
-                      <LockOutlined />
+                      <UserOutlined />
                       <Input
-                        type="password"
-                        name="newPassword"
-                        placeholder="Mật khẩu mới"
-                        //value={resetPassword.newPassword}
-                        onChange={(e) =>
-                          setResetPassword({
-                            ...resetPassword,
-                            newPassword: e.target.value,
-                          })
-                        }
+                        type="text"
+                        name="username"
+                        placeholder="Tên người dùng"
+                        value={formData.username}
+                        onChange={handleChange}
+                        autoComplete="off"
+                        required
+                      />
+                    </InputWrapper>
+                    <InputWrapper>
+                      <PhoneOutlined />
+                      <Input
+                        type="text"
+                        name="phone"
+                        placeholder="Số điện thoại"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        autoComplete="off"
+                        required
+                      />
+                    </InputWrapper>
+                    <InputWrapper>
+                      <CalendarOutlined />
+                      <Input
+                        type="date"
+                        name="birthDate"
+                        value={formData.birthDate}
+                        onChange={handleChange}
                         required
                       />
                     </InputWrapper>
@@ -394,197 +441,93 @@ export default function SignInPage() {
                       <LockOutlined />
                       <Input
                         type="password"
-                        name="confirmNewPassword"
-                        placeholder="Xác nhận mật khẩu mới"
-                        //value={resetPassword.confirmNewPassword}
-                        onChange={(e) =>
-                          setResetPassword({
-                            ...resetPassword,
-                            confirmNewPassword: e.target.value,
-                          })
-                        }
+                        name="password"
+                        placeholder="Mật khẩu"
+                        value={formData.password}
+                        onChange={handleChange}
+                        autoComplete="new-password"
+                        required
+                      />
+                    </InputWrapper>
+                    <InputWrapper>
+                      <LockOutlined />
+                      <Input
+                        type="password"
+                        name="confirmPassword"
+                        placeholder="Xác nhận mật khẩu"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        autoComplete="new-password"
                         required
                       />
                     </InputWrapper>
                   </>
                 )}
               </>
-            )
-          ) : (
-            <>
-              {step === 1 && (
-                <>
-                  <InputWrapper>
-                    <MailOutlined />
-                    <Input
-                      type="email"
-                      name="email"
-                      placeholder="Email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault(); // Chặn form submit
-                          handleNext(); // Chuyển bước
-                        }
-                      }}
-                      required
-                    />
-                  </InputWrapper>
-                  <StyledButton
-                    onClick={handleNext}
-                    type="button"
-                    style={{ display: "flex", justifySelf: "flex-end" }}
-                  >
-                    Tiếp theo
-                  </StyledButton>
-                </>
-              )}
-
-              {step === 2 && (
-                <>
-                  <InputWrapper>
-                    <Input
-                      type="text"
-                      name="verificationCode"
-                      placeholder="Mã xác nhận"
-                      onChange={(e) => setVertification(e.target.value)}
-                      required
-                    />
-                  </InputWrapper>
-                  <ButtonGroup>
-                    <StyledButton type="button" onClick={handleBack}>
-                      Quay lại
-                    </StyledButton>
-                    <StyledButton type="button" onClick={handleNext}>
-                      Tiếp theo
-                    </StyledButton>
-                  </ButtonGroup>
-                </>
-              )}
-
-              {step === 3 && (
-                <>
-                  <InputWrapper>
-                    <UserOutlined />
-                    <Input
-                      type="text"
-                      name="username"
-                      placeholder="Tên người dùng"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                    />
-                  </InputWrapper>
-                  <InputWrapper>
-                    <PhoneOutlined />
-                    <Input
-                      type="text"
-                      name="phone"
-                      placeholder="Số điện thoại"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                    />
-                  </InputWrapper>
-                  <InputWrapper>
-                    <CalendarOutlined />
-                    <Input
-                      type="date"
-                      name="birthDate"
-                      value={formData.birthDate}
-                      onChange={handleChange}
-                      required
-                    />
-                  </InputWrapper>
-                  <InputWrapper>
-                    <LockOutlined />
-                    <Input
-                      type="password"
-                      name="password"
-                      placeholder="Mật khẩu"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                  </InputWrapper>
-                  <InputWrapper>
-                    <LockOutlined />
-                    <Input
-                      type="password"
-                      name="confirmPassword"
-                      placeholder="Xác nhận mật khẩu"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                  </InputWrapper>
-                </>
-              )}
-            </>
-          )}
-          {isForgot ? (
-            <ToggleButton
-              type="button"
-              onClick={() => {
-                setIsForgot(false);
-                setStep(1);
-              }}
-            >
-              Quay lại đăng nhập
-            </ToggleButton>
-          ) : isLogin && step === 1 ? (
-            <ToggleButton
-              type="button"
-              onClick={() => {
-                setIsForgot(true);
-                setStep(1);
-                setFormData({ email: "" }); // Reset lại email
-              }}
-            >
-              Quên mật khẩu?
-            </ToggleButton>
-          ) : null}
-
-          {isForgot ? (
-            step === 3 ? (
-              <SubmitButton
+            )}
+            {isForgot ? (
+              <ToggleButton
                 type="button"
-                onClick={() =>
-                  handleUpdatePassword(
-                    formData.email,
-                    resetPassword.newPassword,
-                    resetPassword.confirmNewPassword
-                  )
-                }
+                onClick={() => {
+                  setIsForgot(false);
+                  setStep(1);
+                }}
               >
-                Cập nhật mật khẩu
+                Quay lại đăng nhập
+              </ToggleButton>
+            ) : isLogin && step === 1 ? (
+              <ToggleButton
+                type="button"
+                onClick={() => {
+                  setIsForgot(true);
+                  setStep(1);
+                  //setFormData({ email: "" }); // Reset lại email
+                }}
+              >
+                Quên mật khẩu?
+              </ToggleButton>
+            ) : null}
+
+            {isForgot ? (
+              step === 3 ? (
+                <SubmitButton
+                  type="button"
+                  onClick={() =>
+                    handleUpdatePassword(
+                      formData.email,
+                      resetPassword.newPassword,
+                      resetPassword.confirmNewPassword
+                    )
+                  }
+                >
+                  Cập nhật mật khẩu
+                </SubmitButton>
+              ) : (
+                " "
+              )
+            ) : isLogin ? (
+              <SubmitButton
+                onClick={(e) =>
+                  handleLogin(e, formData, setIsLogin, setIsAuthenticated)
+                }
+                type="submit"
+              >
+                Đăng nhập
               </SubmitButton>
+            ) : step === 3 ? (
+              <SubmitButton type="submit">Đăng ký</SubmitButton>
             ) : (
-              " "
-            )
-          ) : isLogin ? (
-            <SubmitButton
-              onClick={(e) =>
-                handleLogin(e, formData, setIsLogin, setIsAuthenticated)
-              }
-              type="submit"
-            >
-              Đăng nhập
-            </SubmitButton>
-          ) : step === 3 ? (
-            <SubmitButton type="submit">Đăng ký</SubmitButton>
-          ) : (
-            ""
-          )}
-        </form>
-        <ToggleText>
-          {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
-          <ToggleButton onClick={toggleMode}>
-            {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
-          </ToggleButton>
-        </ToggleText>
-      </FormWrapper>
+              ""
+            )}
+          </form>
+          <ToggleText>
+            {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
+            <ToggleButton onClick={toggleMode}>
+              {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
+            </ToggleButton>
+          </ToggleText>
+        </FormWrapper>
+      </Loading>
     </LoginContainer>
   );
 }
