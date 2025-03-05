@@ -39,7 +39,7 @@ export const LoginButton = styled.div`
   border: 2px solid #005d9c;
   transition: 0.3s;
   height: 30px;
-  width: 190px;
+  width: 100px;
 
   &:hover {
     opacity: 0.8;

@@ -8,11 +8,7 @@ import SearchPage from "../pages/SearchPage/SearchPage";
 import ProfilePage from "../pages/ProfilePage/ProfilePage";
 
 export const routes = [
-  // {
-  //   path: "/",
-  //   page: HomePage,
-  //   isShowHeader: true,
-  // },
+  //PAGE
   {
     path: "/home",
     page: HomePage,
@@ -43,13 +39,19 @@ export const routes = [
     page: SearchPage,
     isShowHeader: true,
   },
-  {
-    path: "/profile",
-    page: ProfilePage,
-    isShowHeader: true,
-  },
+  // {
+  //   path: "/profile",
+  //   page: ProfilePage,
+  //   isShowHeader: true,
+  // },
   {
     path: "*",
     page: NotFoundPage,
+  },
+  //COMPONENT
+  {
+    path: "/profile/:activePage?",
+    page: ProfilePage,
+    isShowHeader: true,
   },
 ];

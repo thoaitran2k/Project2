@@ -1,5 +1,11 @@
-import { Grid, Col, Drawer } from "antd";
-import { SearchOutlined, MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import { Grid, Col, Drawer, Dropdown, Menu } from "antd";
+import {
+  SearchOutlined,
+  MenuOutlined,
+  CloseOutlined,
+  UserOutlined,
+  LogoutOutlined,
+} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { WrapperHeader, WrapperLogo, LoginButton, StyledLink } from "./style";
@@ -215,6 +221,22 @@ const HeaderComponent = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Tạo menu dropdown
+  const menu = (
+    <Menu>
+      <Menu.Item
+        key="1"
+        icon={<UserOutlined />}
+        onClick={() => navigate("/profile")}
+      >
+        Thông tin cá nhân
+      </Menu.Item>
+      <Menu.Item key="2" icon={<LogoutOutlined />} onClick={handleLogout}>
+        Đăng xuất
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
     <div style={{ height: screens.xs ? "4rem" : "7rem" }}>
       <WrapperHeader>
@@ -269,36 +291,38 @@ const HeaderComponent = () => {
             </Col>
             <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
               {isAuthenticated ? (
-                <div
-                  style={{
-                    display: "flex", // Đặt chế độ hiển thị flex
-                    justifyContent: "center", // Canh giữa theo chiều ngang
-                    alignItems: "center", // Canh giữa theo chiều dọc
-                    gap: "10px", // Khoảng cách giữa các phần tử
-                  }}
-                >
-                  <LoginButton
-                    onClick={handleLogout}
+                <Dropdown overlay={menu} trigger={["click"]}>
+                  <div
                     style={{
                       display: "flex",
-                      flexDirection: "column",
+                      justifyContent: "center",
                       alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
                     }}
                   >
-                    <span style={{ fontSize: "11px", textAlign: "center" }}>
-                      Xin chào,
-                    </span>
-                    <span
+                    <LoginButton
                       style={{
-                        fontSize: "17px",
-                        textAlign: "center",
-                        color: "red",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
                       }}
                     >
-                      {username}
-                    </span>
-                  </LoginButton>
-                </div>
+                      <span style={{ fontSize: "11px", textAlign: "center" }}>
+                        Xin chào,
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "17px",
+                          textAlign: "center",
+                          color: "red",
+                        }}
+                      >
+                        {username}
+                      </span>
+                    </LoginButton>
+                  </div>
+                </Dropdown>
               ) : (
                 <LoginButton onClick={() => navigate("/sign-in")}>
                   LOGIN

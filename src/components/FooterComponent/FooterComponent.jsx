@@ -112,8 +112,6 @@ const FooterComponent = () => {
   );
 };
 
-export default FooterComponent;
-
 const FooterWrapper = styled.div`
   width: 100%;
   background-color: rgb(78, 78, 64);
@@ -201,3 +199,5 @@ const StyledLink = styled.span`
     text-decoration: underline;
   }
 `;
+
+export default FooterComponent;
