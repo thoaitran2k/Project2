@@ -20,17 +20,19 @@ export const startTokenRefresh = () => {
     if (timeLeft < 60000) {
       // Nếu còn < 1 phút thì refresh
       const newAccessToken = await refreshTokenApi();
+      console.log("Kiểm tra refresh Token");
       if (newAccessToken) {
         store.dispatch(setUser(newAccessToken)); // Cập nhật Redux
+        console.log("Có accessToken mới");
       } else {
-        store.dispatch(logoutUser()); // Đăng xuất nếu lỗi
+        //store.dispatch(logoutUser()); // Đăng xuất nếu lỗi
       }
     }
   };
 
   checkAndRefreshToken(); // Kiểm tra ngay lúc đăng nhập
 
-  refreshInterval = setInterval(checkAndRefreshToken, 30000); // Kiểm tra mỗi 30 giây
+  refreshInterval = setInterval(checkAndRefreshToken, 1000); // Kiểm tra mỗi 30 giây
 };
 
 export const stopTokenRefresh = () => {

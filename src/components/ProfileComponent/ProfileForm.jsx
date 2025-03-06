@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
 import {
   Form,
   Input,
@@ -8,6 +9,7 @@ import {
   message,
   Row,
   Col,
+  Modal,
 } from "antd";
 import {
   UserOutlined,
@@ -17,7 +19,7 @@ import {
 } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
-import { updateUser } from "../../Services/UserService";
+import { changePasswordUser, updateUser } from "../../Services/UserService";
 import { setLoading } from "../../redux/slices/loadingSlice";
 import { setUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
@@ -26,13 +28,17 @@ const { Option } = Select;
 
 const ProfileForm = () => {
   const [form] = Form.useForm();
+  const [passwordForm] = Form.useForm();
   const dispatch = useDispatch();
+  const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
 
   // Lấy dữ liệu từ Redux
   const user = useSelector((state) => state.user);
   const accessToken = useSelector((state) => state.user.accessToken);
+  const [phone, setPhone] = useState(user.phone || "");
 
-  console.log("User từ Redux:", user);
+  //console.log("User từ Redux:", user);
 
   useEffect(() => {
     if (user) {
@@ -41,12 +47,74 @@ const ProfileForm = () => {
         nickname: user.nickname || "",
         phone: user.phone ? String(user.phone) : "",
         email: user.email || "",
-        dob: user.dob && dayjs(user.dob).isValid() ? dayjs(user.dob) : null, // Chuyển đổi Date sang dayjs
+        dob: user.dob && dayjs(user.dob).isValid() ? dayjs(user.dob) : null,
         gender: user.gender || null,
         nationality: user.nationality ?? undefined,
       });
     }
   }, [user, form]);
+
+  //Cập nhật số điện thoại
+  const handlePhoneUpdate = async () => {
+    if (!phone.trim()) {
+      message.error("Vui lòng nhập số điện thoại hợp lệ!");
+      return;
+    }
+    if (!/^(0[3-9][0-9]{8}|84[3-9][0-9]{8})$/.test(phone)) {
+      message.error("Số điện thoại không hợp lệ! Vui lòng nhập lại.");
+      return;
+    }
+
+    try {
+      dispatch(setLoading(true));
+      const response = await updateUser(user._id, { phone }, accessToken);
+      message.success(response.message || "Cập nhật số điện thoại thành công!");
+
+      dispatch(setUser({ ...user, phone }));
+      setIsPhoneModalVisible(false);
+    } catch (error) {
+      message.error(error.response?.data?.message || "Có lỗi xảy ra!");
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  //Đổi mật khẩu
+  const handleChangePassword = async (values) => {
+    console.log("📤 Dữ liệu gửi đi:", values);
+    try {
+      dispatch(setLoading(true));
+      const { oldPassword, newPassword, confirmPassword } = values;
+
+      if (newPassword !== confirmPassword) {
+        message.error("Mật khẩu xác nhận không khớp!");
+        return;
+      }
+
+      try {
+        const response = await changePasswordUser(
+          oldPassword,
+          newPassword,
+          confirmPassword,
+          accessToken
+        );
+
+        console.log("📨 Phản hồi từ API:", response);
+        message.success(response.message || "Đổi mật khẩu thành công!");
+
+        setIsPasswordModalVisible(false);
+        passwordForm.resetFields();
+      } catch (error) {
+        console.error("🔥 Lỗi FE:", error);
+        message.error(error); // In toàn bộ lỗi để xem chi tiết
+        const errorMessage =
+          error.response?.data?.message || "Lỗi khi đổi mật khẩu!";
+        message.error(errorMessage); // Hiển thị thông báo lỗi từ backend
+      }
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
   const handleUpdateUser = async (values) => {
     if (!user?._id) {
@@ -163,22 +231,125 @@ const ProfileForm = () => {
               <Input prefix={<MailOutlined />} disabled />
             </Form.Item>
             <Form.Item name="phone" label="Số điện thoại">
-              <Input prefix={<PhoneOutlined />} />
+              <StyleInputUpdatePhone
+                prefix={<PhoneOutlined />}
+                readOnly
+                className="readonly-input"
+              />
             </Form.Item>
-            <Button type="primary">Cập nhật</Button>
-            <h2>Bảo mật</h2>
-            <Button type="primary" icon={<LockOutlined />}>
+            <Button
+              type="primary"
+              style={{ marginTop: 5 }}
+              onClick={() => setIsPhoneModalVisible(true)}
+            >
+              Cập nhật
+            </Button>
+            <h3>Bảo mật</h3>
+            <Button
+              type="primary"
+              icon={<LockOutlined />}
+              onClick={() => setIsPasswordModalVisible(true)}
+            >
               Đổi mật khẩu
             </Button>
-            <h2>Yêu cầu xóa tài khoản</h2>
+            <h3>Yêu cầu xóa tài khoản</h3>
             <Button type="primary" danger>
               Yêu cầu
             </Button>
           </Col>
         </Row>
       </Form>
+
+      {/* Modal cập nhật số điện thoại */}
+      <Modal
+        title="Cập nhật số điện thoại"
+        visible={isPhoneModalVisible}
+        onCancel={() => {
+          setIsPhoneModalVisible(false);
+          setTimeout(() => setPhone(user.phone || ""), 0); // Đặt lại phone ngay sau khi đóng modal
+        }}
+        centered
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setIsPhoneModalVisible(false);
+              setPhone(user.phone || "");
+            }}
+          >
+            Hủy
+          </Button>,
+          <Button key="submit" type="primary" onClick={handlePhoneUpdate}>
+            Xác nhận
+          </Button>,
+        ]}
+      >
+        <Input
+          prefix={<PhoneOutlined />}
+          placeholder="Nhập số điện thoại mới"
+          value={phone}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Chỉ cho phép nhập số
+            if (/^\d*$/.test(value)) {
+              setPhone(value);
+            } else {
+              message.warning("Chỉ được nhập số!");
+            }
+          }}
+        />
+      </Modal>
+      {/* Đổi mật khẩu */}
+      <Modal
+        title="Đổi mật khẩu"
+        visible={isPasswordModalVisible}
+        onCancel={() => setIsPasswordModalVisible(false)}
+        centered
+        footer={null}
+      >
+        <Form
+          form={passwordForm}
+          onFinish={handleChangePassword}
+          layout="vertical"
+        >
+          <Form.Item
+            name="oldPassword"
+            label="Mật khẩu cũ"
+            rules={[{ required: true, message: "Vui lòng nhập mật khẩu cũ!" }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="newPassword"
+            label="Mật khẩu mới"
+            rules={[{ required: true, message: "Vui lòng nhập mật khẩu mới!" }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            label="Xác nhận mật khẩu"
+            rules={[{ required: true, message: "Vui lòng xác nhận mật khẩu!" }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Button type="primary" htmlType="submit">
+            Xác nhận
+          </Button>
+        </Form>
+      </Modal>
     </Loading>
   );
 };
 
 export default ProfileForm;
+
+//Styled Component
+export const StyleInputUpdatePhone = styled(Input)`
+  .readonly-input {
+    background-color: red !important;
+    color: black !important;
+    cursor: not-allowed;
+    border: 1px solid #d9d9d9;
+  }
+`;

@@ -29,6 +29,7 @@ router.post("/sign-in", userController.loginUser);
 router.put("/update-user/:id", userController.updateUser);
 router.delete("/delete-user/:id", authMiddleware, userController.deleteUser);
 router.get("/getAll", authMiddleware, userController.getAllUser);
+router.post("/change-password/", authMiddleware, userController.changePassword);
 router.get(
   "/get-details/:id",
   authUserMiddleware,

@@ -104,6 +104,7 @@ const HeaderComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [isUserDetailsFetched, setIsUserDetailsFetched] = useState(false);
 
   const { _id, isLoggingOut, isAuthenticated, accessToken, email, username } =
     useSelector((state) => state.user);
@@ -112,7 +113,6 @@ const HeaderComponent = () => {
   const checkTokenExpiration = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      dispatch(logoutUser()); // Đảm bảo logout nếu không có token
       return;
     }
 
@@ -121,10 +121,13 @@ const HeaderComponent = () => {
 
     if (decodedToken.exp < currentTime) {
       const newToken = await refreshTokenApi(); // Thử refresh token
+      console.log("Đang cố găng refresh token");
       if (!newToken) {
         AutoLogoutTokenExpired(); // Nếu không refresh được, logout
+        console.log("Refresh Token thất bại");
       } else {
-        dispatch(setUser(newToken)); // Cập nhật user với token mới
+        dispatch(setUser({ ...user, accessToken: newToken }));
+        console.log("Refresh thành công và đang lưu Token");
       }
     }
   };
@@ -158,7 +161,6 @@ const HeaderComponent = () => {
         );
 
         const { _id, email, phone, dob, username, gender } = response.data.data;
-        console.log("Data", response.data.data);
 
         // Lưu thông tin người dùng vào Redux
         dispatch(
@@ -201,10 +203,9 @@ const HeaderComponent = () => {
       if (willLogout) {
         dispatch(setLoggingOut(true)); // Bật trạng thái loading
         setTimeout(() => {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          dispatch(logoutUser()); // Đăng xuất
-          dispatch(setLoggingOut(false)); // Tắt trạng thái loading
+          localStorage.clear();
+          dispatch(logoutUser());
+          dispatch(setLoggingOut(false));
           navigate("/sign-in", { replace: true });
         }, 1500);
       }
@@ -212,10 +213,16 @@ const HeaderComponent = () => {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (
+      !isAuthenticated &&
+      !isUserDetailsFetched &&
+      localStorage.getItem("accessToken")
+    ) {
       fetchUserDetails();
-    } // Lấy thông tin người dùng khi component mount
-    checkTokenExpiration(); // Kiểm tra token hết hạn
+      setIsUserDetailsFetched(true);
+    }
+
+    checkTokenExpiration();
 
     // Kiểm tra lại token mỗi phút
     const intervalId = setInterval(() => {
@@ -223,9 +230,9 @@ const HeaderComponent = () => {
     }, 1000 * 60); // 1 phút
 
     return () => {
-      clearInterval(intervalId); // Dọn dẹp khi component unmount
+      clearInterval(intervalId);
     };
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, isUserDetailsFetched]);
 
   const handleLogoClick = () => {
     if (location.pathname !== "/home") navigate("/home");

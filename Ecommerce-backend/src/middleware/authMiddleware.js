@@ -52,12 +52,13 @@ const authUserMiddleware = (req, res, next) => {
           .json({ message: "Token is not valid", status: "ERROR" });
       }
 
-      req.user = user; // Gán user vào request
+      req.user = user; // Gán thông tin user vào request
 
-      const userId = req.params.id;
+      // Kiểm tra xem người dùng có quyền thay đổi mật khẩu của chính họ hay không
+      const userIdFromParams = req.params.id; // Lấy id từ URL params
 
-      // Cho phép nếu là chính chủ hoặc là admin
-      if (user.id !== userId && !user.isAdmin) {
+      // Nếu userId từ params không khớp với userId trong token và người dùng không phải là admin
+      if (user.id !== userIdFromParams && !user.isAdmin) {
         return res
           .status(403)
           .json({ message: "You are not authorized", status: "ERROR" });
@@ -66,8 +67,10 @@ const authUserMiddleware = (req, res, next) => {
       next();
     });
   } catch (error) {
-    console.error("🔹 Auth Middleware Error:", error);
-    res.status(500).json({ message: "Internal Server Error", status: "ERROR" });
+    console.error("🔥 Auth Middleware Error:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", status: "ERROR" });
   }
 };
 

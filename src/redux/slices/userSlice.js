@@ -7,7 +7,7 @@ export const updateUserProfile = createAsyncThunk(
   async (updatedData, { getState }) => {
     const { accessToken } = getState().user;
     const response = await axios.put(
-      `http://localhost:3002/api/user/update-profile`,
+      "http://localhost:3002/api/user/update-profile",
       updatedData,
       {
         headers: {
@@ -44,14 +44,14 @@ const userSlice = createSlice({
       }
 
       state.isAuthenticated = true;
-      state._id = payload._id || null;
-      state.accessToken = payload.accessToken || null;
-      state.refreshToken = payload.refreshToken || null;
-      state.username = payload.username || null;
-      state.email = payload.email || null;
-      state.phone = payload.phone || null;
-      state.dob = payload.dob || null;
-      state.gender = payload.gender || null;
+      state._id = payload._id || state._id;
+      state.accessToken = payload.accessToken || state.accessToken;
+      state.refreshToken = payload.refreshToken || state.refreshToken;
+      state.username = payload.username || state.username;
+      state.email = payload.email || state.email;
+      state.phone = payload.phone || state.phone;
+      state.dob = payload.dob || state.dob;
+      state.gender = payload.gender || state.gender;
     },
     updateUserField: (state, action) => {
       const { field, value } = action.payload;
@@ -62,7 +62,7 @@ const userSlice = createSlice({
       }
     },
     logoutUser: (state) => {
-      Object.assign(state, initialState);
+      Object.assign(state, initialState); // Reset state về giá trị ban đầu
     },
     setLoggingOut: (state, action) => {
       state.isLoggingOut = action.payload;

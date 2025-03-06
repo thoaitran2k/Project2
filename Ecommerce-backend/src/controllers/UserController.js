@@ -1,6 +1,7 @@
 const UserService = require("../services/UserService");
 const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
+const { changePasswordUser } = require("../services/UserService");
 const bcrypt = require("bcrypt");
 
 const User = require("../models/UserModel");
@@ -50,6 +51,47 @@ const createUser = async (req, res) => {
     res
       .status(500)
       .json({ message: "Đã có lỗi xảy ra trong khi tạo người dùng." });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Vui lòng nhập đầy đủ thông tin!",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Mật khẩu xác nhận không khớp!",
+      });
+    }
+
+    const result = await changePasswordUser(userId, oldPassword, newPassword);
+
+    if (!result.success) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: result.message, // Đảm bảo rằng thông báo chi tiết lỗi được trả về
+      });
+    }
+
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: result.message,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Lỗi server!",
+      error: error.message,
+    });
   }
 };
 
@@ -341,4 +383,5 @@ module.exports = {
   sendRegisterVerificationCode,
   forgotPassword,
   sendForgotPasswordCode,
+  changePassword,
 };

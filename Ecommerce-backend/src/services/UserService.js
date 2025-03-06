@@ -140,6 +140,49 @@ const getAllUser = async () => {
   }
 };
 
+const changePasswordUser = async (userId, oldPassword, newPassword) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log("❌ Người dùng không tồn tại!");
+      return { success: false, message: "Người dùng không tồn tại!" };
+    }
+
+    console.log("🔍 Mật khẩu cũ từ client:", oldPassword);
+    console.log("🔍 Mật khẩu hash trong database:", user.password);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      //console.log("❌ Mật khẩu cũ không khớp!");
+      return { success: false, message: "Mật khẩu cũ không chính xác!" };
+    }
+
+    if (newPassword.length < 3) {
+      //console.log("❌ Mật khẩu mới quá ngắn!");
+      return {
+        success: false,
+        message: "Mật khẩu mới phải có ít nhất 3 ký tự!",
+      };
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    //console.log("✅ Đổi mật khẩu thành công!");
+    return { success: true, message: "Đổi mật khẩu thành công!" };
+  } catch (error) {
+    console.error("🔥 Lỗi khi đổi mật khẩu:", error.message);
+    return {
+      success: false,
+      message: "Lỗi khi đổi mật khẩu!",
+      error: error.message,
+    };
+  }
+};
+
 const getDetailsUser = async (id) => {
   try {
     const user = await User.findOne({
@@ -172,4 +215,5 @@ module.exports = {
   getDetailsUser,
   checkUserExistsByEmail,
   forgotPassword,
+  changePasswordUser,
 };

@@ -93,6 +93,32 @@ export const resetPasswordUser = async (email, newPassword) => {
   }
 };
 
+export const changePasswordUser = async (
+  oldPassword,
+  newPassword,
+  confirmPassword,
+  accessToken
+) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/user/change-password`,
+      {
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || "Lỗi khi đổi mật khẩu!";
+  }
+};
+
 export const signUpUser = async (formData) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/user/sign-up`, {
