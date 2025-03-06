@@ -105,7 +105,7 @@ const HeaderComponent = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { isLoggingOut, isAuthenticated, accessToken, email, username } =
+  const { _id, isLoggingOut, isAuthenticated, accessToken, email, username } =
     useSelector((state) => state.user);
 
   // Hàm kiểm tra token hết hạn
@@ -157,12 +157,13 @@ const HeaderComponent = () => {
           }
         );
 
-        const { email, phone, dob, username, gender } = response.data.data;
+        const { _id, email, phone, dob, username, gender } = response.data.data;
         console.log("Data", response.data.data);
 
         // Lưu thông tin người dùng vào Redux
         dispatch(
           setUser({
+            _id,
             accessToken: token,
             refreshToken: localStorage.getItem("refreshToken"),
             isAuthenticated: true,

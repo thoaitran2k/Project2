@@ -1,5 +1,3 @@
-import { LOGIN, LOGOUT, SET_USER } from "../actions/types";
-
 const initialState = {
   user: null,
   accessToken: null,
@@ -10,7 +8,10 @@ const userReducer = (state = initialState, action) => {
     case LOGIN:
       return {
         ...state,
-        user: action.payload.user,
+        user: {
+          ...action.payload.user,
+          _id: action.payload.user._id, // Đảm bảo _id được lưu
+        },
         accessToken: action.payload.accessToken,
       };
     case LOGOUT:
@@ -22,7 +23,10 @@ const userReducer = (state = initialState, action) => {
     case SET_USER:
       return {
         ...state,
-        user: action.payload,
+        user: {
+          ...action.payload,
+          _id: action.payload._id, // Đảm bảo _id được lưu
+        },
       };
     default:
       return state;

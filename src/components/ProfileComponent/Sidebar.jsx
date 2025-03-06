@@ -10,46 +10,59 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const { activePage } = useParams(); // Lấy trang hiện tại từ URL
+  const { activePage } = useParams();
 
   const handleMenuClick = (key) => {
-    navigate(`/profile/${key}`); // Điều hướng URL khi click
+    navigate(`/profile/${key}`);
   };
 
   return (
     <Menu
       mode="vertical"
-      selectedKeys={[activePage || "profile"]} // Nếu activePage undefined, mặc định "profile"
-      style={{ width: 256 }}
+      selectedKeys={[activePage || "customer-info"]}
+      style={{
+        borderRadius: "8px",
+        border: "none",
+        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.1)",
+      }}
     >
-      <Menu.Item
-        key="profile"
-        icon={<UserOutlined />}
-        onClick={() => handleMenuClick("customer-info")}
-      >
-        Thông tin tài khoản
-      </Menu.Item>
-      <Menu.Item
-        key="orders"
-        icon={<FormOutlined />}
-        onClick={() => handleMenuClick("orders")}
-      >
-        Quản lý đơn hàng
-      </Menu.Item>
-      <Menu.Item
-        key="address"
-        icon={<EnvironmentOutlined />}
-        onClick={() => handleMenuClick("address")}
-      >
-        Sổ địa chỉ
-      </Menu.Item>
-      <Menu.Item
-        key="change-password"
-        icon={<LockOutlined />}
-        onClick={() => handleMenuClick("change-password")}
-      >
-        Đổi mật khẩu
-      </Menu.Item>
+      {[
+        {
+          key: "customer-info",
+          icon: <UserOutlined />,
+          label: "Thông tin tài khoản",
+        },
+        { key: "orders", icon: <FormOutlined />, label: "Quản lý đơn hàng" },
+        { key: "address", icon: <EnvironmentOutlined />, label: "Sổ địa chỉ" },
+        {
+          key: "change-password",
+          icon: <LockOutlined />,
+          label: "Đổi mật khẩu",
+        },
+      ].map((item) => (
+        <Menu.Item
+          key={item.key}
+          onClick={() => handleMenuClick(item.key)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            padding: "16px",
+            fontSize: "16px",
+            height: "50px",
+            width: "100%",
+            gap: "10px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            color: activePage === item.key ? "#1677ff" : "#000", // Chỉ đổi màu khi được chọn
+            backgroundColor:
+              activePage === item.key ? "rgb(230, 244, 255)" : "transparent", // Chỉ đổi màu nền khi được chọn
+            transition: "all 0.3s ease",
+          }}
+        >
+          {item.icon} <span>{item.label}</span>
+        </Menu.Item>
+      ))}
     </Menu>
   );
 };

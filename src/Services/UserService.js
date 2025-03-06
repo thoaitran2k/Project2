@@ -108,3 +108,20 @@ export const signUpUser = async (formData) => {
     throw error.response?.data?.message || "Đăng ký thất bại!";
   }
 };
+
+export const updateUser = async (userId, data, accessToken) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/user/update-user/${userId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || "Cập nhật thông tin thất bại!";
+  }
+};

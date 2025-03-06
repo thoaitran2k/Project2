@@ -1,19 +1,22 @@
 import React, { useEffect } from "react";
-import { Row, Col } from "antd";
-import { useDispatch } from "react-redux";
+import { Row, Col, Card, Typography } from "antd";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/ProfileComponent/Sidebar";
 import ProfileForm from "../../components/ProfileComponent/ProfileForm";
 import { setActivePage } from "../../redux/slices/profileSlice";
 
+const { Title } = Typography;
+
 const ProfilePage = () => {
-  const { activePage } = useParams(); // Lấy trạng thái từ URL
+  const { activePage } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { username } = useSelector((state) => state.user);
 
   useEffect(() => {
     if (!activePage) {
-      navigate("/profile/customer-info", { replace: true }); // Điều hướng mặc định
+      navigate("/profile/customer-info", { replace: true });
     } else {
       dispatch(setActivePage(activePage));
     }
@@ -35,20 +38,44 @@ const ProfilePage = () => {
   };
 
   return (
-    <Row
-      gutter={16}
-      style={{
-        height: "85vh",
-        padding: "0 10px",
-      }}
-    >
-      <Col span={5} style={{ display: "flex", flexDirection: "column" }}>
-        <h1>Thoại Trần</h1>
-        <Sidebar />
+    <Row gutter={[16, 16]} style={{ padding: "20px" }}>
+      {/* Sidebar */}
+      <Col xs={24} sm={6} md={5} style={{ minHeight: "100vh" }}>
+        <Card
+          style={{
+            borderRadius: "12px",
+            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+            textAlign: "center",
+          }}
+        >
+          <Title
+            level={4}
+            style={{
+              color: "#1890ff",
+              textAlign: "left",
+              marginTop: "5px",
+              marginBottom: "20px",
+            }}
+          >
+            <span style={{ fontSize: "14px" }}>Tài khoản của </span> <br />{" "}
+            <span style={{ fontSize: "25px", color: "red" }}>{username}</span>
+          </Title>
+          <Sidebar />
+        </Card>
       </Col>
-      <Col span={19} style={{ display: "flex", flexDirection: "column" }}>
-        <h1>Thông tin tài khoản</h1>
-        {renderContent()}
+
+      {/* Nội dung chính */}
+      <Col xs={24} sm={18} md={19}>
+        <Card
+          style={{
+            borderRadius: "12px",
+            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+            padding: "20px",
+          }}
+        >
+          {/* <Title level={3}>Thông tin tài khoản</Title> */}
+          {renderContent()}
+        </Card>
       </Col>
     </Row>
   );

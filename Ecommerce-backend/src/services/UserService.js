@@ -108,7 +108,7 @@ const updateUser = async (id, data) => {
     const updatedUser = await User.findByIdAndUpdate(id, data, { new: true });
     return {
       status: "OK",
-      message: "User updated successfully",
+      message: "Cập nhật thành công",
       data: updatedUser,
     };
   } catch (e) {

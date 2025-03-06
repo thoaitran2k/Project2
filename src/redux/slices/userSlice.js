@@ -1,16 +1,35 @@
-// userSlice.js
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+
+// Async action để cập nhật thông tin người dùng
+export const updateUserProfile = createAsyncThunk(
+  "user/updateUserProfile",
+  async (updatedData, { getState }) => {
+    const { accessToken } = getState().user;
+    const response = await axios.put(
+      `http://localhost:3002/api/user/update-profile`,
+      updatedData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    return response.data; // Trả về dữ liệu cập nhật
+  }
+);
 
 const initialState = {
   isAuthenticated: false,
+  _id: null,
   accessToken: null,
   refreshToken: null,
   username: null,
   email: null,
   phone: null,
   dob: null,
-  gender: null, // Thêm gender vào state
-  isLoggingOut: false, // Thêm trạng thái loading logout
+  gender: null,
+  isLoggingOut: false,
 };
 
 const userSlice = createSlice({
@@ -18,34 +37,49 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      const { accessToken, refreshToken, email, phone, dob, username, gender } =
-        action.payload;
+      const payload = action.payload;
+      if (!payload) {
+        console.error("Payload không hợp lệ!");
+        return;
+      }
+
       state.isAuthenticated = true;
-      state.accessToken = accessToken;
-      state.refreshToken = refreshToken;
-      state.username = username;
-      state.email = email;
-      state.phone = phone;
-      state.dob = dob;
-      state.gender = gender; // Cập nhật giới tính vào state
+      state._id = payload._id || null;
+      state.accessToken = payload.accessToken || null;
+      state.refreshToken = payload.refreshToken || null;
+      state.username = payload.username || null;
+      state.email = payload.email || null;
+      state.phone = payload.phone || null;
+      state.dob = payload.dob || null;
+      state.gender = payload.gender || null;
+    },
+    updateUserField: (state, action) => {
+      const { field, value } = action.payload;
+      if (field in state) {
+        state[field] = value;
+      } else {
+        console.error(`Trường ${field} không tồn tại trong state!`);
+      }
     },
     logoutUser: (state) => {
-      state.isAuthenticated = false;
-      state.accessToken = null;
-      state.refreshToken = null;
-      state.username = null;
-      state.email = null;
-      state.phone = null;
-      state.dob = null;
-      state.gender = null; // Reset gender khi logout
-      state.isLoggingOut = false;
+      Object.assign(state, initialState);
     },
     setLoggingOut: (state, action) => {
       state.isLoggingOut = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase(updateUserProfile.fulfilled, (state, action) => {
+      const { username, email, phone, dob, gender } = action.payload;
+      state.username = username;
+      state.email = email;
+      state.phone = phone;
+      state.dob = dob;
+      state.gender = gender;
+    });
+  },
 });
 
-export const { setUser, logoutUser, setLoggingOut } = userSlice.actions;
-
+export const { setUser, logoutUser, setLoggingOut, updateUserField } =
+  userSlice.actions;
 export default userSlice.reducer;
