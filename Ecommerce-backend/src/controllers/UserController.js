@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/UserModel");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^0\d{9,10}$/;
 
 const createUser = async (req, res) => {
   try {
@@ -21,16 +22,22 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: "Email không hợp lệ!" });
     }
 
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: "Số điện thoại không hợp lệ!" });
+    }
+
     const userExists = await UserService.checkUserExistsByEmail(email);
     if (userExists) {
       return res.status(400).json({ message: "Email đã tồn tại!" });
     }
 
+    //phone = String(phone);
+
     const newUser = await UserService.createUser({
       username,
       email,
       password,
-      phone,
+      phone: String(phone),
       dob,
       gender,
     });
@@ -228,6 +235,13 @@ const updateUser = async (req, res) => {
         .json({ status: "ERROR", message: "User ID is required" });
     }
 
+    let { phone, dob } = req.body;
+    if (phone && !phoneRegex.test(phone)) {
+      return res
+        .status(400)
+        .json({ status: "ERROR", message: "Số điện thoại không hợp lệ!" });
+    }
+
     if (req.body.dob && isNaN(Date.parse(req.body.dob))) {
       return res.status(400).json({
         status: "ERROR",
@@ -235,12 +249,15 @@ const updateUser = async (req, res) => {
       });
     }
 
+    if (phone) req.body.phone = String(phone);
+
     const response = await UserService.updateUser(userId, req.body);
     return res.status(200).json(response);
   } catch (e) {
-    return res
-      .status(500)
-      .json({ message: "Error updating user", error: e.message });
+    return res.status(500).json({
+      message: "Lỗi khi cập nhật thông tin người dùng",
+      error: e.message,
+    });
   }
 };
 

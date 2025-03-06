@@ -11,7 +11,7 @@ const createUser = async ({
   dob,
   gender,
 }) => {
-  const hashedPassword = bcrypt.hashSync(password, 10); // Mã hóa mật khẩu
+  const hashedPassword = await bcrypt.hash(password, 10); // Mã hóa mật khẩu
 
   const newUser = new User({
     username,
@@ -27,8 +27,7 @@ const createUser = async ({
 };
 
 const checkUserExistsByEmail = async (email) => {
-  const user = await User.findOne({ email });
-  return user != null;
+  return await User.exists({ email });
 };
 
 const forgotPassword = async (email, newPassword, confirmPassword) => {
@@ -100,6 +99,12 @@ const loginUser = async ({ email, password }) => {
 
 const updateUser = async (id, data) => {
   try {
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    } else {
+      delete data.password; // Không cập nhật nếu không có mật khẩu mới
+    }
+
     const updatedUser = await User.findByIdAndUpdate(id, data, { new: true });
     return {
       status: "OK",
@@ -122,15 +127,16 @@ const deleteUser = async (id) => {
 
 const getAllUser = async () => {
   try {
-    const allUsers = await User.find(); // Lấy danh sách user từ DB
+    const users = await User.find().select("-password");
+    //const allUsers = await User.find(); // Lấy danh sách user từ DB
     console.log(allUsers);
     return {
       status: "OK",
-      message: "Get sucess!",
+      message: "Lấy danh sách người dùng thành công!",
       data: allUsers,
     };
   } catch (e) {
-    throw new Error("Error fetching users: " + e.message);
+    throw new Error("Lỗi khi lấy danh sách người dùng: " + e.message);
   }
 };
 

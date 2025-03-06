@@ -99,7 +99,7 @@ export const signUpUser = async (formData) => {
       username: formData.username,
       email: formData.email,
       password: formData.password,
-      phone: formData.phone,
+      phone: String(formData.phone),
       dob: formData.birthDate,
       gender: formData.gender,
     });

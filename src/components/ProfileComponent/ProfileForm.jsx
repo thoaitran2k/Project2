@@ -24,25 +24,18 @@ const ProfileForm = () => {
   const [form] = Form.useForm();
 
   // Lấy dữ liệu từ Redux
-  const user = useSelector((state) => state.user.u);
-  const state = useSelector((state) => state);
-  console.log("Redux State:", state);
+  const user = useSelector((state) => state.user);
 
-  useEffect(() => {
-    console.log("Dữ liệu user từ Redux:", user);
-  }, [user]);
-
-  // Cập nhật dữ liệu khi Redux thay đổi
   useEffect(() => {
     if (user) {
       form.setFieldsValue({
-        fullName: user.fullName || "",
+        username: user.username || "",
         nickname: user.nickname || "",
-        phone: user.phone || "",
+        phone: user.phone ? String(user.phone) : "",
         email: user.email || "",
         dob: user.dob ? dayjs(user.dob, "YYYY-MM-DD") : null,
-        gender: user.gender || undefined,
-        nationality: user.nationality || undefined,
+        gender: user.gender || null,
+        nationality: user.nationality ?? undefined,
       });
     }
   }, [user, form]);
@@ -57,15 +50,6 @@ const ProfileForm = () => {
       form={form}
       onFinish={onFinish}
       layout="vertical"
-      initialValues={{
-        userName: user?.userName || "",
-        nickname: user?.nickname || "",
-        phone: user?.phone || "",
-        email: user?.email || "",
-        dob: user?.dob ? dayjs(user.dob, "YYYY-MM-DD") : null,
-        gender: user?.gender || undefined,
-        nationality: user?.nationality || undefined,
-      }}
       style={{ background: "white", padding: "15px", marginBottom: "30px" }}
     >
       <Row gutter={24}>
@@ -79,7 +63,7 @@ const ProfileForm = () => {
           >
             <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
           </Form.Item>
-          <Form.Item name="nickname" label="Nickname">
+          <Form.Item name="nickname" label="nickname">
             <Input placeholder="Nhập nickname" />
           </Form.Item>
           <Form.Item

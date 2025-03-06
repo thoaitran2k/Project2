@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
-
 import {
   UserOutlined,
   MailOutlined,
@@ -57,31 +56,49 @@ export default function SignInPage() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {});
+  useEffect(() => {}, []);
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setIsForgot(false);
     setStep(1);
-    setFormData({ Email: "" });
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phone: "",
+      birthDate: "",
+      gender: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    });
   };
 
   const handleUpdatePassword = async () => {
     try {
+      dispatch(setLoading(true)); // Bật trạng thái loading ngay từ đầu
+
       const response = await forgotPasswordUser(
         formData.email,
         resetPassword.newPassword,
         resetPassword.confirmNewPassword
       );
+
       message.success(
         response.message || "Mật khẩu đã được cập nhật thành công!"
       );
-      setIsForgot(false);
-      setIsLogin(true);
-      setStep(1);
-      setResetPassword({ newPassword: "", confirmNewPassword: "" });
+
+      setTimeout(() => {
+        dispatch(setLoading(false)); // Tắt trạng thái loading
+        setIsForgot(false);
+        setIsLogin(true);
+        setStep(1);
+        setResetPassword({ newPassword: "", confirmNewPassword: "" });
+      }, 1500);
     } catch (errorMsg) {
       message.error(errorMsg);
+      dispatch(setLoading(false)); // Đảm bảo tắt loading nếu có lỗi
     }
   };
 
@@ -131,10 +148,9 @@ export default function SignInPage() {
   };
 
   const handleNext = async () => {
-    //e.preventDefault();
-
     if (step === 1) {
       try {
+        dispatch(setLoading(true)); // Bật trạng thái loading
         const type = isForgot ? "forgot-password" : "register";
         const response = await sendVerificationCode(formData.email, type);
         message.success("Mã xác nhận đã được gửi!");
@@ -142,11 +158,24 @@ export default function SignInPage() {
         setStep(2);
       } catch (errorMsg) {
         message.error(errorMsg);
+      } finally {
+        setTimeout(() => {
+          dispatch(setLoading(false)); // Tắt trạng thái loading
+        }, 1000);
       }
     } else if (step === 2) {
       if (vertification?.trim() === String(code)) {
+        dispatch(setLoading(true));
         message.success("Xác nhận email thành công!");
-        setStep(3);
+        setTimeout(() => {
+          dispatch(setLoading(false)); // Tắt trạng thái loading
+
+          // Nếu là quên mật khẩu, giữ isForgot = true để sang bước nhập mật khẩu mới
+          // Nếu là đăng ký, đặt isForgot = false để sang form đăng ký
+          setIsForgot(isForgot);
+
+          setStep(3);
+        }, 1500);
       } else {
         message.error("Mã xác nhận không chính xác!");
       }
@@ -189,29 +218,28 @@ export default function SignInPage() {
 
       try {
         const response = await signUpUser(formData);
+        dispatch(setLoading(true));
         message.success(response.message || "Đăng ký thành công!");
-        setIsLogin(true);
-        setStep(1);
-        setFormData({
-          username: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-          phone: "",
-          birthDate: "",
-          gender: "",
-        });
+
+        setTimeout(() => {
+          dispatch(setLoading(false));
+          setIsLogin(true);
+          setStep(1);
+          setFormData({
+            username: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            phone: "",
+            birthDate: "",
+            gender: "",
+          });
+        }, 1500);
       } catch (errorMsg) {
         message.error(errorMsg);
       }
     }
   };
-
-  // useEffect(() => {
-  //   if (step === 3 && !isLogin) {
-  //     alert("Xác nhận Email thành công!");
-  //   }
-  // }, [step]);
 
   return (
     <LoginContainer>
@@ -224,7 +252,6 @@ export default function SignInPage() {
             {isLogin ? (
               !isForgot ? (
                 <div>
-                  {" "}
                   <InputWrapper>
                     <MailOutlined />
                     <Input
@@ -315,71 +342,18 @@ export default function SignInPage() {
                   {step === 3 && (
                     <>
                       <InputWrapper>
-                        <UserOutlined />
-                        <Input
-                          type="text"
-                          name="username"
-                          placeholder="Tên người dùng"
-                          value={formData.username}
-                          onChange={handleChange}
-                          autoComplete="off"
-                          required
-                        />
-                      </InputWrapper>
-                      <InputWrapper>
-                        <PhoneOutlined />
-                        <Input
-                          type="text"
-                          name="phone"
-                          placeholder="Số điện thoại"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          autoComplete="off"
-                          required
-                        />
-                      </InputWrapper>
-                      <InputWrapper>
-                        <CalendarOutlined />
-                        <Input
-                          type="date"
-                          name="birthDate"
-                          value={formData.birthDate}
-                          onChange={handleChange}
-                          required
-                        />
-                      </InputWrapper>
-
-                      {/* Thêm trường chọn giới tính */}
-                      <InputWrapper>
-                        <UserOutlined />
-                        <select
-                          name="gender"
-                          value={formData.gender}
-                          onChange={handleChange}
-                          required
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            borderRadius: "5px",
-                            border: "1px solid #ccc",
-                            background: "#fff",
-                          }}
-                        >
-                          <option value="">Chọn giới tính</option>
-                          <option value="male">Nam</option>
-                          <option value="female">Nữ</option>
-                        </select>
-                      </InputWrapper>
-
-                      <InputWrapper>
                         <LockOutlined />
                         <Input
                           type="password"
-                          name="password"
-                          placeholder="Mật khẩu"
-                          value={formData.password}
-                          onChange={handleChange}
-                          autoComplete="new-password"
+                          name="newPassword"
+                          placeholder="Mật khẩu mới"
+                          value={resetPassword.newPassword}
+                          onChange={(e) =>
+                            setResetPassword({
+                              ...resetPassword,
+                              newPassword: e.target.value,
+                            })
+                          }
                           required
                         />
                       </InputWrapper>
@@ -387,11 +361,15 @@ export default function SignInPage() {
                         <LockOutlined />
                         <Input
                           type="password"
-                          name="confirmPassword"
-                          placeholder="Xác nhận mật khẩu"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          autoComplete="new-password"
+                          name="confirmNewPassword"
+                          placeholder="Xác nhận mật khẩu mới"
+                          value={resetPassword.confirmNewPassword}
+                          onChange={(e) =>
+                            setResetPassword({
+                              ...resetPassword,
+                              confirmNewPassword: e.target.value,
+                            })
+                          }
                           required
                         />
                       </InputWrapper>
@@ -494,7 +472,6 @@ export default function SignInPage() {
                         required
                       />
                     </InputWrapper>
-                    {/* Thêm trường chọn giới tính */}
                     <InputWrapper>
                       <UserOutlined />
                       <select
@@ -560,7 +537,6 @@ export default function SignInPage() {
                 onClick={() => {
                   setIsForgot(true);
                   setStep(1);
-                  //setFormData({ email: "" }); // Reset lại email
                 }}
               >
                 Quên mật khẩu?
@@ -569,28 +545,14 @@ export default function SignInPage() {
 
             {isForgot ? (
               step === 3 ? (
-                <SubmitButton
-                  type="button"
-                  onClick={() =>
-                    handleUpdatePassword(
-                      formData.email,
-                      resetPassword.newPassword,
-                      resetPassword.confirmNewPassword
-                    )
-                  }
-                >
+                <SubmitButton type="button" onClick={handleUpdatePassword}>
                   Cập nhật mật khẩu
                 </SubmitButton>
               ) : (
                 " "
               )
             ) : isLogin ? (
-              <SubmitButton
-                onClick={(e) =>
-                  handleLogin(e, formData, setIsLogin, setIsAuthenticated)
-                }
-                type="submit"
-              >
+              <SubmitButton onClick={handleLogin} type="submit">
                 Đăng nhập
               </SubmitButton>
             ) : step === 3 ? (
