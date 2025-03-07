@@ -14,7 +14,7 @@ export const WrapperHeader = styled(Row)`
   left: 0;
   width: 100%;
   z-index: 1000;
-  height: 8.7rem;
+  height: 10rem;
 `;
 
 export const WrapperLogo = styled.span`

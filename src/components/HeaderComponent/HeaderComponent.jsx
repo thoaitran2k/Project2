@@ -106,8 +106,15 @@ const HeaderComponent = () => {
   const dispatch = useDispatch();
   const [isUserDetailsFetched, setIsUserDetailsFetched] = useState(false);
 
-  const { _id, isLoggingOut, isAuthenticated, accessToken, email, username } =
-    useSelector((state) => state.user);
+  const {
+    _id,
+    isLoggingOut,
+    isAuthenticated,
+    accessToken,
+    email,
+    username,
+    avatar,
+  } = useSelector((state) => state.user);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -261,7 +268,7 @@ const HeaderComponent = () => {
 
   return (
     <Loading>
-      <div style={{ height: screens.xs ? "4rem" : "7rem" }}>
+      <div style={{ height: screens.xs ? "4rem" : "5rem" }}>
         <WrapperHeader>
           {location.pathname === "/sign-in" ? (
             <Col span={24} style={{ textAlign: "center" }}>
@@ -328,22 +335,38 @@ const HeaderComponent = () => {
                         style={{
                           display: "flex",
                           flexDirection: "column",
+                          gap: "5px",
                           alignItems: "center",
                           padding: "8px",
                           minWidth: "80px",
                           width: "auto",
                           height: "auto",
-                          whiteSpace: "nowrap",
+                          //whiteSpace: "nowrap",
+                          background: "#ECE9DF",
+                          border: "none",
+                          boxShadow: "none",
                         }}
                       >
                         <span style={{ fontSize: "11px", textAlign: "center" }}>
-                          Xin chào,
+                          {avatar && (
+                            <img
+                              src={avatar}
+                              alt="avt"
+                              style={{
+                                width: "45px", // Kích thước nhỏ hơn
+                                height: "45px",
+                                borderRadius: "50%", // Bo tròn ảnh
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
                         </span>
                         <span
                           style={{
-                            fontSize: "17px",
+                            fontSize: "15px",
                             textAlign: "center",
-                            color: "red",
+                            color: "Blue",
+                            fontWeight: "400",
                           }}
                         >
                           {username || "Người dùng"}

@@ -28,7 +28,7 @@ export default function Home() {
 
       <Title level={2} style={{ textAlign: "center", marginTop: "20px" }}>
         Khách hàng luôn là ưu tiên của chúng tôi
-        <br /> Hãy lựa chọn theo sở thích của bạn!
+        <br /> Hãy lựa chọn theo phong cách của bạn!
       </Title>
       <Row gutter={[16, 16]} justify="center">
         {collections.map((collection, index) => (
