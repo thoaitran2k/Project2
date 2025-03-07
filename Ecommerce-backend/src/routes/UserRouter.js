@@ -1,6 +1,11 @@
 const express = require("express");
-const router = express.Router();
+
+const multer = require("multer");
 const userController = require("../controllers/UserController");
+const { uploadAvatar } = require("../controllers/UserController");
+
+const router = express.Router();
+const upload = multer({ dest: "uploads/" });
 
 const jwt = require("jsonwebtoken");
 
@@ -42,5 +47,15 @@ router.post(
   userController.sendForgotPasswordCode
 );
 router.post("/forgot-password", userController.forgotPassword);
+
+router.post(
+  "/upload-avatar",
+  upload.single("avatar"),
+  (req, res, next) => {
+    console.log("Multer đã xử lý file:", req.file); // 🔍 Kiểm tra multer
+    next();
+  },
+  userController.uploadAvatar
+);
 
 module.exports = router;

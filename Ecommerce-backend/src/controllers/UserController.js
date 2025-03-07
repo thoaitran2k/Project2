@@ -8,6 +8,26 @@ const User = require("../models/UserModel");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^0\d{9,10}$/;
+const { uploadImageToCloudinary } = require("../services/uploadService");
+
+const uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file; // File được gửi từ FE
+    console.log("File nhận được từ frontend:", req.file);
+    if (!file) {
+      return res.status(400).json({ message: "Không có file được tải lên!" });
+    }
+
+    // Tải ảnh lên Cloudinary
+    const imageUrl = await uploadImageToCloudinary(file);
+    console.log("URL ảnh sau khi upload:", imageUrl);
+
+    // Trả về URL của ảnh
+    res.status(200).json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi tải ảnh lên Cloudinary!" });
+  }
+};
 
 const createUser = async (req, res) => {
   try {
@@ -387,4 +407,5 @@ module.exports = {
   forgotPassword,
   sendForgotPasswordCode,
   changePassword,
+  uploadAvatar,
 };

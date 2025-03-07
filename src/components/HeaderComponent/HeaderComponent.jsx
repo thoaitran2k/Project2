@@ -112,6 +112,7 @@ const HeaderComponent = () => {
     isAuthenticated,
     accessToken,
     email,
+    gender,
     username,
     avatar,
   } = useSelector((state) => state.user);
@@ -348,14 +349,29 @@ const HeaderComponent = () => {
                         }}
                       >
                         <span style={{ fontSize: "11px", textAlign: "center" }}>
-                          {avatar && (
+                          {avatar ? (
                             <img
                               src={avatar}
-                              alt="avt"
+                              alt="User Avatar"
                               style={{
-                                width: "45px", // Kích thước nhỏ hơn
+                                width: "45px",
                                 height: "45px",
-                                borderRadius: "50%", // Bo tròn ảnh
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : (
+                            <img
+                              src={
+                                gender === "Nữ"
+                                  ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
+                                  : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
+                              }
+                              alt="Default Avatar"
+                              style={{
+                                width: "45px",
+                                height: "45px",
+                                borderRadius: "50%",
                                 objectFit: "cover",
                               }}
                             />

@@ -11,7 +11,6 @@ import {
   Col,
   Modal,
   Upload,
-  Menu,
 } from "antd";
 import {
   UserOutlined,
@@ -27,6 +26,7 @@ import { setLoading } from "../../redux/slices/loadingSlice";
 import { setUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
 import { getBase64 } from "../../utils/UploadAvatar";
+import axios from "axios";
 
 const { Option } = Select;
 
@@ -44,18 +44,34 @@ const ProfileForm = () => {
   const accessToken = useSelector((state) => state.user.accessToken);
   const [phone, setPhone] = useState(user.phone || "");
   const [avatar, setAvatar] = useState(user.avatar || "");
-  const handlePreview = async (file) => {
-    setPreviewImage(file.url || file.thumbUrl);
-    setPreviewVisible(true);
-  };
+  const API_BASE_URL = import.meta.env.VITE_URL_BACKEND;
 
   const handleChangeImage = async ({ fileList }) => {
     const file = fileList[0];
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
-    //setFileList(fileList.slice(-1));
-    setAvatar(file.preview);
+    setFileList(fileList.slice(-1));
+
+    const formData = new FormData();
+    formData.append("avatar", file.originFileObj);
+
+    console.log("File gửi lên backend:", file.originFileObj);
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/user/upload-avatar`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      console.log("Response từ server:", response.data);
+      setAvatar(response.data.imageUrl);
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh lên:", error);
+      message.error("Tải ảnh lên thất bại!");
+    }
   };
 
   const beforeUpload = (file) => {
@@ -73,8 +89,6 @@ const ProfileForm = () => {
     </div>
   );
 
-  //console.log("User từ Redux:", user);
-
   useEffect(() => {
     if (user) {
       form.setFieldsValue({
@@ -89,7 +103,7 @@ const ProfileForm = () => {
     }
   }, [user, form]);
 
-  //Cập nhật số điện thoại
+  // Cập nhật số điện thoại
   const handlePhoneUpdate = async () => {
     if (!phone.trim()) {
       message.error("Vui lòng nhập số điện thoại hợp lệ!");
@@ -114,7 +128,7 @@ const ProfileForm = () => {
     }
   };
 
-  //Đổi mật khẩu
+  // Đổi mật khẩu
   const handleChangePassword = async (values) => {
     console.log("📤 Dữ liệu gửi đi:", values);
     try {
@@ -271,7 +285,6 @@ const ProfileForm = () => {
               <Select placeholder="Chọn giới tính">
                 <Option value="Nam">Nam</Option>
                 <Option value="Nữ">Nữ</Option>
-                <Option value="other">Khác</Option>
               </Select>
             </Form.Item>
             <Form.Item style={{ textAlign: "center", marginTop: 20 }}>
@@ -399,7 +412,7 @@ const ProfileForm = () => {
 
 export default ProfileForm;
 
-//Styled Component
+// Styled Component
 export const StyleInputUpdatePhone = styled(Input)`
   .readonly-input {
     background-color: red !important;

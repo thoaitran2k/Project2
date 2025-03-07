@@ -28,8 +28,10 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // Chỉ định origin frontend (không dùng "*")
-    credentials: true, // Cho phép gửi cookies/token
+    origin: "http://localhost:3000", // Đảm bảo đúng với frontend
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
