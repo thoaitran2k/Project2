@@ -27,6 +27,8 @@ const initialState = {
   username: null,
   email: null,
   phone: null,
+  address: null,
+  avatar: null,
   dob: null,
   gender: null,
   isLoggingOut: false,
@@ -50,6 +52,8 @@ const userSlice = createSlice({
       state.username = payload.username || state.username;
       state.email = payload.email || state.email;
       state.phone = payload.phone || state.phone;
+      state.address = payload.address || state.address;
+      state.avatar = payload.avatar || state.avatar;
       state.dob = payload.dob || state.dob;
       state.gender = payload.gender || state.gender;
     },
@@ -70,12 +74,15 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(updateUserProfile.fulfilled, (state, action) => {
-      const { username, email, phone, dob, gender } = action.payload;
+      const { username, email, phone, dob, gender, address, avatar } =
+        action.payload;
       state.username = username;
       state.email = email;
       state.phone = phone;
       state.dob = dob;
       state.gender = gender;
+      state.address = address;
+      state.avatar = avatar;
     });
   },
 });

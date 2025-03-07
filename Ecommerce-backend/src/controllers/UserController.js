@@ -11,7 +11,8 @@ const phoneRegex = /^0\d{9,10}$/;
 
 const createUser = async (req, res) => {
   try {
-    const { username, email, password, phone, dob, gender } = req.body;
+    const { username, email, password, phone, dob, gender, address, avatar } =
+      req.body;
 
     if (!username || !email || !password || !phone || !dob || !gender) {
       return res
@@ -41,6 +42,8 @@ const createUser = async (req, res) => {
       phone: String(phone),
       dob,
       gender,
+      address,
+      avatar,
     });
 
     res

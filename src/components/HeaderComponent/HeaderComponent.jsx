@@ -1,4 +1,4 @@
-import { Grid, Col, Drawer, Dropdown, Menu } from "antd";
+import { Grid, Col, Drawer, Dropdown } from "antd";
 import {
   SearchOutlined,
   MenuOutlined,
@@ -160,7 +160,8 @@ const HeaderComponent = () => {
           }
         );
 
-        const { _id, email, phone, dob, username, gender } = response.data.data;
+        const { _id, email, phone, dob, username, gender, address, avatar } =
+          response.data.data;
 
         // Lưu thông tin người dùng vào Redux
         dispatch(
@@ -174,6 +175,8 @@ const HeaderComponent = () => {
             phone,
             dob,
             gender,
+            address,
+            avatar,
           })
         );
       }
@@ -240,20 +243,21 @@ const HeaderComponent = () => {
   };
 
   // Tạo menu dropdown
-  const menu = (
-    <Menu>
-      <Menu.Item
-        key="1"
-        icon={<UserOutlined />}
-        onClick={() => navigate("/profile")}
-      >
-        Thông tin cá nhân
-      </Menu.Item>
-      <Menu.Item key="2" icon={<LogoutOutlined />} onClick={handleLogout}>
-        Đăng xuất
-      </Menu.Item>
-    </Menu>
-  );
+
+  const items = [
+    {
+      key: "1",
+      label: "Thông tin cá nhân",
+      icon: <UserOutlined />,
+      onClick: () => navigate("/profile"),
+    },
+    {
+      key: "2",
+      label: "Đăng xuất",
+      icon: <LogoutOutlined />,
+      onClick: handleLogout,
+    },
+  ];
 
   return (
     <Loading>
@@ -310,7 +314,7 @@ const HeaderComponent = () => {
               </Col>
               <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
                 {isAuthenticated ? (
-                  <Dropdown overlay={menu} trigger={["click"]}>
+                  <Dropdown menu={{ items }} trigger={["click"]}>
                     <div
                       style={{
                         display: "flex",
@@ -326,10 +330,10 @@ const HeaderComponent = () => {
                           flexDirection: "column",
                           alignItems: "center",
                           padding: "8px",
-                          minWidth: "80px", // Đảm bảo không quá nhỏ
-                          width: "auto", // Tự động điều chỉnh chiều rộng theo nội dung
-                          height: "auto", // Tự động điều chỉnh chiều cao theo nội dung
-                          whiteSpace: "nowrap", // Đảm bảo chữ không bị xuống dòng
+                          minWidth: "80px",
+                          width: "auto",
+                          height: "auto",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         <span style={{ fontSize: "11px", textAlign: "center" }}>
@@ -342,7 +346,7 @@ const HeaderComponent = () => {
                             color: "red",
                           }}
                         >
-                          {username}
+                          {username || "Người dùng"}
                         </span>
                       </LoginButton>
                     </div>

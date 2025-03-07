@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, enum: ["Nam", "Nữ"], required: true },
     access_token: { type: String },
     refresh_token: { type: String },
+    address: { type: String, default: "" },
+    avatar: { type: String, default: "" },
   },
   {
     timestamps: true,

@@ -10,12 +10,15 @@ import {
   Row,
   Col,
   Modal,
+  Upload,
+  Menu,
 } from "antd";
 import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
   LockOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
@@ -23,6 +26,7 @@ import { changePasswordUser, updateUser } from "../../Services/UserService";
 import { setLoading } from "../../redux/slices/loadingSlice";
 import { setUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
+import { getBase64 } from "../../utils/UploadAvatar";
 
 const { Option } = Select;
 
@@ -30,6 +34,8 @@ const ProfileForm = () => {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const dispatch = useDispatch();
+  const [fileList, setFileList] = useState([]);
+
   const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
 
@@ -37,6 +43,35 @@ const ProfileForm = () => {
   const user = useSelector((state) => state.user);
   const accessToken = useSelector((state) => state.user.accessToken);
   const [phone, setPhone] = useState(user.phone || "");
+  const [avatar, setAvatar] = useState(user.avatar || "");
+  const handlePreview = async (file) => {
+    setPreviewImage(file.url || file.thumbUrl);
+    setPreviewVisible(true);
+  };
+
+  const handleChangeImage = async ({ fileList }) => {
+    const file = fileList[0];
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj);
+    }
+    //setFileList(fileList.slice(-1));
+    setAvatar(file.preview);
+  };
+
+  const beforeUpload = (file) => {
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+      Modal.error({ title: "Chỉ được tải lên file ảnh!" });
+    }
+    return isImage;
+  };
+
+  const uploadButton = (
+    <div>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>Upload</div>
+    </div>
+  );
 
   //console.log("User từ Redux:", user);
 
@@ -44,12 +79,12 @@ const ProfileForm = () => {
     if (user) {
       form.setFieldsValue({
         username: user.username || "",
-        nickname: user.nickname || "",
         phone: user.phone ? String(user.phone) : "",
         email: user.email || "",
         dob: user.dob && dayjs(user.dob).isValid() ? dayjs(user.dob) : null,
         gender: user.gender || null,
-        nationality: user.nationality ?? undefined,
+        address: user.address || null,
+        avatar: user.avatar || null,
       });
     }
   }, [user, form]);
@@ -133,9 +168,10 @@ const ProfileForm = () => {
 
       const updatedData = {
         username: values.username,
-        nickname: values.nickname,
+        avatar: avatar,
         dob: formattedDob, // Đảm bảo giá trị hợp lệ
         gender: values.gender,
+        address: values.address,
       };
 
       const response = await updateUser(user._id, updatedData, accessToken);
@@ -175,16 +211,14 @@ const ProfileForm = () => {
         form={form}
         onFinish={handleUpdateUser}
         layout="vertical"
-        style={{ background: "white", padding: "15px", marginBottom: "30px" }}
+        style={{
+          background: "white",
+          padding: "15px",
+          marginBottom: "30px",
+        }}
       >
-        <Row gutter={24}>
-          <Col
-            span={12}
-            style={{
-              borderRight: "1px solid #d9d9d9", // Đường gạch dọc
-              paddingRight: "18px", // Tạo khoảng cách với nội dung
-            }}
-          >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={12} lg={12} xl={12}>
             <Form.Item
               name="username"
               label="Họ & Tên"
@@ -192,8 +226,29 @@ const ProfileForm = () => {
             >
               <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
             </Form.Item>
-            <Form.Item name="nickname" label="Nickname">
-              <Input placeholder="Nhập nickname" />
+            <Form.Item name="avatar" label="Avatar">
+              <CustomUpload>
+                {avatar && (
+                  <img
+                    src={avatar}
+                    style={{
+                      height: "60px",
+                      width: "60px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                    alt="Avatar"
+                  />
+                )}
+                <Upload
+                  action={null}
+                  customRequest={() => {}}
+                  onChange={handleChangeImage}
+                  maxCount={1}
+                >
+                  <Button icon={<PlusOutlined />}>Chọn Avatar</Button>
+                </Upload>
+              </CustomUpload>
             </Form.Item>
             <Form.Item
               name="dob"
@@ -226,7 +281,7 @@ const ProfileForm = () => {
             </Form.Item>
           </Col>
 
-          <Col span={12}>
+          <Col xs={24} sm={12} md={12} lg={12} xl={12}>
             <Form.Item name="email" label="Địa chỉ email">
               <Input prefix={<MailOutlined />} disabled />
             </Form.Item>
@@ -263,7 +318,7 @@ const ProfileForm = () => {
       {/* Modal cập nhật số điện thoại */}
       <Modal
         title="Cập nhật số điện thoại"
-        visible={isPhoneModalVisible}
+        open={isPhoneModalVisible}
         onCancel={() => {
           setIsPhoneModalVisible(false);
           setTimeout(() => setPhone(user.phone || ""), 0); // Đặt lại phone ngay sau khi đóng modal
@@ -302,7 +357,7 @@ const ProfileForm = () => {
       {/* Đổi mật khẩu */}
       <Modal
         title="Đổi mật khẩu"
-        visible={isPasswordModalVisible}
+        open={isPasswordModalVisible}
         onCancel={() => setIsPasswordModalVisible(false)}
         centered
         footer={null}
@@ -351,5 +406,25 @@ export const StyleInputUpdatePhone = styled(Input)`
     color: black !important;
     cursor: not-allowed;
     border: 1px solid #d9d9d9;
+  }
+`;
+
+export const CustomUpload = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+
+  .ant-upload-list-item-name {
+    display: none;
+  }
+  .ant-btn-icon {
+    display: none;
+  }
+  .ant-upload-icon {
+    display: none;
+  }
+  .ant-upload-list-item-container {
+    display: none;
   }
 `;

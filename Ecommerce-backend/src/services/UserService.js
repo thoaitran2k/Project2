@@ -10,6 +10,8 @@ const createUser = async ({
   phone,
   dob,
   gender,
+  address = "",
+  avatar = "",
 }) => {
   const hashedPassword = await bcrypt.hash(password, 10); // Mã hóa mật khẩu
 
@@ -20,6 +22,8 @@ const createUser = async ({
     phone,
     dob,
     gender,
+    address,
+    avatar,
   });
 
   await newUser.save();
@@ -102,7 +106,7 @@ const updateUser = async (id, data) => {
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
     } else {
-      delete data.password; // Không cập nhật nếu không có mật khẩu mới
+      delete data.password;
     }
 
     const updatedUser = await User.findByIdAndUpdate(id, data, { new: true });

@@ -7,6 +7,8 @@ import { store, persistor } from "./redux/store.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PersistGate } from "redux-persist/integration/react";
 
+console.warn = () => {};
+
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")).render(
