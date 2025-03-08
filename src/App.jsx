@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   useLocation,
 } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { routes } from "./routes";
 import HeaderComponent from "./components/HeaderComponent/HeaderComponent";
 import Layout from "./components/Layout/Layout";
@@ -12,43 +13,56 @@ import FooterComponent from "./components/FooterComponent/FooterComponent";
 import styled from "styled-components";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
+import { setUser } from "./redux/slices/userSlice";
 import { startTokenRefresh, stopTokenRefresh } from "./utils/TokenManager";
 
 function App() {
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.user);
+  const [isUserLoaded, setIsUserLoaded] = useState(false);
 
+  // ✅ Load user từ localStorage trước khi render
   useEffect(() => {
-    if (user?.accessToken) {
-      startTokenRefresh();
-    } else {
-      stopTokenRefresh();
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      dispatch(setUser(JSON.parse(storedUser)));
     }
-  }, [user]);
+    setIsUserLoaded(true); // ✅ Đánh dấu user đã được load
+  }, [dispatch]);
+
+  // ✅ Chỉ chạy startTokenRefresh nếu user đã load
+  useEffect(() => {
+    if (isUserLoaded) {
+      if (user?.accessToken) {
+        startTokenRefresh();
+      } else {
+        stopTokenRefresh();
+      }
+    }
+  }, [user, isUserLoaded]);
 
   const fetchAPI = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
       );
-      return res.data; // Trả về dữ liệu từ API
+      return res.data;
     } catch (error) {
       console.error("Fetch API error:", error);
       throw error;
     }
   };
 
-  // Sử dụng useQuery để gọi API
+  // ✅ Chỉ gọi API nếu user đã load & đã đăng nhập
   const { data, isLoading, error } = useQuery({
     queryKey: ["products"],
     queryFn: fetchAPI,
+    enabled: isUserLoaded && user.isAuthenticated,
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  if (!isUserLoaded) return <p>Loading user...</p>;
+  if (isLoading) return <p>Loading products...</p>;
   if (error) return <p>Error: {error.message}</p>;
-
-  //console.log("query:", data);
 
   return (
     <AppContainer>

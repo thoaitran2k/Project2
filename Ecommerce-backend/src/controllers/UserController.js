@@ -10,59 +10,64 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^0\d{9,10}$/;
 const { uploadImageToCloudinary } = require("../services/uploadService");
 
-const uploadAvatar = async (req, res) => {
-  try {
-    const file = req.file; // File được gửi từ FE
-    console.log("File nhận được từ frontend:", req.file);
-    if (!file) {
-      return res.status(400).json({ message: "Không có file được tải lên!" });
-    }
-
-    // Tải ảnh lên Cloudinary
-    const imageUrl = await uploadImageToCloudinary(file);
-    console.log("URL ảnh sau khi upload:", imageUrl);
-
-    // Trả về URL của ảnh
-    res.status(200).json({ imageUrl });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi khi tải ảnh lên Cloudinary!" });
-  }
-};
-
 const createUser = async (req, res) => {
   try {
     const { username, email, password, phone, dob, gender, address, avatar } =
       req.body;
 
+    // Kiểm tra các trường bắt buộc
     if (!username || !email || !password || !phone || !dob || !gender) {
       return res
         .status(400)
         .json({ message: "Tất cả các trường đều bắt buộc!" });
     }
 
+    // Kiểm tra định dạng email
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Email không hợp lệ!" });
     }
 
+    // Kiểm tra định dạng số điện thoại
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({ message: "Số điện thoại không hợp lệ!" });
     }
 
+    // Kiểm tra xem email đã tồn tại chưa
     const userExists = await UserService.checkUserExistsByEmail(email);
     if (userExists) {
       return res.status(400).json({ message: "Email đã tồn tại!" });
     }
 
-    //phone = String(phone);
+    // Xử lý trường address
+    let userAddress = [];
+    if (Array.isArray(address)) {
+      userAddress = address; // Nếu address là một mảng, sử dụng nó
+    } else if (typeof address === "string") {
+      userAddress = [{ address, isDefault: true }]; // Nếu address là chuỗi, chuyển đổi thành mảng
+    } else if (address === undefined || address === null) {
+      userAddress = []; // Nếu address là undefined hoặc null, đặt lại thành mảng rỗng
+    } else {
+      return res.status(400).json({ message: "Địa chỉ không hợp lệ!" });
+    }
 
+    // Kiểm tra trường avatar
+    if (avatar && typeof avatar !== "string") {
+      return res.status(400).json({ message: "Avatar phải là một chuỗi!" });
+    }
+
+    // Mã hóa mật khẩu
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Tạo người dùng mới
     const newUser = await UserService.createUser({
       username,
       email,
-      password,
+      password: hashedPassword,
       phone: String(phone),
       dob,
       gender,
-      address,
+      address: userAddress, // Sử dụng address đã được xử lý
       avatar,
     });
 
@@ -70,10 +75,11 @@ const createUser = async (req, res) => {
       .status(201)
       .json({ message: "Tạo người dùng thành công!", user: newUser });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Đã có lỗi xảy ra trong khi tạo người dùng." });
+    console.error("Lỗi khi tạo người dùng:", error);
+    res.status(500).json({
+      message: "Đã có lỗi xảy ra trong khi tạo người dùng.",
+      error: error.message,
+    });
   }
 };
 
@@ -395,6 +401,121 @@ const refreshToken = async (req, res) => {
   }
 };
 
+const uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file; // File được gửi từ FE
+    console.log("File nhận được từ frontend:", req.file);
+    if (!file) {
+      return res.status(400).json({ message: "Không có file được tải lên!" });
+    }
+
+    // Tải ảnh lên Cloudinary
+    const imageUrl = await uploadImageToCloudinary(file);
+    console.log("URL ảnh sau khi upload:", imageUrl);
+
+    // Trả về URL của ảnh
+    res.status(200).json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi tải ảnh lên Cloudinary!" });
+  }
+};
+
+const addAddress = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { address, isDefault } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ message: "Địa chỉ là bắt buộc!" });
+    }
+
+    const response = await UserService.addAddress(userId, {
+      address,
+      isDefault,
+    });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const setDefaultAddress = async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+
+    const response = await UserService.setDefaultAddress(userId, addressId);
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getAddresses = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const response = await UserService.getAddresses(userId);
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteAddress = async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+    const response = await UserService.deleteAddress(userId, addressId);
+
+    if (response.status === "FAIL") {
+      return res.status(400).json(response);
+    }
+
+    if (response.status === "ERROR") {
+      return res.status(500).json(response);
+    }
+
+    return res.status(200).json(response);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Lỗi máy chủ!", error: error.message });
+  }
+};
+
+const updateAddress = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const addressId = req.params.addressId;
+
+    // Kiểm tra xem có ID người dùng và ID địa chỉ không
+    if (!userId || !addressId) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "User ID and Address ID are required",
+      });
+    }
+
+    const { address, isDefault } = req.body;
+
+    // Gọi service để cập nhật địa chỉ
+    const updatedUser = await UserService.updateAddress(userId, addressId, {
+      address,
+      isDefault,
+    });
+
+    return res.status(200).json({
+      status: "SUCCESS",
+      message: "Cập nhật địa chỉ thành công",
+      data: updatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Lỗi khi cập nhật địa chỉ",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -408,4 +529,9 @@ module.exports = {
   sendForgotPasswordCode,
   changePassword,
   uploadAvatar,
+  addAddress,
+  setDefaultAddress,
+  getAddresses,
+  deleteAddress,
+  updateAddress,
 };

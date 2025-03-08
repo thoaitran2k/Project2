@@ -112,6 +112,7 @@ const HeaderComponent = () => {
     isAuthenticated,
     accessToken,
     email,
+    address,
     gender,
     username,
     avatar,

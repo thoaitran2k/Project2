@@ -151,3 +151,56 @@ export const updateUser = async (userId, data, accessToken) => {
     throw error.response?.data?.message || "Cập nhật thông tin thất bại!";
   }
 };
+
+export const getAddresses = async (userId, accessToken) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/user/${userId}/addresses`, // Gọi đúng API
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    return response.data; // Trả về danh sách địa chỉ
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Không lấy được danh sách địa chỉ!"
+    );
+  }
+};
+
+export const addAddress = async (userId, address, isDefault, accessToken) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/user/${userId}/addresses`,
+      { address, isDefault }, // Gửi dữ liệu địa chỉ trong body
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    return response.data; // Trả về kết quả từ API
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Không thêm được địa chỉ!"
+    );
+  }
+};
+
+export const updateAddress = async (userId, addressId, newAddress) => {
+  try {
+    const response = await axios.put(
+      `/api/user/${userId}/address/${addressId}/update-address`,
+      {
+        address: newAddress.address,
+        isDefault: newAddress.isDefault, // Nếu bạn muốn thay đổi trạng thái mặc định
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating address:", error);
+    throw error;
+  }
+};

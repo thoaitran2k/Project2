@@ -10,7 +10,7 @@ const createUser = async ({
   phone,
   dob,
   gender,
-  address = "",
+  address = [],
   avatar = "",
 }) => {
   const hashedPassword = await bcrypt.hash(password, 10); // Mã hóa mật khẩu
@@ -210,6 +210,168 @@ const getDetailsUser = async (id) => {
   }
 };
 
+const addAddress = async (userId, newAddress) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: "ERROR", message: "Người dùng không tồn tại!" };
+    }
+
+    if (user.address.length >= 5) {
+      return {
+        status: "WARNING",
+        message: "Bạn chỉ có thể lưu tối đa 5 địa chỉ!",
+      };
+    }
+
+    // Nếu địa chỉ mới được chọn làm mặc định, cập nhật lại các địa chỉ khác
+    if (newAddress.isDefault) {
+      user.address.forEach((addr) => {
+        addr.isDefault = false;
+      });
+    }
+
+    // Thêm địa chỉ mới vào mảng
+    user.address.push(newAddress);
+    await user.save();
+
+    return { status: "OK", message: "Thêm địa chỉ thành công!", data: user };
+  } catch (error) {
+    throw new Error("Lỗi khi thêm địa chỉ: " + error.message);
+  }
+};
+
+const setDefaultAddress = async (userId, addressId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: "ERROR", message: "Người dùng không tồn tại!" };
+    }
+
+    // Cập nhật lại các địa chỉ khác không phải là mặc định
+    user.address.forEach((addr) => {
+      addr.isDefault = addr._id.equals(addressId);
+    });
+
+    await user.save();
+
+    return {
+      status: "OK",
+      message: "Cập nhật địa chỉ mặc định thành công!",
+      data: user,
+    };
+  } catch (error) {
+    throw new Error("Lỗi khi cập nhật địa chỉ mặc định: " + error.message);
+  }
+};
+
+const getAddresses = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: "ERROR", message: "Người dùng không tồn tại!" };
+    }
+
+    return {
+      status: "OK",
+      message: "Lấy danh sách địa chỉ thành công!",
+      data: user.address,
+    };
+  } catch (error) {
+    throw new Error("Lỗi khi lấy danh sách địa chỉ: " + error.message);
+  }
+};
+
+const deleteAddress = async (userId, addressId) => {
+  try {
+    if (!userId || !addressId) {
+      return {
+        status: "FAIL",
+        message: "Thiếu thông tin userId hoặc addressId!",
+      };
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return { status: "FAIL", message: "Người dùng không tồn tại!" };
+    }
+
+    console.log("Danh sách địa chỉ trước khi xóa:", user.address);
+    console.log("ID cần xóa:", addressId);
+
+    // Kiểm tra nếu `address` chưa tồn tại hoặc không phải mảng
+    if (!Array.isArray(user.address)) {
+      user.address = []; // Gán thành mảng rỗng nếu chưa có
+      await user.save();
+      return { status: "FAIL", message: "Không có địa chỉ nào để xóa!" };
+    }
+
+    // Kiểm tra xem `addressId` có tồn tại không
+    const addressExists = user.address.some(
+      (addr) => addr._id.toString() === addressId
+    );
+    if (!addressExists) {
+      return { status: "FAIL", message: "Không tìm thấy địa chỉ cần xóa!" };
+    }
+
+    // Xóa địa chỉ
+    user.address = user.address.filter(
+      (addr) => addr._id.toString() !== addressId
+    );
+    await user.save();
+
+    return {
+      status: "OK",
+      message: "Xóa địa chỉ thành công!",
+      data: user.address,
+    };
+  } catch (error) {
+    return {
+      status: "ERROR",
+      message: "Lỗi khi xóa địa chỉ!",
+      error: error.message,
+    };
+  }
+};
+
+// Hàm cập nhật địa chỉ
+const updateAddress = async (userId, addressId, newAddress) => {
+  try {
+    // Tạo đối tượng cập nhật
+    const updateFields = {};
+
+    // Nếu có địa chỉ mới, thêm vào đối tượng cập nhật
+    if (newAddress.address !== undefined && newAddress.address.trim() !== "") {
+      updateFields["address.$.address"] = newAddress.address;
+    }
+
+    // Nếu có giá trị isDefault, thêm vào đối tượng cập nhật
+    if (newAddress.isDefault !== undefined) {
+      updateFields["address.$.isDefault"] = newAddress.isDefault;
+    }
+
+    // Nếu không có trường nào để cập nhật, trả về lỗi
+    if (Object.keys(updateFields).length === 0) {
+      throw new Error("Không có trường nào để cập nhật");
+    }
+
+    // Cập nhật địa chỉ cho người dùng
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, "address._id": addressId }, // Tìm người dùng và địa chỉ theo ID
+      { $set: updateFields }, // Chỉ cập nhật các trường cần thiết
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      throw new Error("User or Address not found");
+    }
+
+    return updatedUser;
+  } catch (error) {
+    throw new Error("Error updating address: " + error.message);
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -220,4 +382,9 @@ module.exports = {
   checkUserExistsByEmail,
   forgotPassword,
   changePasswordUser,
+  addAddress,
+  setDefaultAddress,
+  getAddresses,
+  deleteAddress,
+  updateAddress,
 };

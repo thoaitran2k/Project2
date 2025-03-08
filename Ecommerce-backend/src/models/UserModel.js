@@ -1,4 +1,11 @@
+// UserModel.js
 const mongoose = require("mongoose");
+
+const AddressSchema = new mongoose.Schema({
+  address: { type: String },
+  isDefault: { type: Boolean, default: false },
+});
+
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true },
@@ -10,7 +17,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       validate: {
         validator: function (v) {
-          return /^0\d{9,10}$/.test(v); // Số điện thoại phải có 10-11 chữ số và bắt đầu bằng 0
+          return /^0\d{9,10}$/.test(v);
         },
         message: (props) =>
           `${props.value} không phải là số điện thoại hợp lệ!`,
@@ -20,12 +27,14 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, enum: ["Nam", "Nữ"], required: true },
     access_token: { type: String },
     refresh_token: { type: String },
-    address: { type: String, default: "" },
+    address: [AddressSchema],
+    // Trường address là một mảng
     avatar: { type: String, default: "" },
   },
   {
     timestamps: true,
   }
 );
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;

@@ -8,13 +8,17 @@ body {
   font-family: Arial, sans-serif;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 html {
   font-size: 62.5%;
   overflow-x: hidden;
+}
 
-  @media (min-width: 576px) {
-    .menu-button {
-      display: none !important;
-    }
+@media (min-width: 576px) {
+  .menu-button {
+    display: none !important;
   }
 }

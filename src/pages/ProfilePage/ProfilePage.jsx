@@ -6,13 +6,14 @@ import { MenuOutlined } from "@ant-design/icons";
 import Sidebar from "../../components/ProfileComponent/Sidebar";
 import ProfileForm from "../../components/ProfileComponent/ProfileForm";
 import { setActivePage } from "../../redux/slices/profileSlice";
+import EditAddress from "../../components/ProfileComponent/AddressComponent/Address";
 
 const { Title } = Typography;
 
 const pageTitles = {
   "customer-info": "Thông tin tài khoản",
   orders: "Quản lý đơn hàng",
-  address: "Sổ địa chỉ",
+  address: "Chỉnh sửa địa chỉ",
   "change-password": "Đổi mật khẩu",
 };
 
@@ -38,7 +39,7 @@ const ProfilePage = () => {
       case "orders":
         return <h2>Quản lý đơn hàng</h2>;
       case "address":
-        return <h2>Sổ địa chỉ</h2>;
+        return <EditAddress />;
       case "change-password":
         return <h2>Đổi mật khẩu</h2>;
       default:

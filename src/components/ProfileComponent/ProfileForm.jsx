@@ -91,13 +91,19 @@ const ProfileForm = () => {
 
   useEffect(() => {
     if (user) {
+      const formattedAddress = Array.isArray(user.address)
+        ? user.address.map((addr) => ({
+            address: addr.address || "", // Đảm bảo address là chuỗi
+            isDefault: addr.isDefault || false, // Đảm bảo isDefault là boolean
+          }))
+        : [];
       form.setFieldsValue({
         username: user.username || "",
         phone: user.phone ? String(user.phone) : "",
         email: user.email || "",
         dob: user.dob && dayjs(user.dob).isValid() ? dayjs(user.dob) : null,
         gender: user.gender || null,
-        address: user.address || null,
+        address: formattedAddress,
         avatar: user.avatar || null,
       });
     }
@@ -180,12 +186,27 @@ const ProfileForm = () => {
           ? dayjs(values.dob).format("YYYY-MM-DD")
           : null;
 
+      // Kiểm tra và xử lý trường address
+      let updatedAddress = [];
+      if (Array.isArray(values.address)) {
+        updatedAddress = values.address.map((addr) => ({
+          address: addr.address || "", // Đảm bảo address là chuỗi
+          isDefault: addr.isDefault || false, // Đảm bảo isDefault là boolean
+        }));
+      } else if (typeof values.address === "string") {
+        // Nếu address là chuỗi, chuyển đổi thành mảng
+        updatedAddress = [{ address: values.address, isDefault: true }];
+      } else {
+        // Nếu address không hợp lệ, đặt lại thành mảng rỗng
+        updatedAddress = [];
+      }
+
       const updatedData = {
         username: values.username,
         avatar: avatar,
         dob: formattedDob, // Đảm bảo giá trị hợp lệ
         gender: values.gender,
-        address: values.address,
+        address: updatedAddress, // Sử dụng address đã được xử lý
       };
 
       const response = await updateUser(user._id, updatedData, accessToken);

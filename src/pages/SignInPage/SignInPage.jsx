@@ -49,6 +49,8 @@ export default function SignInPage() {
     confirmPassword: "",
     phone: "",
     birthDate: "",
+    address: [],
+    avatar: "",
     gender: "",
     newPassword: "",
     confirmNewPassword: "",
@@ -70,6 +72,8 @@ export default function SignInPage() {
       phone: "",
       birthDate: "",
       gender: "",
+      address: [],
+      avatar: "",
       newPassword: "",
       confirmNewPassword: "",
     });
