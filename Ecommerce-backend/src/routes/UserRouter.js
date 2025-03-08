@@ -71,4 +71,6 @@ router.put(
   userController.updateAddress
 );
 
+router.get("/:userId/address-info/:addressId", userController.getInfoAddress);
+
 module.exports = router;

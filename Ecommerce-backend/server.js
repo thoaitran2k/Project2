@@ -1,29 +1,11 @@
 const express = require("express");
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
-const routes = require("./routes");
+const axios = require("axios");
 const cors = require("cors");
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
-
-dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3002;
+app.use(cors());
 
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Đảm bảo đúng với frontend
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
-
+// Proxy endpoint để lấy danh sách tỉnh/thành phố
 app.get("/api/provinces", async (req, res) => {
   try {
     const response = await axios.get(
@@ -59,30 +41,8 @@ app.get("/api/wards/:districtCode", async (req, res) => {
   }
 });
 
-app.use(bodyParser.json({ limit: "50mb" }));
-app.use(
-  bodyParser.urlencoded({
-    limit: "50mb",
-    extended: true,
-    parameterLimit: 50000,
-  })
-);
-app.use(bodyParser.json());
-app.use(cookieParser());
-
-routes(app);
-
-// console.log("process.env.MONGO_DB", process.env.MONGO_DB);
-
-mongoose
-  .connect(`${process.env.MONGO_DB}`)
-  .then(() => {
-    console.log("Connect DB success");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
-app.listen(port, () => {
-  console.log("Sever is running in port: ", port);
+// Khởi động server
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`Proxy server đang chạy trên http://localhost:${PORT}`);
 });

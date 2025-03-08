@@ -372,6 +372,31 @@ const updateAddress = async (userId, addressId, newAddress) => {
   }
 };
 
+const getInfoAddress = async (userId, addressId) => {
+  try {
+    // Tìm kiếm người dùng theo userId và tìm địa chỉ với addressId trong mảng addresses
+    const user = await User.findById(userId); // Tìm người dùng theo userId
+
+    if (!user) {
+      return { status: "FAIL", message: "User not found" };
+    }
+
+    // Tìm địa chỉ trong mảng addresses của người dùng
+    const address = user.addresses.find((addr) => addr.addressId === addressId);
+
+    if (!address) {
+      return { status: "FAIL", message: "Address not found" };
+    }
+
+    // Trả về thông tin địa chỉ
+    return { status: "SUCCESS", data: address };
+  } catch (error) {
+    // Xử lý lỗi
+    console.error("Error getting address:", error);
+    return { status: "ERROR", message: "Lỗi máy chủ!", error: error.message };
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -387,4 +412,5 @@ module.exports = {
   getAddresses,
   deleteAddress,
   updateAddress,
+  getInfoAddress,
 };

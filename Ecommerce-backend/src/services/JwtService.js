@@ -46,7 +46,7 @@ const generateRefreshToken = (payload) => {
 };
 
 const refreshTokenJwtService = async (token) => {
-  console.log("Received refresh token:", token);
+  //console.log("Received refresh token:", token);
 
   try {
     if (!process.env.REFRESH_TOKEN) {
@@ -68,7 +68,7 @@ const refreshTokenJwtService = async (token) => {
       isAdmin: decoded.isAdmin,
     });
 
-    console.log("Generated new access token:", access_token);
+    //console.log("Generated new access token:", access_token);
     return {
       status: "OK",
       message: "Token refreshed successfully.",

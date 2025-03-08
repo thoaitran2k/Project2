@@ -516,6 +516,41 @@ const updateAddress = async (req, res) => {
   }
 };
 
+const getInfoAddress = async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+
+    // Lấy người dùng từ database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+
+    // Kiểm tra xem mảng address có tồn tại và không rỗng không
+    if (!user.address || user.address.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không có địa chỉ cho người dùng này" });
+    }
+
+    // Tìm địa chỉ theo addressId
+    const address = user.address.find(
+      (addr) => addr._id.toString() === addressId
+    );
+    if (!address) {
+      return res.status(404).json({ message: "Địa chỉ không tìm thấy" });
+    }
+
+    // Trả về thông tin địa chỉ tìm thấy
+    return res.status(200).json(address);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi máy chủ!", error: error.message });
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -534,4 +569,5 @@ module.exports = {
   getAddresses,
   deleteAddress,
   updateAddress,
+  getInfoAddress,
 };

@@ -20,6 +20,9 @@ const EditAddressForm = ({
   const [selectedWard, setSelectedWard] = useState("");
   const [checked, setChecked] = useState(false);
   const [allAddresses, setAllAddresses] = useState([]);
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(true);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
 
   // Lấy danh sách tỉnh/thành phố khi component mount
   useEffect(() => {
@@ -33,7 +36,11 @@ const EditAddressForm = ({
   useEffect(() => {
     if (selectedProvince) {
       axios
-        .get(`https://provinces.open-api.vn/api/p/${selectedProvince}?depth=2`)
+        .get(
+          `https://provinces.open-api.vn/api/p/${encodeURIComponent(
+            selectedProvince
+          )}?depth=2`
+        )
         .then((response) => {
           setDistricts(response.data.districts);
           setSelectedDistrict(""); // Reset quận/huyện
@@ -47,7 +54,11 @@ const EditAddressForm = ({
   useEffect(() => {
     if (selectedDistrict) {
       axios
-        .get(`https://provinces.open-api.vn/api/d/${selectedDistrict}?depth=2`)
+        .get(
+          `https://provinces.open-api.vn/api/d/${encodeURIComponent(
+            selectedDistrict
+          )}?depth=2`
+        )
         .then((response) => setWards(response.data.wards))
         .catch((error) => console.error("Lỗi khi lấy phường/xã:", error));
     }
@@ -61,7 +72,7 @@ const EditAddressForm = ({
       setSelectedProvince(city);
       setSelectedDistrict(district);
       setSelectedWard(ward);
-      setChecked(isDefault); // Đặt checked từ isDefault của editingAddress
+      setChecked(isDefault);
 
       // Cập nhật giá trị form
       form.setFieldsValue({
@@ -73,6 +84,61 @@ const EditAddressForm = ({
       });
     }
   }, [editingAddress, form]);
+
+  //Lấy thông tin địa chỉ khi addressId thay đổi
+  useEffect(() => {
+    if (!addressId || !userId) {
+      console.log("addressId hoặc userId không hợp lệ.");
+      return;
+    }
+
+    axios
+      .get(`http://localhost:3002/api/user/${userId}/address-info/${addressId}`)
+      .then((response) => {
+        if (response.data) {
+          const addressData = response.data.address;
+
+          console.log("DATA ADDREES:", response.data.address);
+          const addressParts = addressData
+            .split(",")
+            .map((item) => item.trim());
+
+          let street, ward, district, city;
+          if (addressParts.length === 3) {
+            // Nếu có 3 phần, thì gán theo thứ tự ward, district, city
+            [ward, district, city] = addressParts;
+          } else if (addressParts.length === 4) {
+            // Nếu có 4 phần, thì gán theo thứ tự street, ward, district, city
+            [street, ward, district, city] = addressParts;
+          }
+
+          console.log("Tách địa chỉ:", { street, ward, district, city });
+
+          setSelectedProvince(city);
+          setSelectedDistrict(district);
+          setSelectedWard(ward);
+          setChecked(addressData.isDefault);
+
+          // Cập nhật form
+          form.setFieldsValue({
+            city,
+            district,
+            ward,
+            street,
+          });
+
+          const fullAddress = [street, ward, district, city]
+            .filter(Boolean)
+            .join(", ");
+          console.log("Địa chỉ đầy đủ:", fullAddress);
+        } else {
+          console.log("Không có dữ liệu trả về từ API.");
+        }
+      })
+      .catch((error) => {
+        console.error("Lỗi khi lấy thông tin địa chỉ:", error);
+      });
+  }, [addressId, userId, form]);
 
   //Lấy tất cả địa chỉ
   useEffect(() => {
@@ -99,17 +165,14 @@ const EditAddressForm = ({
       districts.find((district) => district.code === values.district)?.name,
       provinces.find((province) => province.code === values.city)?.name,
     ]
-      .filter(Boolean) // Lọc bỏ các giá trị falsy (undefined, null, "")
-      .join(", "); // Nối các phần lại với nhau, cách nhau bằng dấu phẩy
+      .filter(Boolean)
+      .join(", ");
 
     try {
-      // Kiểm tra nếu chỉ thay đổi trạng thái mặc định mà không thay đổi thông tin địa chỉ
       if (!values.street && !values.ward && !values.district && !values.city) {
         console.log("Chỉ thay đổi trạng thái mặc định");
 
-        // Nếu người dùng chọn làm mặc định và chưa có địa chỉ mặc định khác
         if (checked) {
-          // Đặt tất cả các địa chỉ khác thành không mặc định trước khi cập nhật địa chỉ này
           await Promise.all(
             allAddresses.map(async (address) => {
               if (address._id !== addressId) {
@@ -124,20 +187,17 @@ const EditAddressForm = ({
           );
         }
 
-        // Cập nhật địa chỉ hiện tại và đặt làm mặc định nếu cần
         const response = await axios.put(
           `http://localhost:3002/api/user/${userId}/address/${addressId}/update-address`,
           {
-            isDefault: checked, // chỉ thay đổi isDefault nếu người dùng chọn
+            isDefault: checked,
           }
         );
         console.log("Cập nhật thành công:", response.data);
         if (onUpdateSuccess) onUpdateSuccess();
       } else {
-        // Trường hợp có thay đổi thông tin địa chỉ
         console.log("Đang cập nhật địa chỉ");
 
-        // Đặt tất cả các địa chỉ không phải là mặc định thành không mặc định trước khi cập nhật
         await Promise.all(
           allAddresses.map(async (address) => {
             if (address._id !== addressId && checked) {
@@ -220,7 +280,6 @@ const EditAddressForm = ({
           ))}
         </Select>
       </Form.Item>
-
       <Form.Item
         label="Địa chỉ chi tiết"
         name="street"
