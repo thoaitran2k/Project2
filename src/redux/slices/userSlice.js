@@ -29,35 +29,6 @@ export const updateAddressList = createAsyncThunk(
   }
 );
 
-export const addUserAddress = createAsyncThunk(
-  "user/addUserAddress",
-  async ({ userId, newAddress }, { getState, dispatch }) => {
-    const accessToken = getState().user.accessToken;
-
-    if (!accessToken) throw new Error("Không có accessToken!");
-
-    try {
-      const response = await axios.post(
-        `http://localhost:3002/api/user/${userId}/add-addresses`,
-        newAddress,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      // Gọi lại API để lấy danh sách địa chỉ mới sau khi thêm thành công
-      await dispatch(updateAddressList());
-
-      return response.data; // Trả về dữ liệu địa chỉ mới
-    } catch (error) {
-      console.error("Lỗi khi thêm địa chỉ:", error);
-      throw new Error("Không thể thêm địa chỉ!");
-    }
-  }
-);
-
 export const updateUserAddress = createAsyncThunk(
   "user/updateUserAddress",
   async ({ userId, addressId, newAddress }, { getState, dispatch }) => {
@@ -203,6 +174,33 @@ const userSlice = createSlice({
     setLoggingOut: (state, action) => {
       state.isLoggingOut = action.payload;
     },
+
+    addUserAddress: (state, action) => {
+      const newAddresses = action.payload; // Mảng địa chỉ mới từ API
+
+      if (!Array.isArray(newAddresses)) return;
+
+      // Nếu địa chỉ mới là mặc định, đặt lại trạng thái mặc định cho địa chỉ cũ
+      newAddresses.forEach((newAddress) => {
+        if (newAddress.isDefault) {
+          state.address.forEach((addr) => (addr.isDefault = false)); // Đặt isDefault = false cho tất cả
+        }
+      });
+
+      // Thêm các địa chỉ mới vào Redux store nếu chưa có trong danh sách
+      newAddresses.forEach((newAddress) => {
+        const exists = state.address.some(
+          (addr) => addr._id === newAddress._id
+        );
+        if (!exists) {
+          state.address.push(newAddress); // Chỉ thêm địa chỉ mới vào mảng
+        }
+      });
+
+      // Lưu vào localStorage
+      localStorage.setItem("userAddresses", JSON.stringify(state.address));
+      console.log("✅ Đã cập nhật danh sách địa chỉ vào Redux:", state.address);
+    },
   },
 
   extraReducers: (builder) => {
@@ -287,8 +285,8 @@ export const {
   logoutUser,
   setLoggingOut,
   updateUserField,
-  addAddress,
   setDefaultAddress,
+  addUserAddress,
   removeAddress,
   updateAddresses,
   setUserAddresses,

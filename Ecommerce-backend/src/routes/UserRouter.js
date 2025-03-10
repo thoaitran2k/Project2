@@ -64,7 +64,10 @@ router.put(
   userController.setDefaultAddress
 ); // Cập nhật địa chỉ mặc định
 router.get("/:userId/addresses", userController.getAddresses); // Lấy danh sách địa chỉ
-router.delete("/:userId/addresses/:addressId", userController.deleteAddress);
+router.delete(
+  "/:userId/delete-address/:addressId",
+  userController.deleteAddress
+);
 
 router.put(
   "/:userId/address/:addressId/update-address",

@@ -188,23 +188,26 @@ const ProfileForm = () => {
 
       // Kiểm tra và xử lý trường address
       let updatedAddress = [];
-      if (Array.isArray(values.address)) {
-        updatedAddress = values.address.map((addr) => ({
-          address: addr.address || "", // Đảm bảo address là chuỗi
-          isDefault: addr.isDefault || false, // Đảm bảo isDefault là boolean
-        }));
-      } else if (typeof values.address === "string") {
-        // Nếu address là chuỗi, chuyển đổi thành mảng
-        updatedAddress = [{ address: values.address, isDefault: true }];
+      if ("address" in values) {
+        if (Array.isArray(values.address)) {
+          updatedAddress = values.address.map((addr) => ({
+            address: addr.address || "",
+            isDefault: addr.isDefault || false,
+          }));
+        } else if (typeof values.address === "string") {
+          updatedAddress = [{ address: values.address, isDefault: true }];
+        } else {
+          updatedAddress = [];
+        }
       } else {
-        // Nếu address không hợp lệ, đặt lại thành mảng rỗng
-        updatedAddress = [];
+        // Nếu người dùng không chỉnh sửa address, giữ nguyên địa chỉ cũ
+        updatedAddress = user.address || [];
       }
 
       const updatedData = {
         username: values.username,
         avatar: avatar,
-        dob: formattedDob, // Đảm bảo giá trị hợp lệ
+        dob: formattedDob,
         gender: values.gender,
         address: updatedAddress, // Sử dụng address đã được xử lý
       };
@@ -214,16 +217,15 @@ const ProfileForm = () => {
 
       dispatch(
         setUser({
-          ...user, // Giữ nguyên các trường khác
+          ...user,
           ...updatedData,
-          username: values.username, // Cập nhật username mới
+          username: values.username,
         })
       );
 
       setTimeout(() => {
-        dispatch(setLoading(false)); // Dừng loading trước khi reload
-        //window.location.reload();
-      }, 1500); // Chờ 1 giây để hiển thị thông báo
+        dispatch(setLoading(false));
+      }, 1500);
 
       // Cập nhật lại form sau khi lưu thành công
       form.setFieldsValue({
@@ -234,9 +236,8 @@ const ProfileForm = () => {
       message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     } finally {
       setTimeout(() => {
-        dispatch(setLoading(false)); // Dừng loading trước khi reload
-        //window.location.reload();
-      }, 1000); // Chờ 1 giây để hiển thị thông báo
+        dispatch(setLoading(false));
+      }, 1000);
     }
   };
 

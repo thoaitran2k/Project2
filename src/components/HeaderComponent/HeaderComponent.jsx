@@ -5,6 +5,7 @@ import {
   CloseOutlined,
   UserOutlined,
   LogoutOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -407,6 +408,11 @@ const HeaderComponent = () => {
                     LOGIN
                   </button>
                 )}
+              </Col>
+              <Col>
+                <ShoppingCartOutlined
+                  style={{ fontSize: "45px", color: "rgb(36, 31, 31)" }}
+                />
               </Col>
             </>
           )}

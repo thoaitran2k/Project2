@@ -313,7 +313,7 @@ const updateUser = async (req, res) => {
         .json({ status: "ERROR", message: "Số điện thoại không hợp lệ!" });
     }
 
-    if (req.body.dob && isNaN(Date.parse(req.body.dob))) {
+    if (dob && isNaN(Date.parse(dob))) {
       return res.status(400).json({
         status: "ERROR",
         message: "Invalid date format",
@@ -322,8 +322,31 @@ const updateUser = async (req, res) => {
 
     if (phone) req.body.phone = String(phone);
 
-    const response = await UserService.updateUser(userId, req.body);
-    return res.status(200).json(response);
+    // Tìm user hiện tại để giữ lại address nếu nó không được gửi từ frontend
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      return res
+        .status(404)
+        .json({ status: "ERROR", message: "User not found" });
+    }
+
+    // Giữ lại address nếu nó không có trong req.body
+    const updatedData = { ...req.body };
+    if (!req.body.address) {
+      updatedData.address = existingUser.address;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updatedData },
+      { new: true } // Trả về dữ liệu đã cập nhật
+    );
+
+    return res.status(200).json({
+      status: "OK",
+      message: "Cập nhật thông tin thành công!",
+      data: updatedUser,
+    });
   } catch (e) {
     return res.status(500).json({
       message: "Lỗi khi cập nhật thông tin người dùng",
@@ -427,16 +450,27 @@ const addAddress = async (req, res) => {
 
     console.log("🟢 Dữ liệu nhận từ FE:", req.body);
 
+    // Kiểm tra địa chỉ là bắt buộc
     if (!address) {
       return res.status(400).json({ message: "Địa chỉ là bắt buộc!" });
     }
 
-    const response = await UserService.addAddress(userId, {
+    if (phoneDelivery && !/^0\d{9,10}$/.test(phoneDelivery)) {
+      return res.status(400).json({ message: "Số điện thoại không hợp lệ!" });
+    }
+
+    // Tạo object newAddress với các trường có thể thiếu
+    const newAddress = {
       address,
-      isDefault,
-      name,
-      phoneDelivery,
-    });
+      isDefault: isDefault || false, // Nếu không có isDefault, default về false
+      name: name || "", // Nếu không có name, set mặc định là chuỗi rỗng
+      phoneDelivery: phoneDelivery || "", // Nếu không có phoneDelivery, set mặc định là chuỗi rỗng
+    };
+
+    // Gọi service để thêm địa chỉ
+    const response = await UserService.addAddress(userId, newAddress);
+
+    // Trả về kết quả từ service
     return res.status(200).json(response);
   } catch (error) {
     return res.status(500).json({ message: error.message });

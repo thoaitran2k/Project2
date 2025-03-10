@@ -109,7 +109,26 @@ const updateUser = async (id, data) => {
       delete data.password;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, data, { new: true });
+    // Lấy user hiện tại để giữ lại address nếu không có trong data
+    const existingUser = await User.findById(id);
+    if (!existingUser) {
+      return {
+        status: "ERROR",
+        message: "User không tồn tại",
+      };
+    }
+
+    // Giữ lại address nếu nó không có trong data
+    if (!data.address) {
+      data.address = existingUser.address;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true }
+    );
+
     return {
       status: "OK",
       message: "Cập nhật thành công",
@@ -212,14 +231,15 @@ const getDetailsUser = async (id) => {
 
 const addAddress = async (userId, newAddress) => {
   try {
+    // Tìm user bằng userId
     const user = await User.findById(userId);
     if (!user) {
       return { status: "ERROR", message: "Người dùng không tồn tại!" };
     }
 
-    // Kiểm tra nếu `user.address` có tồn tại hay chưa
+    // Kiểm tra nếu `user.address` chưa tồn tại, gán mảng trống
     if (!user.address) {
-      user.address = []; // Gán mảng trống nếu chưa có
+      user.address = [];
     }
 
     // Giới hạn tối đa 3 địa chỉ
@@ -235,8 +255,10 @@ const addAddress = async (userId, newAddress) => {
       user.address.forEach((addr) => (addr.isDefault = false));
     }
 
-    // Thêm địa chỉ mới vào danh sách
+    // Thêm địa chỉ mới vào mảng address
     user.address.push(newAddress);
+
+    // Lưu thay đổi vào database
     await user.save();
 
     return { status: "OK", message: "Thêm địa chỉ thành công!", data: user };

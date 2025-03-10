@@ -1,12 +1,13 @@
-import { React, useState, useEffect } from "react";
+import { useMemo, React, useState, useEffect } from "react";
 import styled from "styled-components";
 import {
   PlusOutlined,
   EditOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { Button, Modal, Form, Input, Select } from "antd";
+import { Button, Modal, Form, Input, Select, message } from "antd";
 import { getAddresses } from "../../../Services/UserService";
+import { addNewAddress } from "../../../Services/UserService";
 import { updateAddress } from "../../../Services/UserService";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -28,6 +29,7 @@ const AddressList = ({ userId, accessToken }) => {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [form] = Form.useForm();
   const address = useSelector((state) => state.user.address);
+  const addressesInStore = useSelector((state) => state.user.address);
   //const userAddresses = useSelector((state) => state.user.address);
 
   const dispatch = useDispatch();
@@ -36,6 +38,18 @@ const AddressList = ({ userId, accessToken }) => {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
+
+  const sortedAddresses = useMemo(() => {
+    return [...addresses].sort((a, b) => {
+      if (a.isDefault && !b.isDefault) {
+        return -1; // Địa chỉ có isDefault = true sẽ xuất hiện trước
+      }
+      if (!a.isDefault && b.isDefault) {
+        return 1; // Địa chỉ có isDefault = false sẽ xuất hiện sau
+      }
+      return 0; // Nếu cả hai địa chỉ có isDefault giống nhau, không thay đổi thứ tự
+    });
+  }, [addresses]);
 
   useEffect(() => {
     fetch("/provinces.json")
@@ -64,6 +78,13 @@ const AddressList = ({ userId, accessToken }) => {
       form.setFieldsValue({ ward: undefined }); // Reset phường/xã
     }
   };
+
+  //Sau khi thêm mới địa chỉ thành công thành công
+
+  useEffect(() => {
+    // Trigger lại render khi userAddresses thay đổi
+    console.log("Đã cập nhật địa chỉ mới trong Redux:", address);
+  }, [address]);
 
   // Xử lý chọn vị trí địa lý
   useEffect(() => {
@@ -107,15 +128,30 @@ const AddressList = ({ userId, accessToken }) => {
     const addressParts = addr.address.split(",").map((part) => part.trim());
     console.log("📌 Tách địa chỉ:", addressParts);
 
-    const street = addressParts[0] || "";
-    const ward = addressParts[1] || "";
-    const district = addressParts[2] || "";
-    const city = addressParts[3] || "";
+    // const street = addressParts[0] || "";
+    // const ward = addressParts[1] || "";
+    // const district = addressParts[2] || "";
+    // const city = addressParts[3] || "";
+    let street, ward, district, city;
+
+    if (addressParts.length > 3) {
+      street = addressParts[0] || "";
+      ward = addressParts[1] || "";
+      district = addressParts[2] || "";
+      city = addressParts[3] || "";
+    } else {
+      // Nếu chuỗi chỉ có 3 dấu phẩy, sử dụng thứ tự ward, district, city
+      ward = addressParts[0] || "";
+      district = addressParts[1] || "";
+      city = addressParts[2] || "";
+      street = ""; // Nếu không có thông tin về street, bạn có thể để trống hoặc xử lý theo cách khác
+    }
 
     // Tìm mã tỉnh/thành phố
     const selectedProvince = provinces.find((p) => p.name === city);
+    console.log("selectedProvince", selectedProvince);
     const provinceCode = selectedProvince?.code || undefined;
-
+    console.log("provinceCode", provinceCode);
     // Nếu tìm thấy tỉnh, cập nhật danh sách quận/huyện
     if (selectedProvince) {
       setDistricts(selectedProvince.districts || []);
@@ -142,9 +178,9 @@ const AddressList = ({ userId, accessToken }) => {
         name: addr.name || "",
         phoneDelivery: addr.phoneDelivery || "",
         street,
-        ward: wardCode,
-        district: districtCode,
-        city: provinceCode,
+        ward: wardCode || undefined,
+        district: districtCode || undefined,
+        city: provinceCode || undefined,
         address: addr.address || "",
       });
     }, 300);
@@ -152,6 +188,14 @@ const AddressList = ({ userId, accessToken }) => {
 
   const handleUpdateAddress = async (values) => {
     console.log("Gửi request cập nhật địa chỉ...", values);
+    console.log("Dữ liệu form:", values);
+
+    if (!values.city || !values.district || !values.ward) {
+      message.warning("Bạn phải chọn đầy đủ tỉnh, quận/huyện và phường/xã!");
+      //alert("Vui lòng điền đầy đủ thông tin về tỉnh, quận/huyện và phường/xã.");
+      return;
+    }
+
     if (!selectedAddress && isEditing) {
       console.error("❌ Không tìm thấy địa chỉ để cập nhật!");
       return;
@@ -173,7 +217,16 @@ const AddressList = ({ userId, accessToken }) => {
       .filter(Boolean)
       .join(", ");
 
+    console.log("Địa chỉ đầy đủ:", fullAddress);
+
     try {
+      let newAddress;
+      // const newAddress = {
+      //   name: values.name,
+      //   phoneDelivery: values.phoneDelivery,
+      //   address: fullAddress,
+      //   isDefault: values.isDefault || false,
+      // };
       const validatedValues = values; // Kiểm tra form hợp lệ
 
       if (isEditing) {
@@ -187,14 +240,57 @@ const AddressList = ({ userId, accessToken }) => {
         ).unwrap();
 
         console.log("✅ Cập nhật thành công:", result);
+        setIsModalOpen(false);
       } else {
+        //Thêm địa chỉ mới
+        newAddress = {
+          name: values.name || "",
+          phoneDelivery: values.phoneDelivery || "",
+          address: fullAddress,
+          isDefault: values.isDefault !== undefined ? values.isDefault : false,
+        };
       }
 
-      // Cập nhật `localStorage`
+      const response = await addNewAddress(
+        userId,
+        newAddress.address,
+        newAddress.isDefault,
+        accessToken,
+        newAddress.name,
+        newAddress.phoneDelivery
+      );
 
-      //localStorage.setItem("userAddress", JSON.stringify(updatedAddresses));
+      console.log("newAddress", newAddress);
 
-      // Đóng modal sau khi cập nhật thành công
+      console.log("Phản hồi từ API khi thêm địa chỉ:", response);
+      if (response.status === "OK") {
+        const addresses = response.data.address; // Mảng địa chỉ mới
+
+        // Kiểm tra nếu có địa chỉ trong phản hồi từ API
+        if (addresses && addresses.length > 0) {
+          console.log("Đã thêm địa chỉ mới vào API:", addresses);
+
+          // Kiểm tra nếu state.address hiện tại không có địa chỉ nào
+          if (addressesInStore.length === 0) {
+            // Nếu chưa có địa chỉ nào trong Redux, thêm tất cả địa chỉ vào Redux
+            dispatch(addUserAddress(addresses)); // Thêm toàn bộ địa chỉ vào Redux
+          } else {
+            // Nếu đã có địa chỉ, chỉ thêm địa chỉ mới vào Redux
+            addresses.forEach((newAddress) => {
+              const exists = addressesInStore.some(
+                (addr) => addr._id === newAddress._id
+              );
+              if (!exists) {
+                dispatch(addUserAddress([newAddress])); // Chỉ thêm địa chỉ mới vào Redux
+              }
+            });
+          }
+        } else {
+          console.error("Không tìm thấy địa chỉ trong phản hồi API!");
+        }
+      } else {
+        console.error("Lỗi khi thêm địa chỉ!", response.data.message);
+      }
       setIsModalOpen(false);
     } catch (error) {
       console.error("❌ Lỗi khi cập nhật địa chỉ:", error);
@@ -208,8 +304,8 @@ const AddressList = ({ userId, accessToken }) => {
         <AddNewAddress onClick={() => handleAddAddress()}>
           <PlusOutlined /> <span>Thêm địa chỉ mới</span>
         </AddNewAddress>
-        {Array.isArray(address) &&
-          address
+        {Array.isArray(sortedAddresses) &&
+          sortedAddresses
             .filter(
               (addr) => addr && typeof addr === "object" && !Array.isArray(addr)
             ) // Chỉ giữ lại object

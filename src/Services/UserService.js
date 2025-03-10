@@ -168,19 +168,30 @@ export const getAddresses = async (userId, accessToken) => {
   }
 };
 
-export const addAddress = async (userId, address, isDefault, accessToken) => {
+export const addNewAddress = async (
+  userId,
+  address,
+  isDefault,
+  accessToken,
+  name,
+  phoneDelivery
+) => {
   try {
+    const addressData = { address, isDefault, name, phoneDelivery };
+
     const response = await axios.post(
-      `${API_BASE_URL}/user/${userId}/addresses`,
-      { address, isDefault }, // Gửi dữ liệu địa chỉ trong body
+      `${API_BASE_URL}/user/${userId}/add-addresses`,
+      addressData, // Gửi dữ liệu địa chỉ trực tiếp, không cần bọc trong object
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
+    console.log("Phản hồi từ API:", response.data);
     return response.data; // Trả về kết quả từ API
   } catch (error) {
+    console.error("Lỗi từ API:", error.response?.data);
     throw new Error(
       error.response?.data?.message || "Không thêm được địa chỉ!"
     );
