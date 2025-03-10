@@ -343,7 +343,6 @@ const HeaderComponent = () => {
                           minWidth: "80px",
                           width: "auto",
                           height: "auto",
-                          //whiteSpace: "nowrap",
                           background: "#ECE9DF",
                           border: "none",
                           boxShadow: "none",
@@ -392,9 +391,21 @@ const HeaderComponent = () => {
                     </div>
                   </Dropdown>
                 ) : (
-                  <LoginButton onClick={() => navigate("/sign-in")}>
+                  <button
+                    style={{
+                      width: "100px",
+                      padding: "10px 20px",
+                      backgroundColor: "#ECE9DF",
+                      color: "BLUE",
+                      border: "solid 2px rgb(44, 131, 158)",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      fontSize: "26x",
+                    }}
+                    onClick={() => navigate("/sign-in")}
+                  >
                     LOGIN
-                  </LoginButton>
+                  </button>
                 )}
               </Col>
             </>

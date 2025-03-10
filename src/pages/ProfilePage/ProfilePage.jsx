@@ -6,7 +6,8 @@ import { MenuOutlined } from "@ant-design/icons";
 import Sidebar from "../../components/ProfileComponent/Sidebar";
 import ProfileForm from "../../components/ProfileComponent/ProfileForm";
 import { setActivePage } from "../../redux/slices/profileSlice";
-import EditAddress from "../../components/ProfileComponent/AddressComponent/Address";
+
+import AddressList from "../../components/ProfileComponent/AddressComponent/AddressList";
 
 const { Title } = Typography;
 
@@ -21,7 +22,7 @@ const ProfilePage = () => {
   const { activePage } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { username } = useSelector((state) => state.user);
+  const user = useSelector((state) => state.user);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -39,7 +40,15 @@ const ProfilePage = () => {
       case "orders":
         return <h2>Quản lý đơn hàng</h2>;
       case "address":
-        return <EditAddress />;
+        return (
+          <div style={{ width: "100%" }}>
+            {user?.isAuthenticated ? (
+              <AddressList userId={user._id} accessToken={user.accessToken} />
+            ) : (
+              <p>Đang tải dữ liệu...</p>
+            )}
+          </div>
+        );
       case "change-password":
         return <h2>Đổi mật khẩu</h2>;
       default:
@@ -79,7 +88,9 @@ const ProfilePage = () => {
             }}
           >
             <span style={{ fontSize: "14px" }}>Tài khoản của </span> <br />
-            <span style={{ fontSize: "25px", color: "red" }}>{username}</span>
+            <span style={{ fontSize: "25px", color: "red" }}>
+              {user.username}
+            </span>
           </Title>
           <Sidebar />
         </Card>

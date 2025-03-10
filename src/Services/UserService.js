@@ -155,18 +155,16 @@ export const updateUser = async (userId, data, accessToken) => {
 export const getAddresses = async (userId, accessToken) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/user/${userId}/addresses`, // Gọi đúng API
+      `http://localhost:3002/api/user/${userId}/addresses`,
       {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
-    return response.data; // Trả về danh sách địa chỉ
+    console.log("Response từ API getAddresses:", response.data);
+    return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Không lấy được danh sách địa chỉ!"
-    );
+    console.error("Lỗi khi lấy danh sách địa chỉ:", error);
+    throw error;
   }
 };
 
@@ -189,16 +187,35 @@ export const addAddress = async (userId, address, isDefault, accessToken) => {
   }
 };
 
-export const updateAddress = async (userId, addressId, newAddress) => {
+export const updateAddress = async (
+  userId,
+  addressId,
+  newAddress,
+  accessToken
+) => {
+  console.log("🔹 userId:", userId);
+  console.log("🔹 addressId:", addressId);
+  console.log("🔹 newAddress:", newAddress);
+
   try {
     const response = await axios.put(
-      `/api/user/${userId}/address/${addressId}/update-address`,
+      `http://localhost:3002/api/user/${userId}/address/${addressId}/update-address`,
       {
         address: newAddress.address,
-        isDefault: newAddress.isDefault, // Nếu bạn muốn thay đổi trạng thái mặc định
+        isDefault: newAddress.isDefault,
+        phoneDelivery: newAddress.phoneDelivery,
+        name: newAddress.name,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
       }
     );
-    return response.data;
+
+    console.log("Response từ API update:", response.data);
+    return response.data; // Trả về dữ liệu địa chỉ đã cập nhật
   } catch (error) {
     console.error("Error updating address:", error);
     throw error;

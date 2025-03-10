@@ -423,7 +423,9 @@ const uploadAvatar = async (req, res) => {
 const addAddress = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { address, isDefault } = req.body;
+    const { address, isDefault, name, phoneDelivery } = req.body;
+
+    console.log("🟢 Dữ liệu nhận từ FE:", req.body);
 
     if (!address) {
       return res.status(400).json({ message: "Địa chỉ là bắt buộc!" });
@@ -432,6 +434,8 @@ const addAddress = async (req, res) => {
     const response = await UserService.addAddress(userId, {
       address,
       isDefault,
+      name,
+      phoneDelivery,
     });
     return res.status(200).json(response);
   } catch (error) {
@@ -483,11 +487,12 @@ const deleteAddress = async (req, res) => {
 };
 
 const updateAddress = async (req, res) => {
+  console.log("🔹 userId:", req.params.userId);
+  console.log("🔹 addressId:", req.params.addressId);
   try {
-    const userId = req.params.userId;
-    const addressId = req.params.addressId;
+    const { userId, addressId } = req.params;
+    const { address, isDefault, name, phoneDelivery } = req.body;
 
-    // Kiểm tra xem có ID người dùng và ID địa chỉ không
     if (!userId || !addressId) {
       return res.status(400).json({
         status: "ERROR",
@@ -495,13 +500,20 @@ const updateAddress = async (req, res) => {
       });
     }
 
-    const { address, isDefault } = req.body;
-
     // Gọi service để cập nhật địa chỉ
     const updatedUser = await UserService.updateAddress(userId, addressId, {
       address,
       isDefault,
+      name,
+      phoneDelivery,
     });
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: "ERROR",
+        message: "User or Address not found",
+      });
+    }
 
     return res.status(200).json({
       status: "SUCCESS",

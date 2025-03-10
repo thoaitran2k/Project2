@@ -4,6 +4,16 @@ const mongoose = require("mongoose");
 const AddressSchema = new mongoose.Schema({
   address: { type: String },
   isDefault: { type: Boolean, default: false },
+  name: { type: String },
+  phoneDelivery: {
+    type: String,
+    validate: {
+      validator: function (v) {
+        return /^0\d{9,10}$/.test(v);
+      },
+      message: (props) => `${props.value} không phải là số điện thoại hợp lệ!`,
+    },
+  },
 });
 
 const userSchema = new mongoose.Schema(

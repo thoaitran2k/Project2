@@ -217,26 +217,31 @@ const addAddress = async (userId, newAddress) => {
       return { status: "ERROR", message: "Người dùng không tồn tại!" };
     }
 
-    if (user.address.length >= 5) {
+    // Kiểm tra nếu `user.address` có tồn tại hay chưa
+    if (!user.address) {
+      user.address = []; // Gán mảng trống nếu chưa có
+    }
+
+    // Giới hạn tối đa 3 địa chỉ
+    if (user.address.length >= 3) {
       return {
         status: "WARNING",
-        message: "Bạn chỉ có thể lưu tối đa 5 địa chỉ!",
+        message: "Bạn chỉ có thể lưu tối đa 3 địa chỉ!",
       };
     }
 
-    // Nếu địa chỉ mới được chọn làm mặc định, cập nhật lại các địa chỉ khác
+    // Nếu địa chỉ mới là mặc định, reset các địa chỉ cũ
     if (newAddress.isDefault) {
-      user.address.forEach((addr) => {
-        addr.isDefault = false;
-      });
+      user.address.forEach((addr) => (addr.isDefault = false));
     }
 
-    // Thêm địa chỉ mới vào mảng
+    // Thêm địa chỉ mới vào danh sách
     user.address.push(newAddress);
     await user.save();
 
     return { status: "OK", message: "Thêm địa chỉ thành công!", data: user };
   } catch (error) {
+    console.error("❌ Lỗi trong UserService.addAddress:", error);
     throw new Error("Lỗi khi thêm địa chỉ: " + error.message);
   }
 };
@@ -337,38 +342,41 @@ const deleteAddress = async (userId, addressId) => {
 // Hàm cập nhật địa chỉ
 const updateAddress = async (userId, addressId, newAddress) => {
   try {
-    // Tạo đối tượng cập nhật
-    const updateFields = {};
+    let updateFields = {};
 
-    // Nếu có địa chỉ mới, thêm vào đối tượng cập nhật
-    if (newAddress.address !== undefined && newAddress.address.trim() !== "") {
-      updateFields["address.$.address"] = newAddress.address;
-    }
+    // Lặp qua tất cả các trường trong newAddress và chỉ thêm những giá trị hợp lệ vào updateFields
+    Object.keys(newAddress).forEach((key) => {
+      if (
+        newAddress[key] !== undefined &&
+        newAddress[key] !== null &&
+        newAddress[key] !== ""
+      ) {
+        updateFields[`address.$.${key}`] = newAddress[key];
+      }
+    });
 
-    // Nếu có giá trị isDefault, thêm vào đối tượng cập nhật
-    if (newAddress.isDefault !== undefined) {
-      updateFields["address.$.isDefault"] = newAddress.isDefault;
-    }
-
-    // Nếu không có trường nào để cập nhật, trả về lỗi
+    // Kiểm tra xem có trường nào để cập nhật không
     if (Object.keys(updateFields).length === 0) {
-      throw new Error("Không có trường nào để cập nhật");
+      throw new Error("Không có trường hợp lệ để cập nhật");
     }
 
-    // Cập nhật địa chỉ cho người dùng
+    console.log("Updating fields:", updateFields);
+
+    // Cập nhật vào database
     const updatedUser = await User.findOneAndUpdate(
-      { _id: userId, "address._id": addressId }, // Tìm người dùng và địa chỉ theo ID
-      { $set: updateFields }, // Chỉ cập nhật các trường cần thiết
+      { _id: userId, "address._id": addressId },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 
     if (!updatedUser) {
-      throw new Error("User or Address not found");
+      throw new Error("Không tìm thấy người dùng hoặc địa chỉ");
     }
 
     return updatedUser;
   } catch (error) {
-    throw new Error("Error updating address: " + error.message);
+    console.error("Lỗi khi cập nhật địa chỉ:", error.message);
+    throw new Error("Lỗi khi cập nhật địa chỉ: " + error.message);
   }
 };
 

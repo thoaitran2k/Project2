@@ -33,4 +33,13 @@ const userReducer = (state = initialState, action) => {
   }
 };
 
+// const addressReducer = (state = initialState, action) => {
+//   switch (action.type) {
+//     case "UPDATE_ADDRESSES":
+//       return { ...state, addresses: action.payload };
+//     default:
+//       return state;
+//   }
+// };
+
 export default userReducer;

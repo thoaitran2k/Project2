@@ -58,7 +58,7 @@ router.post(
 );
 
 //Address
-router.post("/:userId/addresses", userController.addAddress); // Thêm địa chỉ mới
+router.post("/:userId/add-addresses", userController.addAddress); // Thêm địa chỉ mới
 router.put(
   "/:userId/addresses/:addressId/set-default",
   userController.setDefaultAddress
