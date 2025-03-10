@@ -232,3 +232,20 @@ export const updateAddress = async (
     throw error;
   }
 };
+
+export const deleteUserAddress = async (userId, addressId, accessToken) => {
+  try {
+    const response = await axios.delete(
+      `http://localhost:3002/api/user/${userId}/delete-address/${addressId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`, // Thêm token vào header
+        },
+      }
+    );
+    return response.data; // Trả về dữ liệu nếu thành công
+  } catch (error) {
+    console.error("Có lỗi khi xóa địa chỉ:", error);
+    throw error; // Ném lỗi nếu có lỗi xảy ra
+  }
+};

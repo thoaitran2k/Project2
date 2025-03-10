@@ -4,21 +4,26 @@ import {
   PlusOutlined,
   EditOutlined,
   CheckCircleOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { Button, Modal, Form, Input, Select, message } from "antd";
 import { getAddresses } from "../../../Services/UserService";
 import { addNewAddress } from "../../../Services/UserService";
-import { updateAddress } from "../../../Services/UserService";
+import { deleteUserAddress } from "../../../Services/UserService";
 import { useSelector, useDispatch } from "react-redux";
+import { removeUserAddress } from "../../../redux/actions/userActions";
 import {
   updateUserAddress,
   setUserAddresses,
   addUserAddress,
+  deleteAddress,
 } from "../../../redux/slices/userSlice";
+import Loading from "../../LoadingComponent/Loading";
 
 import ErrorBoundary from "../../ErrorBoundary/ErrorBoundary";
+import { setLoading } from "../../../redux/slices/loadingSlice";
 
-const AddressList = ({ userId, accessToken }) => {
+const AddressList = ({ userId, accessToken, addressId }) => {
   //console.log("Danh sách địa chỉ:", address);
   //const [addresses, setAddresses] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -33,7 +38,7 @@ const AddressList = ({ userId, accessToken }) => {
   //const userAddresses = useSelector((state) => state.user.address);
 
   const dispatch = useDispatch();
-
+  const isLoading = useSelector((state) => state.loading.isLoading);
   //Xử lý chọn vị trí địa lý
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -82,9 +87,9 @@ const AddressList = ({ userId, accessToken }) => {
   //Sau khi thêm mới địa chỉ thành công thành công
 
   useEffect(() => {
-    // Trigger lại render khi userAddresses thay đổi
-    console.log("Đã cập nhật địa chỉ mới trong Redux:", address);
-  }, [address]);
+    // Đây sẽ là cách để theo dõi sự thay đổi của Redux state
+    console.log("Đã cập nhật địa chỉ mới trong Redux:", addresses);
+  }, [addresses]);
 
   // Xử lý chọn vị trí địa lý
   useEffect(() => {
@@ -119,6 +124,47 @@ const AddressList = ({ userId, accessToken }) => {
     //e.preventDefault();
   };
 
+  //Xóa
+  const handleDeleteAddress = async (userId, addressId) => {
+    const accessToken = localStorage.getItem("accessToken");
+    console.log("Xóa địa chỉ:", accessToken);
+    console.log("Xóa địa chỉ với ID:", address);
+
+    if (!accessToken) {
+      console.error("Không có access token!");
+      return;
+    }
+
+    try {
+      const response = await deleteUserAddress(userId, addressId, accessToken);
+      console.log("Địa chỉ đã được xóa:", response);
+      dispatch(setLoading(true));
+
+      // Dispatch action để cập nhật lại danh sách địa chỉ trong Redux
+      console.log("Chạy dispatch......", addressId);
+      dispatch(removeUserAddress(addressId));
+
+      setTimeout(async () => {
+        const updatedAddresses = await getAddresses(userId, accessToken);
+        if (updatedAddresses && updatedAddresses.data) {
+          dispatch(setUserAddresses(updatedAddresses.data)); // Cập nhật lại địa chỉ trong Redux
+        }
+        dispatch(setLoading(false));
+      }, 1500);
+
+      // Thông báo xóa thành công cho người dùng
+      message.success("Đã xóa địa chỉ thành công!");
+    } catch {
+      console.error("Xóa địa chỉ thất bại:", error);
+      alert("Đã có lỗi xảy ra khi xóa địa chỉ.");
+    } finally {
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 1500);
+    }
+  };
+
+  //Sửa
   const handleEdit = (addr) => {
     console.log("🔍 Kiểm tra dữ liệu của addr:", addr);
     setSelectedAddress(addr);
@@ -311,35 +357,69 @@ const AddressList = ({ userId, accessToken }) => {
             ) // Chỉ giữ lại object
             .map((addr) => (
               <AddressCard key={addr._id}>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <Name>{addr.name || "Không có tên"}</Name>
-                  <div>
-                    {addr.isDefault && (
-                      <CheckCircleOutlined
-                        className="default-icon"
-                        style={{ color: "green" }}
-                      />
-                    )}
-                    {addr.isDefault && <Tag>Địa chỉ mặc định</Tag>}
+                <div style={{ position: "relative" }}>
+                  {/* Checkbox ở góc trên bên phải */}
+                  <input
+                    type="checkbox"
+                    style={{
+                      position: "absolute",
+                      top: "10px", // Đặt ở góc trên
+                      right: "40px", // Đặt ở bên trái của thùng rác, để không bị đè lên nhau
+                      zIndex: 10, // Đảm bảo checkbox luôn nằm trên các phần tử khác
+                    }}
+                    onChange={(e) => handleCheckboxChange(e, addr)} // Xử lý khi checkbox thay đổi
+                  />
+
+                  {/* Icon thùng rác ở bên phải checkbox */}
+                  <TrashIcon
+                    style={{
+                      position: "absolute",
+                      top: "10px", // Căn chỉnh với checkbox
+                      right: "10px", // Đặt ở bên phải của checkbox
+                      zIndex: 10, // Đảm bảo thùng rác không bị che khuất
+                      cursor: "pointer",
+                      fontSize: "17px",
+                    }}
+                    onClick={() => handleDeleteAddress(userId, addr._id)} // Xử lý khi click vào thùng rác
+                  />
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <Name>{addr.name || "Không có tên"}</Name>
+                    <div>
+                      {addr.isDefault && (
+                        <CheckCircleOutlined
+                          className="default-icon"
+                          style={{ color: "green" }}
+                        />
+                      )}
+                      {addr.isDefault && <Tag>Địa chỉ mặc định</Tag>}
+                    </div>
                   </div>
+                  <Address>
+                    <strong>Địa chỉ:</strong>{" "}
+                    {addr.address || "Không có địa chỉ"}
+                  </Address>
+                  <Phone>
+                    <strong>Điện thoại:</strong>{" "}
+                    <span>
+                      {addr.phoneDelivery || "Không có số điện thoại"}
+                    </span>
+                  </Phone>
+                  {/* Giữ nút chỉnh sửa ở chỗ cũ */}
+                  <EditButton
+                    onClick={() => handleEdit(addr)}
+                    style={{ float: "right" }}
+                  >
+                    <EditOutlined /> Chỉnh sửa
+                  </EditButton>
                 </div>
-                <Address>
-                  <strong>Địa chỉ:</strong> {addr.address || "Không có địa chỉ"}
-                </Address>
-                <Phone>
-                  <strong>Điện thoại:</strong>{" "}
-                  <span>{addr.phoneDelivery || "Không có số điện thoại"}</span>
-                </Phone>
-                <EditButton onClick={() => handleEdit(addr)}>
-                  <EditOutlined /> Chỉnh sửa
-                </EditButton>
               </AddressCard>
             ))}
 
@@ -477,6 +557,7 @@ const AddressCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 5px;
+  position: relative; /* Đảm bảo các phần tử con có thể sử dụng position absolute */
 `;
 
 const Row = styled.div`
@@ -501,6 +582,14 @@ const Name = styled.div`
 
   .default-icon {
     color: green;
+  }
+`;
+
+const TrashIcon = styled(DeleteOutlined)`
+  font-size: 20px;
+  color: red; // Thùng rác màu đỏ
+  &:hover {
+    color: darkred; // Đổi màu khi hover
   }
 `;
 

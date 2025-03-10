@@ -1,6 +1,7 @@
 const initialState = {
   user: null,
   accessToken: null,
+  address: [],
 };
 
 const userReducer = (state = initialState, action) => {
@@ -27,6 +28,18 @@ const userReducer = (state = initialState, action) => {
           ...action.payload,
           _id: action.payload._id, // Đảm bảo _id được lưu
         },
+      };
+    case "REMOVE_USER_ADDRESS":
+      return {
+        ...state,
+        addresses: state.addresses.filter(
+          (address) => address._id !== action.payload
+        ),
+      };
+    case "UPDATE_ADDRESSES":
+      return {
+        ...state,
+        addresses: action.payload,
       };
     default:
       return state;

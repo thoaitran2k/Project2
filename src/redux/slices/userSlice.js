@@ -115,6 +115,14 @@ const userSlice = createSlice({
       // ✅ Lưu user vào localStorage
       localStorage.setItem("user", JSON.stringify(state));
     },
+    removeUserAddress: (state, action) => {
+      const addressId = action.payload;
+      // Loại bỏ địa chỉ có id trùng với addressId
+      state.address = state.address.filter(
+        (addr) => addr._id !== action.payload
+      );
+      localStorage.setItem("user", JSON.stringify(state)); // Lưu lại vào localStorage
+    },
     updateAddresses: (state, action) => {
       console.log("Dữ liệu nhận vào Redux:", action.payload);
       const updatedAddress = action.payload;
@@ -217,6 +225,11 @@ const userSlice = createSlice({
         state.avatar = avatar;
         localStorage.setItem("user", JSON.stringify(state));
       })
+      // .addCase(deleteAddress.fulfilled, (state, action) => {
+      //   const addressId = action.payload._id; // Giả sử API trả về dữ liệu địa chỉ đã xóa
+      //   state.address = state.address.filter((addr) => addr._id !== addressId);
+      //   localStorage.setItem("user", JSON.stringify(state)); // Lưu lại vào localStorage
+      // })
       .addCase(updateAddressList.fulfilled, (state, action) => {
         console.log("🚀 API trả về danh sách địa chỉ mới:", action.payload);
 
@@ -287,8 +300,10 @@ export const {
   updateUserField,
   setDefaultAddress,
   addUserAddress,
+  deleteAddress,
   removeAddress,
   updateAddresses,
   setUserAddresses,
+  removeUserAddress,
 } = userSlice.actions;
 export default userSlice.reducer;

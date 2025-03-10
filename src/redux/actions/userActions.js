@@ -1,4 +1,10 @@
-import { LOGIN, LOGOUT, SET_USER } from "./types";
+import {
+  LOGIN,
+  LOGOUT,
+  SET_USER,
+  REMOVE_USER_ADDRESS,
+  UPDATE_ADDRESSES,
+} from "./Types";
 
 // Action login thành công
 export const loginUser = (user, accessToken) => {
@@ -22,3 +28,13 @@ export const setUser = (user) => {
     payload: user,
   };
 };
+
+export const removeUserAddress = (addressId) => ({
+  type: REMOVE_USER_ADDRESS,
+  payload: addressId,
+});
+
+export const updateAddresses = (addresses) => ({
+  type: UPDATE_ADDRESSES,
+  payload: addresses,
+});
