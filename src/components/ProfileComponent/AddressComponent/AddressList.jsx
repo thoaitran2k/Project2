@@ -27,11 +27,15 @@ const AddressList = ({ userId, accessToken, addressId }) => {
   //console.log("Danh sách địa chỉ:", address);
   //const [addresses, setAddresses] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [defaultAddress, setDefaultAddress] = useState(null);
+  const [selectedDefault, setSelectedDefault] = useState(null);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [ButtonUpdate, setButtonUpdate] = useState(null);
 
   const addresses = useSelector((state) => state.user.address);
   //const userId = useSelector((state) => state.user._id);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState(null);
+
   const [form] = Form.useForm();
   const address = useSelector((state) => state.user.address);
   const addressesInStore = useSelector((state) => state.user.address);
@@ -164,85 +168,130 @@ const AddressList = ({ userId, accessToken, addressId }) => {
     }
   };
 
-  //Sửa
-  const handleEdit = (addr) => {
-    console.log("🔍 Kiểm tra dữ liệu của addr:", addr);
+  //Chọn làm mặc định
+  const handleCheckboxChange = async (checked, addr, addressId) => {
+    if (addr.isDefault) return;
+
     setSelectedAddress(addr);
-    setIsEditing(true);
-    setIsModalOpen(true);
+    setSelectedDefault(checked ? addressId : null); // Cập nhật state
 
-    const addressParts = addr.address.split(",").map((part) => part.trim());
-    console.log("📌 Tách địa chỉ:", addressParts);
+    setButtonUpdate(checked ? addr._id : null);
+    console.log("📌BUTTON Ở ĐÂY SẼ ĐỔI THÀNH CẬP NHẬT :", ButtonUpdate);
 
-    // const street = addressParts[0] || "";
-    // const ward = addressParts[1] || "";
-    // const district = addressParts[2] || "";
-    // const city = addressParts[3] || "";
-    let street, ward, district, city;
-
-    if (addressParts.length > 3) {
-      street = addressParts[0] || "";
-      ward = addressParts[1] || "";
-      district = addressParts[2] || "";
-      city = addressParts[3] || "";
-    } else {
-      // Nếu chuỗi chỉ có 3 dấu phẩy, sử dụng thứ tự ward, district, city
-      ward = addressParts[0] || "";
-      district = addressParts[1] || "";
-      city = addressParts[2] || "";
-      street = ""; // Nếu không có thông tin về street, bạn có thể để trống hoặc xử lý theo cách khác
-    }
-
-    // Tìm mã tỉnh/thành phố
-    const selectedProvince = provinces.find((p) => p.name === city);
-    console.log("selectedProvince", selectedProvince);
-    const provinceCode = selectedProvince?.code || undefined;
-    console.log("provinceCode", provinceCode);
-    // Nếu tìm thấy tỉnh, cập nhật danh sách quận/huyện
-    if (selectedProvince) {
-      setDistricts(selectedProvince.districts || []);
-    }
-
-    // Tìm mã quận/huyện
-    const selectedDistrict = selectedProvince?.districts.find(
-      (d) => d.name === district
-    );
-    const districtCode = selectedDistrict?.code || undefined;
-
-    // Nếu tìm thấy quận, cập nhật danh sách phường/xã
-    if (selectedDistrict) {
-      setWards(selectedDistrict.wards || []);
-    }
-
-    // Tìm mã phường/xã
-    const selectedWard = selectedDistrict?.wards.find((w) => w.name === ward);
-    const wardCode = selectedWard?.code || undefined;
-
-    // Đợi cập nhật danh sách quận/huyện và phường/xã trước khi đặt giá trị form
-    setTimeout(() => {
-      form.setFieldsValue({
-        name: addr.name || "",
-        phoneDelivery: addr.phoneDelivery || "",
-        street,
-        ward: wardCode || undefined,
-        district: districtCode || undefined,
-        city: provinceCode || undefined,
-        address: addr.address || "",
-      });
-    }, 300);
+    console.log("📌SelectedDefault :", selectedDefault);
+    console.log("Địa chỉ đang chọn có ID:", addressId); // Kiểm tra giá trị checked}
   };
 
-  const handleUpdateAddress = async (values) => {
-    console.log("Gửi request cập nhật địa chỉ...", values);
-    console.log("Dữ liệu form:", values);
+  //Sửa
+  const handleEdit = async (addr, userId, addressId) => {
+    if (selectedDefault === addr._id && !addr.isDefault) {
+      // Nếu checkbox được tick và địa chỉ không phải mặc định
+      console.log(
+        "Cập nhật địa chỉ",
+        addressId,
+        "làm mặc định cho user:",
+        userId
+      );
 
+      dispatch(setLoading(true));
+      try {
+        // Cập nhật địa chỉ này thành mặc định
+        await dispatch(
+          updateUserAddress({
+            userId,
+            addressId,
+            newAddress: { isDefault: true },
+          })
+        ).unwrap();
+        console.log("✅ Đã chọn địa chỉ làm mặc định:", addressId);
+
+        // Cập nhật tất cả các địa chỉ khác thành `isDefault = false`
+        const updatePromises = address
+          .filter((item) => item._id !== addressId)
+          .map((item) =>
+            dispatch(
+              updateUserAddress({
+                userId,
+                addressId: item._id,
+                newAddress: { isDefault: false },
+              })
+            ).unwrap()
+          );
+
+        await Promise.all(updatePromises);
+      } catch (error) {
+        console.error("❌ Lỗi khi cập nhật địa chỉ mặc định:", error);
+      } finally {
+        setTimeout(() => {
+          dispatch(setLoading(false));
+        }, 1500);
+      }
+    } else {
+      // Nếu không tick checkbox, chỉ mở form chỉnh sửa
+      console.log("🔍 Mở form chỉnh sửa cho địa chỉ:", addr);
+      setSelectedAddress(addr);
+      setIsEditing(true);
+      setIsModalOpen(true);
+
+      const addressParts = addr.address.split(",").map((part) => part.trim());
+      let street, ward, district, city;
+
+      if (addressParts.length > 3) {
+        street = addressParts[0] || "";
+        ward = addressParts[1] || "";
+        district = addressParts[2] || "";
+        city = addressParts[3] || "";
+      } else {
+        ward = addressParts[0] || "";
+        district = addressParts[1] || "";
+        city = addressParts[2] || "";
+        street = "";
+      }
+
+      const selectedProvince = provinces.find((p) => p.name === city);
+      const provinceCode = selectedProvince?.code || undefined;
+
+      if (selectedProvince) {
+        setDistricts(selectedProvince.districts || []);
+      }
+
+      const selectedDistrict = selectedProvince?.districts.find(
+        (d) => d.name === district
+      );
+      const districtCode = selectedDistrict?.code || undefined;
+
+      if (selectedDistrict) {
+        setWards(selectedDistrict.wards || []);
+      }
+
+      const selectedWard = selectedDistrict?.wards.find((w) => w.name === ward);
+      const wardCode = selectedWard?.code || undefined;
+
+      setTimeout(() => {
+        form.setFieldsValue({
+          name: addr.name || "",
+          phoneDelivery: addr.phoneDelivery || "",
+          street,
+          ward: wardCode || undefined,
+          district: districtCode || undefined,
+          city: provinceCode || undefined,
+          address: addr.address || "",
+        });
+      }, 300);
+    }
+  };
+
+  //Update địa chỉ
+  const handleUpdateAddress = async (values) => {
+    console.log("📤 Gửi request cập nhật/thêm địa chỉ...", values);
+
+    // Kiểm tra thông tin địa chỉ
     if (!values.city || !values.district || !values.ward) {
       message.warning("Bạn phải chọn đầy đủ tỉnh, quận/huyện và phường/xã!");
-      //alert("Vui lòng điền đầy đủ thông tin về tỉnh, quận/huyện và phường/xã.");
       return;
     }
 
-    if (!selectedAddress && isEditing) {
+    if (isEditing && !selectedAddress) {
       console.error("❌ Không tìm thấy địa chỉ để cập nhật!");
       return;
     }
@@ -253,7 +302,6 @@ const AddressList = ({ userId, accessToken, addressId }) => {
     const selectedDistrict = districts.find((d) => d.code === values.district);
     const selectedWard = wards.find((w) => w.code === values.ward);
 
-    // Đảm bảo không có `undefined` trong `fullAddress`
     const fullAddress = [
       street,
       selectedWard?.name,
@@ -263,83 +311,87 @@ const AddressList = ({ userId, accessToken, addressId }) => {
       .filter(Boolean)
       .join(", ");
 
-    console.log("Địa chỉ đầy đủ:", fullAddress);
+    console.log("📌 Địa chỉ đầy đủ:", fullAddress);
 
     try {
-      let newAddress;
-      // const newAddress = {
-      //   name: values.name,
-      //   phoneDelivery: values.phoneDelivery,
-      //   address: fullAddress,
-      //   isDefault: values.isDefault || false,
-      // };
-      const validatedValues = values; // Kiểm tra form hợp lệ
+      let result;
+      let newAddressData = {
+        name: values.name || "",
+        phoneDelivery: values.phoneDelivery || "",
+        address: fullAddress,
+        isDefault: values.isDefault || false,
+      };
 
       if (isEditing) {
-        // Cập nhật địa chỉ
-        const result = await dispatch(
+        // 📝 CẬP NHẬT ĐỊA CHỈ
+        result = await dispatch(
           updateUserAddress({
             userId,
             addressId: selectedAddress._id,
-            newAddress: { ...values, address: fullAddress },
+            newAddress: newAddressData,
           })
         ).unwrap();
 
         console.log("✅ Cập nhật thành công:", result);
-        setIsModalOpen(false);
       } else {
-        //Thêm địa chỉ mới
-        newAddress = {
-          name: values.name || "",
-          phoneDelivery: values.phoneDelivery || "",
-          address: fullAddress,
-          isDefault: values.isDefault !== undefined ? values.isDefault : false,
-        };
-      }
+        // ➕ THÊM ĐỊA CHỈ MỚI
+        const response = await addNewAddress(
+          userId,
+          newAddressData.address,
+          newAddressData.isDefault,
+          accessToken,
+          newAddressData.name,
+          newAddressData.phoneDelivery
+        );
 
-      const response = await addNewAddress(
-        userId,
-        newAddress.address,
-        newAddress.isDefault,
-        accessToken,
-        newAddress.name,
-        newAddress.phoneDelivery
-      );
+        console.log("📤 Phản hồi từ API khi thêm địa chỉ:", response);
 
-      console.log("newAddress", newAddress);
+        if (response.status === "OK" && response.data?.address) {
+          dispatch(setLoading(true));
+          const newAddresses = response.data.address; // Danh sách địa chỉ sau khi thêm
+          console.log("✅ Đã thêm địa chỉ mới:", newAddresses);
+          message.success("Đã thêm địa chỉ mới thành công!");
 
-      console.log("Phản hồi từ API khi thêm địa chỉ:", response);
-      if (response.status === "OK") {
-        const addresses = response.data.address; // Mảng địa chỉ mới
+          setTimeout(() => {
+            dispatch(setLoading(false));
+          }, 1500);
 
-        // Kiểm tra nếu có địa chỉ trong phản hồi từ API
-        if (addresses && addresses.length > 0) {
-          console.log("Đã thêm địa chỉ mới vào API:", addresses);
-
-          // Kiểm tra nếu state.address hiện tại không có địa chỉ nào
-          if (addressesInStore.length === 0) {
-            // Nếu chưa có địa chỉ nào trong Redux, thêm tất cả địa chỉ vào Redux
-            dispatch(addUserAddress(addresses)); // Thêm toàn bộ địa chỉ vào Redux
-          } else {
-            // Nếu đã có địa chỉ, chỉ thêm địa chỉ mới vào Redux
-            addresses.forEach((newAddress) => {
-              const exists = addressesInStore.some(
-                (addr) => addr._id === newAddress._id
-              );
-              if (!exists) {
-                dispatch(addUserAddress([newAddress])); // Chỉ thêm địa chỉ mới vào Redux
-              }
-            });
-          }
+          // Cập nhật Redux với danh sách mới
+          dispatch(addUserAddress(newAddresses));
         } else {
-          console.error("Không tìm thấy địa chỉ trong phản hồi API!");
+          // 🛑 XỬ LÝ TRƯỜNG HỢP API TRẢ VỀ CẢNH BÁO
+          const errorMessage = response.message || "Không thể thêm địa chỉ!";
+          message.warning(errorMessage);
+          console.warn("⚠️ Cảnh báo từ API:", errorMessage);
+          return;
         }
-      } else {
-        console.error("Lỗi khi thêm địa chỉ!", response.data.message);
       }
+
+      // Nếu địa chỉ mới là mặc định, cập nhật các địa chỉ khác về `isDefault: false`
+      if (values.isDefault) {
+        const updatePromises = addressesInStore
+          .filter(
+            (addr) =>
+              addr._id !== (isEditing ? selectedAddress._id : result?._id)
+          )
+          .map((addr) =>
+            dispatch(
+              updateUserAddress({
+                userId,
+                addressId: addr._id,
+                newAddress: { isDefault: false },
+              })
+            ).unwrap()
+          );
+
+        await Promise.all(updatePromises);
+      }
+
+      // Đóng modal sau khi hoàn thành
       setIsModalOpen(false);
     } catch (error) {
-      console.error("❌ Lỗi khi cập nhật địa chỉ:", error);
+      console.error("❌ Lỗi khi xử lý địa chỉ:", error);
+      message.error("Đã xảy ra lỗi, vui lòng thử lại!");
     }
   };
 
@@ -356,32 +408,37 @@ const AddressList = ({ userId, accessToken, addressId }) => {
               (addr) => addr && typeof addr === "object" && !Array.isArray(addr)
             ) // Chỉ giữ lại object
             .map((addr) => (
-              <AddressCard key={addr._id}>
+              <AddressCard
+                style={
+                  addr.isDefault ? { background: "rgb(204, 228, 230)" } : {}
+                }
+                key={addr._id}
+              >
                 <div style={{ position: "relative" }}>
-                  {/* Checkbox ở góc trên bên phải */}
-                  <input
-                    type="checkbox"
-                    style={{
-                      position: "absolute",
-                      top: "10px", // Đặt ở góc trên
-                      right: "40px", // Đặt ở bên trái của thùng rác, để không bị đè lên nhau
-                      zIndex: 10, // Đảm bảo checkbox luôn nằm trên các phần tử khác
-                    }}
-                    onChange={(e) => handleCheckboxChange(e, addr)} // Xử lý khi checkbox thay đổi
-                  />
-
-                  {/* Icon thùng rác ở bên phải checkbox */}
-                  <TrashIcon
-                    style={{
-                      position: "absolute",
-                      top: "10px", // Căn chỉnh với checkbox
-                      right: "10px", // Đặt ở bên phải của checkbox
-                      zIndex: 10, // Đảm bảo thùng rác không bị che khuất
-                      cursor: "pointer",
-                      fontSize: "17px",
-                    }}
-                    onClick={() => handleDeleteAddress(userId, addr._id)} // Xử lý khi click vào thùng rác
-                  />
+                  {/* Checkbox và text "Đặt làm mặc định" */}
+                  {addr.isDefault ? (
+                    <span style={{ fontStyle: "italic", color: "gray" }}></span>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "5px",
+                        float: "right",
+                      }}
+                    >
+                      <h4 style={{ margin: 0 }}>Đặt làm mặc định</h4>
+                      <input
+                        type="checkbox"
+                        checked={selectedDefault === addr._id} // Tick nếu địa chỉ được chọn
+                        style={{ position: "relative", zIndex: 10 }}
+                        onChange={(e) =>
+                          handleCheckboxChange(e.target.checked, addr, addr._id)
+                        }
+                      />
+                    </div>
+                  )}
 
                   <div
                     style={{
@@ -413,12 +470,45 @@ const AddressList = ({ userId, accessToken, addressId }) => {
                     </span>
                   </Phone>
                   {/* Giữ nút chỉnh sửa ở chỗ cũ */}
-                  <EditButton
-                    onClick={() => handleEdit(addr)}
-                    style={{ float: "right" }}
+                  {/* Icon thùng rác ở bên phải checkbox */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginTop: "10px",
+                    }}
                   >
-                    <EditOutlined /> Chỉnh sửa
-                  </EditButton>
+                    <TrashIcon
+                      style={{
+                        cursor: "pointer",
+                        fontSize: "25px",
+                      }}
+                      onClick={() => handleDeleteAddress(userId, addr._id)}
+                    />
+                    <EditButton
+                      style={
+                        ButtonUpdate === addr._id && !addr.isDefault
+                          ? { background: "rgb(168, 179, 16)", color: "white" } // Nếu điều kiện đúng, có background màu xanh
+                          : {} // Nếu điều kiện sai, không có style (trả về object rỗng)
+                      }
+                      onClick={() => handleEdit(addr, userId, addr._id)}
+                      className={
+                        ButtonUpdate === addr._id
+                          ? "update-button"
+                          : "edit-button"
+                      }
+                    >
+                      {ButtonUpdate === addr._id && !addr.isDefault ? (
+                        <>Cập nhật</>
+                      ) : (
+                        <>
+                          <EditOutlined /> Chỉnh sửa
+                        </>
+                      )}
+                    </EditButton>
+                  </div>
                 </div>
               </AddressCard>
             ))}
@@ -615,6 +705,24 @@ const EditButton = styled(Button)`
   align-self: flex-end;
   color: #1890ff;
   font-size: 14px;
+  min-width: 120px;
+  .edit-button {
+    background-color: #f0f0f0;
+    color: #333;
+  }
+
+  .edit-button:hover {
+    background-color: #ddd;
+  }
+
+  .update-button {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .update-button:hover {
+    background-color: #0056b3;
+  }
 `;
 
 export default AddressList;

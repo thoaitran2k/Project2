@@ -243,10 +243,10 @@ const addAddress = async (userId, newAddress) => {
     }
 
     // Giới hạn tối đa 3 địa chỉ
-    if (user.address.length >= 3) {
+    if (user.address.length >= 5) {
       return {
         status: "WARNING",
-        message: "Bạn chỉ có thể lưu tối đa 3 địa chỉ!",
+        message: "Danh sách tối đa chỉ gồm 5 địa chỉ!",
       };
     }
 

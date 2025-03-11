@@ -42,7 +42,7 @@ const generateAccessToken = (payload) => {
 };
 
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "7d" });
+  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "2h" });
 };
 
 const refreshTokenJwtService = async (token) => {

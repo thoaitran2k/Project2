@@ -188,20 +188,30 @@ const userSlice = createSlice({
 
       if (!Array.isArray(newAddresses)) return;
 
-      // Nếu địa chỉ mới là mặc định, đặt lại trạng thái mặc định cho địa chỉ cũ
-      newAddresses.forEach((newAddress) => {
-        if (newAddress.isDefault) {
-          state.address.forEach((addr) => (addr.isDefault = false)); // Đặt isDefault = false cho tất cả
-        }
-      });
+      // Khởi tạo state.address nếu chưa có
+      if (!state.address) state.address = [];
 
-      // Thêm các địa chỉ mới vào Redux store nếu chưa có trong danh sách
+      // Nếu có địa chỉ mới là mặc định, đặt lại isDefault của địa chỉ cũ
+      const hasNewDefault = newAddresses.some((addr) => addr.isDefault);
+
+      if (hasNewDefault) {
+        state.address = state.address.map((addr) => ({
+          ...addr,
+          isDefault: false, // Đặt tất cả địa chỉ cũ về không mặc định
+        }));
+      }
+
+      // Thêm hoặc cập nhật địa chỉ mới vào Redux store
       newAddresses.forEach((newAddress) => {
-        const exists = state.address.some(
+        const index = state.address.findIndex(
           (addr) => addr._id === newAddress._id
         );
-        if (!exists) {
-          state.address.push(newAddress); // Chỉ thêm địa chỉ mới vào mảng
+        if (index !== -1) {
+          // Nếu địa chỉ đã tồn tại, cập nhật thông tin
+          state.address[index] = newAddress;
+        } else {
+          // Nếu chưa có, thêm vào danh sách
+          state.address.push(newAddress);
         }
       });
 
