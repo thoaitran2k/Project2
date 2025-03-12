@@ -1,4 +1,5 @@
 const ProductService = require("../services/ProductService");
+const uploadImageProductService = require("../services/uploadImageProductService");
 
 const createProduct = async (req, res) => {
   try {
@@ -111,10 +112,25 @@ const getAllProduct = async (req, res) => {
   }
 };
 
+const uploadImageProduct = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    const imageUrl = await uploadImageProductService.uploadImageToCloudinary(
+      req.file
+    );
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error("Lỗi upload ảnh:", error);
+    res.status(500).json({ message: "Lỗi tải ảnh lên" });
+  }
+};
+
 module.exports = {
   createProduct,
   updateProduct,
   getDetailProduct,
   deleteProduct,
   getAllProduct,
+  uploadImageProduct,
 };

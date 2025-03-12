@@ -21,16 +21,14 @@ function App() {
   const user = useSelector((state) => state.user);
   const [isUserLoaded, setIsUserLoaded] = useState(false);
 
-  // ✅ Load user từ localStorage trước khi render
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       dispatch(setUser(JSON.parse(storedUser)));
     }
-    setIsUserLoaded(true); // ✅ Đánh dấu user đã được load
+    setIsUserLoaded(true);
   }, [dispatch]);
 
-  // ✅ Chỉ chạy startTokenRefresh nếu user đã load
   useEffect(() => {
     if (isUserLoaded) {
       if (user?.accessToken) {
@@ -41,38 +39,15 @@ function App() {
     }
   }, [user, isUserLoaded]);
 
-  const fetchAPI = async () => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
-      );
-      return res.data;
-    } catch (error) {
-      console.error("Fetch API error:", error);
-      throw error;
-    }
-  };
-
-  // ✅ Chỉ gọi API nếu user đã load & đã đăng nhập
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchAPI,
-    enabled: isUserLoaded && user.isAuthenticated,
-  });
-
-  if (!isUserLoaded) return <p>Loading user...</p>;
-  if (isLoading) return <p>Loading products...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-
   return (
     <AppContainer>
       <Router>
         <ScrollToTop />
-        <HeaderComponent />
         <MainContent>
           <Routes>
             {routes.map((route) => {
               const Page = route.page;
+              const ischeckAuth = !route.isPrivate || user.isAdmin; // Kiểm tra quyền admin
               const LayoutComponent = route.isShowHeader
                 ? Layout
                 : React.Fragment;
@@ -81,16 +56,20 @@ function App() {
                   key={route.path}
                   path={route.path}
                   element={
-                    <LayoutComponent>
-                      <Page />
-                    </LayoutComponent>
+                    ischeckAuth ? (
+                      <LayoutComponent>
+                        <Page />
+                      </LayoutComponent>
+                    ) : (
+                      <Navigate to="/home" /> // Chuyển hướng nếu không có quyền
+                    )
                   }
                 />
               );
             })}
           </Routes>
         </MainContent>
-        <FooterComponent />
+        {/* <FooterComponent /> */}
       </Router>
     </AppContainer>
   );

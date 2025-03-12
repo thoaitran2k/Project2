@@ -1,10 +1,11 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import axios from "axios";
 import { updateAddress } from "../../Services/UserService";
 
 // ✅ Lấy user từ localStorage nếu có
 const getUserFromLocalStorage = () => {
   const storedUser = localStorage.getItem("user");
+  console.log("Dữ liệu từ localStorage:", storedUser);
   return storedUser ? JSON.parse(storedUser) : null;
 };
 
@@ -85,6 +86,7 @@ const initialState = getUserFromLocalStorage() || {
   dob: null,
   gender: null,
   isLoggingOut: false,
+  isAdmin: false,
 };
 
 const userSlice = createSlice({
@@ -92,27 +94,48 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      const payload = action.payload;
-      if (!payload) {
+      const userData = action.payload;
+
+      console.log("API response:", userData);
+
+      if (!userData) {
         console.error("Payload không hợp lệ!");
         return;
       }
+      state.address = Array.isArray(userData.address)
+        ? userData.address
+        : state.address;
 
       state.isAuthenticated = true;
-      state._id = payload._id || state._id;
-      state.accessToken = payload.accessToken || state.accessToken;
-      state.refreshToken = payload.refreshToken || state.refreshToken;
-      state.username = payload.username || state.username;
-      state.email = payload.email || state.email;
-      state.phone = payload.phone || state.phone;
-      state.address = Array.isArray(payload.address)
-        ? payload.address
-        : state.address;
-      state.avatar = payload.avatar || state.avatar;
-      state.dob = payload.dob || state.dob;
-      state.gender = payload.gender || state.gender;
+      state._id = userData._id;
+      state.username = userData.username;
+      state.email = userData.email;
+      state.phone = userData.phone;
+      //state.address = userData.address || [];
+      state.avatar = userData.avatar || "";
+      state.dob = userData.dob;
+      state.gender = userData.gender;
+      console.log("Dữ liệu userData từ API:", userData);
+      state.isAdmin =
+        userData.isAdmin !== undefined ? userData.isAdmin : state.isAdmin;
+      state.createdAt = userData.createdAt;
+      state.updatedAt = userData.updatedAt;
 
-      // ✅ Lưu user vào localStorage
+      //console.log("API response:", userData);
+      console.log("User isAdmin", userData.isAdmin);
+
+      if (userData.accessToken) state.accessToken = userData.accessToken;
+      if (userData.refreshToken) state.refreshToken = userData.refreshToken;
+
+      // Lưu vào localStorage
+      // const pureState = current(state);
+      // console.log("Dữ liệu state:", pureState);
+
+      // console.log(
+      //   "Dữ liệu state sau khi cập nhật:",
+      //   JSON.parse(JSON.stringify(state))
+      // );
+      // Lưu vào localStorage
       localStorage.setItem("user", JSON.stringify(state));
     },
     removeUserAddress: (state, action) => {
@@ -176,7 +199,11 @@ const userSlice = createSlice({
 
     logoutUser: (state) => {
       localStorage.removeItem("user"); // ✅ Xóa user khỏi localStorage khi logout
-      Object.assign(state, { ...initialState, isAuthenticated: false });
+      Object.assign(state, {
+        ...initialState,
+        isAuthenticated: false,
+        //isAdmin: true,
+      });
     },
 
     setLoggingOut: (state, action) => {
@@ -224,8 +251,16 @@ const userSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(updateUserProfile.fulfilled, (state, action) => {
-        const { username, email, phone, dob, gender, address, avatar } =
-          action.payload;
+        const {
+          username,
+          email,
+          phone,
+          dob,
+          gender,
+          address,
+          avatar,
+          isAdmin,
+        } = action.payload;
         state.username = username;
         state.email = email;
         state.phone = phone;
@@ -233,6 +268,7 @@ const userSlice = createSlice({
         state.gender = gender;
         state.address = address;
         state.avatar = avatar;
+        state.isAdmin = isAdmin;
         localStorage.setItem("user", JSON.stringify(state));
       })
       // .addCase(deleteAddress.fulfilled, (state, action) => {
@@ -283,7 +319,7 @@ const userSlice = createSlice({
           ? updatedAddress[0]
           : updatedAddress;
 
-        console.log("🔹 Địa chỉ đã cập nhật:", updatedAddress);
+        //console.log("🔹 Địa chỉ đã cập nhật:", updatedAddress);
 
         const index = state.address.findIndex(
           (addr) => addr._id === updatedAddress._id

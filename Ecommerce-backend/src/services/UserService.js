@@ -72,11 +72,13 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
 const loginUser = async ({ email, password }) => {
   try {
     const checkUser = await User.findOne({ email });
+
     if (!checkUser) {
       return { status: "ERROR", message: "Người dùng không tồn tại" };
     }
 
-    const isMatch = bcrypt.compareSync(password, checkUser.password);
+    const isMatch = await bcrypt.compare(password, checkUser.password);
+
     if (!isMatch) {
       return { status: "ERROR", message: "Mật khẩu không chính xác" };
     }
@@ -152,11 +154,11 @@ const getAllUser = async () => {
   try {
     const users = await User.find().select("-password");
     //const allUsers = await User.find(); // Lấy danh sách user từ DB
-    console.log(allUsers);
+    console.log("allUsers", users);
     return {
       status: "OK",
       message: "Lấy danh sách người dùng thành công!",
-      data: allUsers,
+      data: users,
     };
   } catch (e) {
     throw new Error("Lỗi khi lấy danh sách người dùng: " + e.message);
@@ -242,11 +244,11 @@ const addAddress = async (userId, newAddress) => {
       user.address = [];
     }
 
-    // Giới hạn tối đa 3 địa chỉ
-    if (user.address.length >= 5) {
+    // Giới hạn tối đa 6 địa chỉ
+    if (user.address.length >= 6) {
       return {
         status: "WARNING",
-        message: "Danh sách tối đa chỉ gồm 5 địa chỉ!",
+        message: "Danh sách tối đa chỉ gồm 6 địa chỉ!",
       };
     }
 

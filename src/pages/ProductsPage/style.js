@@ -2,11 +2,17 @@ import styled from "styled-components";
 import { Button } from "antd";
 
 export const ProductsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  padding: 16px;
-  justify-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* 🔥 Căn giữa card theo chiều ngang */
+  gap: 20px;
+
+  max-width: 1200px; /* Giới hạn chiều rộng */
+  margin: 0 auto; /* Căn giữa toàn bộ container */
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước */
+  // background: rgb(184, 65, 65);
 `;
 
 export const WrapperButtonContainer = styled.div`

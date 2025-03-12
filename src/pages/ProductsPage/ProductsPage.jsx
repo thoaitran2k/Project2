@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Pagination } from "antd";
 import CardComponent from "../../components/CardComponent/CardComponent";
+import * as ProductService from "../../Services/ProductService";
 import {
   ProductsContainer,
   WrapperButtonContainer,
@@ -15,26 +17,36 @@ const ProductsPage = () => {
     console.log("Trang hiện tại:", page);
   };
 
+  const fetchProductAll = async () => {
+    try {
+      const res = await ProductService.getAllProduct();
+      console.log("Kết quả API:", res); // 🔥 Kiểm tra dữ liệu
+      return res;
+    } catch (error) {
+      console.error("Lỗi khi gọi API:", error);
+      return { data: [] }; // ✅ Trả về mảng rỗng nếu lỗi
+    }
+  };
+
+  const { isLoading, data: products = [] } = useQuery({
+    queryKey: ["products"],
+    queryFn: fetchProductAll,
+    retry: 3,
+    retryDelay: 1000,
+  });
+
   return (
     <div>
       <ProductsContainer>
-        {Array.from({ length: 70 }).map((_, index) => (
-          <CardComponent key={index} />
-        ))}
+        {isLoading ? (
+          <p>Loading...</p>
+        ) : (
+          <CardComponent products={products?.data || []} />
+        )}
       </ProductsContainer>
 
       <WrapperButtonContainer>
         <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
-      </WrapperButtonContainer>
-
-      <WrapperButtonContainer>
-        <Pagination
-          showQuickJumper
-          defaultCurrent={1}
-          current={currentPage}
-          total={100}
-          onChange={onChange}
-        />
       </WrapperButtonContainer>
     </div>
   );

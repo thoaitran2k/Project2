@@ -133,6 +133,7 @@ export default function SignInPage() {
         setIsLogin(true);
         setIsAuthenticated(true);
         message.success("Đăng nhập thành công!");
+        //dispatch(setUser(user));
         setTimeout(() => {
           dispatch(setLoading(false)); // Tắt trạng thái loading
           navigate("/home");
@@ -570,6 +571,18 @@ export default function SignInPage() {
             <ToggleButton onClick={toggleMode}>
               {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
             </ToggleButton>
+            <div style={{ textAlign: "center", marginTop: "45px" }}>
+              Truy cập đến{" "}
+              <span
+                onClick={() => navigate("/home")}
+                style={{ cursor: "pointer", color: "blue" }}
+              >
+                <u>
+                  <i>Trang chủ</i>
+                </u>
+              </span>{" "}
+              của chúng tôi!
+            </div>
           </ToggleText>
         </FormWrapper>
       </Loading>

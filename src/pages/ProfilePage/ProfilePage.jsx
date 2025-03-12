@@ -6,6 +6,7 @@ import { MenuOutlined } from "@ant-design/icons";
 import Sidebar from "../../components/ProfileComponent/Sidebar";
 import ProfileForm from "../../components/ProfileComponent/ProfileForm";
 import { setActivePage } from "../../redux/slices/profileSlice";
+import styled from "styled-components";
 
 import AddressList from "../../components/ProfileComponent/AddressComponent/AddressList";
 
@@ -57,73 +58,92 @@ const ProfilePage = () => {
   };
 
   return (
-    <Row gutter={[16, 16]} style={{ padding: "20px" }}>
-      {/* Nút Menu (chỉ hiển thị trên mobile) */}
-      <Col xs={24} sm={0} style={{ textAlign: "left", marginBottom: "10px" }}>
-        <Button
-          type="primary"
-          icon={<MenuOutlined />}
-          onClick={() => setVisible(true)}
-        >
-          {pageTitles[activePage] || "Menu"}
-        </Button>
-      </Col>
+    <ContainerProfile>
+      <Row
+        gutter={[16, 16]}
+        style={{
+          padding: "20px",
+          // border: "solid 2px red",
+          marginTop: "4vh",
+          minHeight: "calc(100vh - 8vh - 60px)",
+          height: "20vh", // Trừ phần Header và Footer
+          display: "flex",
+          flexGrow: 1,
+        }}
+      >
+        {/* Nút Menu (chỉ hiển thị trên mobile) */}
+        <Col xs={24} sm={0} style={{ textAlign: "left", marginBottom: "10px" }}>
+          <Button
+            type="primary"
+            icon={<MenuOutlined />}
+            onClick={() => setVisible(true)}
+          >
+            {pageTitles[activePage] || "Menu"}
+          </Button>
+        </Col>
 
-      {/* Sidebar (ẩn trên mobile) */}
-      <Col xs={0} sm={6} md={5} style={{ minHeight: "100vh" }}>
-        <Card
-          style={{
-            borderRadius: "12px",
-            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-            textAlign: "center",
-          }}
-        >
-          <Title
-            level={4}
+        {/* Sidebar (ẩn trên mobile) */}
+        <Col xs={0} sm={6} md={5} style={{ minHeight: "100vh" }}>
+          <Card
             style={{
-              color: "#1890ff",
-              textAlign: "left",
-              marginTop: "5px",
-              marginBottom: "20px",
+              borderRadius: "12px",
+              boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+              textAlign: "center",
             }}
           >
-            <span style={{ fontSize: "14px" }}>Tài khoản của </span> <br />
-            <span style={{ fontSize: "25px", color: "red" }}>
-              {user.username}
-            </span>
-          </Title>
-          <Sidebar />
-        </Card>
-      </Col>
+            <Title
+              level={4}
+              style={{
+                color: "#1890ff",
+                textAlign: "left",
+                marginTop: "5px",
+                marginBottom: "20px",
+              }}
+            >
+              <span style={{ fontSize: "14px" }}>Tài khoản của </span> <br />
+              <span style={{ fontSize: "25px", color: "red" }}>
+                {user.username}
+              </span>
+            </Title>
+            <Sidebar />
+          </Card>
+        </Col>
 
-      {/* Nội dung chính */}
-      <Col xs={24} sm={18} md={19}>
-        <Card
-          style={{
-            borderRadius: "12px",
-            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-            padding: "20px",
-          }}
+        {/* Nội dung chính */}
+        <Col xs={24} sm={18} md={19}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+              padding: "20px",
+            }}
+          >
+            <Title level={4} style={{ marginTop: "0", marginBottom: "16px" }}>
+              {pageTitles[activePage] || "Thông tin tài khoản"}
+            </Title>
+            {renderContent()}
+          </Card>
+        </Col>
+
+        {/* Drawer Sidebar cho mobile */}
+        <Drawer
+          title="Menu"
+          placement="left"
+          closable
+          onClose={() => setVisible(false)}
+          open={visible}
         >
-          <Title level={4} style={{ marginTop: "0", marginBottom: "16px" }}>
-            {pageTitles[activePage] || "Thông tin tài khoản"}
-          </Title>
-          {renderContent()}
-        </Card>
-      </Col>
-
-      {/* Drawer Sidebar cho mobile */}
-      <Drawer
-        title="Menu"
-        placement="left"
-        closable
-        onClose={() => setVisible(false)}
-        open={visible}
-      >
-        <Sidebar />
-      </Drawer>
-    </Row>
+          <Sidebar />
+        </Drawer>
+      </Row>
+    </ContainerProfile>
   );
 };
 
 export default ProfilePage;
+
+export const ContainerProfile = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+`;

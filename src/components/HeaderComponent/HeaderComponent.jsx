@@ -6,6 +6,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   ShoppingCartOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -100,7 +101,11 @@ const Sidebar = () => {
   );
 };
 
-const HeaderComponent = () => {
+const HeaderComponent = ({
+  isHiddenSerach = false,
+  isHiddenMenu = false,
+  isHiddenShoppingCard = false,
+}) => {
   const screens = useBreakpoint();
   const location = useLocation();
   const navigate = useNavigate();
@@ -117,6 +122,7 @@ const HeaderComponent = () => {
     gender,
     username,
     avatar,
+    isAdmin,
   } = useSelector((state) => state.user);
 
   // Hàm kiểm tra token hết hạn
@@ -170,8 +176,17 @@ const HeaderComponent = () => {
           }
         );
 
-        const { _id, email, phone, dob, username, gender, address, avatar } =
-          response.data.data;
+        const {
+          _id,
+          email,
+          phone,
+          dob,
+          username,
+          gender,
+          address,
+          avatar,
+          isAdmin,
+        } = response.data.data;
 
         // Lưu thông tin người dùng vào Redux
         dispatch(
@@ -187,6 +202,7 @@ const HeaderComponent = () => {
             gender,
             address,
             avatar,
+            isAdmin,
           })
         );
       }
@@ -268,11 +284,26 @@ const HeaderComponent = () => {
       onClick: handleLogout,
     },
   ];
+  if (isAdmin) {
+    items.push({
+      key: "3",
+      label: "Quản lý hệ thống",
+      icon: <SettingOutlined />,
+      onClick: () => navigate("/system/admin"),
+    });
+  }
 
   return (
     <Loading>
       <div style={{ height: screens.xs ? "4rem" : "5rem" }}>
-        <WrapperHeader>
+        <WrapperHeader
+          style={{
+            justifyContent:
+              isHiddenMenu && isHiddenSerach && isHiddenShoppingCard
+                ? "space-between"
+                : "unset",
+          }}
+        >
           {location.pathname === "/sign-in" ? (
             <Col span={24} style={{ textAlign: "center" }}>
               <div
@@ -288,132 +319,275 @@ const HeaderComponent = () => {
             </Col>
           ) : (
             <>
-              <Col style={{ textAlign: "center" }} span={screens.xs ? 4 : 2}>
-                <Sidebar />
-              </Col>
-              <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
-                <div className="Search">
-                  <StyledLink to="/search">
+              {isHiddenMenu && isHiddenSerach && isHiddenShoppingCard ? (
+                // Khi tất cả đều bị ẩn, LOGO bên trái, LOGIN hoặc Avatar bên phải
+                <>
+                  <Col style={{ textAlign: "left", flex: 1 }}>
                     <div
+                      onClick={handleLogoClick}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "5px",
-                      }}
-                    >
-                      <SearchOutlined />
-                      <div style={{ margin: "0 5px" }}>Tìm kiếm</div>
-                    </div>
-                  </StyledLink>
-                </div>
-              </Col>
-              <Col span={screens.xs ? 16 : 16} style={{ textAlign: "center" }}>
-                <div
-                  onClick={handleLogoClick}
-                  style={{
-                    cursor:
-                      location.pathname === "/home" && window.scrollY === 0
-                        ? "default"
-                        : "pointer",
-                    transition: "opacity 0.3s",
-                    display: "inline-block",
-                  }}
-                >
-                  <WrapperLogo>LOGO</WrapperLogo>
-                </div>
-              </Col>
-              <Col style={{ textAlign: "center" }} span={screens.xs ? 0 : 2}>
-                {isAuthenticated ? (
-                  <Dropdown menu={{ items }} trigger={["click"]}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: "10px",
                         cursor: "pointer",
+                        transition: "opacity 0.3s",
+                        display: "inline-block",
+                        marginLeft: "50px",
                       }}
                     >
-                      <LoginButton
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "5px",
-                          alignItems: "center",
-                          padding: "8px",
-                          minWidth: "80px",
-                          width: "auto",
-                          height: "auto",
-                          background: "#ECE9DF",
-                          border: "none",
-                          boxShadow: "none",
-                        }}
-                      >
-                        <span style={{ fontSize: "11px", textAlign: "center" }}>
-                          {avatar ? (
-                            <img
-                              src={avatar}
-                              alt="User Avatar"
-                              style={{
-                                width: "45px",
-                                height: "45px",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          ) : (
-                            <img
-                              src={
-                                gender === "Nữ"
-                                  ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
-                                  : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
-                              }
-                              alt="Default Avatar"
-                              style={{
-                                width: "45px",
-                                height: "45px",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          )}
-                        </span>
-                        <span
+                      <WrapperLogo>LOGO</WrapperLogo>
+                    </div>
+                  </Col>
+
+                  <Col style={{ textAlign: "right" }}>
+                    {isAuthenticated ? (
+                      <Dropdown menu={{ items }} trigger={["click"]}>
+                        <div
                           style={{
-                            fontSize: "15px",
-                            textAlign: "center",
-                            color: "Blue",
-                            fontWeight: "400",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: "10px",
+                            cursor: "pointer",
                           }}
                         >
-                          {username || "Người dùng"}
-                        </span>
-                      </LoginButton>
-                    </div>
-                  </Dropdown>
-                ) : (
-                  <button
-                    style={{
-                      width: "100px",
-                      padding: "10px 20px",
-                      backgroundColor: "#ECE9DF",
-                      color: "BLUE",
-                      border: "solid 2px rgb(44, 131, 158)",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      fontSize: "26x",
-                    }}
-                    onClick={() => navigate("/sign-in")}
+                          <LoginButton
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "5px",
+                              alignItems: "center",
+                              padding: "8px",
+                              minWidth: "80px",
+                              width: "auto",
+                              height: "auto",
+                              background: "#ECE9DF",
+                              border: "none",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <span
+                              style={{ fontSize: "11px", textAlign: "center" }}
+                            >
+                              {avatar ? (
+                                <img
+                                  src={avatar}
+                                  alt="User Avatar"
+                                  style={{
+                                    width: "45px",
+                                    height: "45px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  src={
+                                    gender === "Nữ"
+                                      ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
+                                      : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
+                                  }
+                                  alt="Default Avatar"
+                                  style={{
+                                    width: "45px",
+                                    height: "45px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              )}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "15px",
+                                textAlign: "center",
+                                color: "Blue",
+                                fontWeight: "400",
+                              }}
+                            >
+                              {username || "Người dùng"}
+                            </span>
+                          </LoginButton>
+                        </div>
+                      </Dropdown>
+                    ) : (
+                      <button
+                        style={{
+                          width: "100px",
+                          padding: "10px 20px",
+                          backgroundColor: "#ECE9DF",
+                          color: "BLUE",
+                          border: "solid 2px rgb(44, 131, 158)",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontSize: "26px",
+                        }}
+                        onClick={() => navigate("/sign-in")}
+                      >
+                        LOGIN
+                      </button>
+                    )}
+                  </Col>
+                </>
+              ) : (
+                // Trường hợp bình thường (vẫn hiển thị các thành phần khác)
+                <>
+                  {!isHiddenMenu && (
+                    <Col
+                      style={{ textAlign: "center" }}
+                      span={screens.xs ? 4 : 2}
+                    >
+                      <Sidebar />
+                    </Col>
+                  )}
+
+                  {!isHiddenSerach && (
+                    <Col
+                      style={{ textAlign: "center" }}
+                      span={screens.xs ? 0 : 2}
+                    >
+                      <div className="Search">
+                        <StyledLink to="/search">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                            }}
+                          >
+                            <SearchOutlined />
+                            <div style={{ margin: "0 5px" }}>Tìm kiếm</div>
+                          </div>
+                        </StyledLink>
+                      </div>
+                    </Col>
+                  )}
+
+                  <Col
+                    span={screens.xs ? 16 : 16}
+                    style={{ textAlign: "center" }}
                   >
-                    LOGIN
-                  </button>
-                )}
-              </Col>
-              <Col>
-                <ShoppingCartOutlined
-                  style={{ fontSize: "45px", color: "rgb(36, 31, 31)" }}
-                />
-              </Col>
+                    <div
+                      onClick={handleLogoClick}
+                      style={{
+                        cursor:
+                          location.pathname === "/home" && window.scrollY === 0
+                            ? "default"
+                            : "pointer",
+                        transition: "opacity 0.3s",
+                        display: "inline-block",
+                      }}
+                    >
+                      <WrapperLogo>LOGO</WrapperLogo>
+                    </div>
+                  </Col>
+
+                  <Col
+                    style={{ textAlign: "center" }}
+                    span={screens.xs ? 0 : 2}
+                  >
+                    {isAuthenticated ? (
+                      <Dropdown menu={{ items }} trigger={["click"]}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: "10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <LoginButton
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "5px",
+                              alignItems: "center",
+                              padding: "8px",
+                              minWidth: "80px",
+                              width: "auto",
+                              height: "auto",
+                              background: "#ECE9DF",
+                              border: "none",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <span
+                              style={{ fontSize: "11px", textAlign: "center" }}
+                            >
+                              {avatar ? (
+                                <img
+                                  src={avatar}
+                                  alt="User Avatar"
+                                  style={{
+                                    width: "45px",
+                                    height: "45px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  src={
+                                    gender === "Nữ"
+                                      ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
+                                      : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
+                                  }
+                                  alt="Default Avatar"
+                                  style={{
+                                    width: "45px",
+                                    height: "45px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                  }}
+                                />
+                              )}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "15px",
+                                textAlign: "center",
+                                color: "Blue",
+                                fontWeight: "400",
+                              }}
+                            >
+                              {username || "Người dùng"}
+                            </span>
+                          </LoginButton>
+                        </div>
+                      </Dropdown>
+                    ) : (
+                      <button
+                        style={{
+                          width: "120px", // Tăng chiều rộng để đảm bảo chữ không bị bó hẹp
+                          height: "50px", // Đặt chiều cao cụ thể để giúp căn giữa chữ
+                          backgroundColor: "#ECE9DF",
+                          color: "blue",
+                          border: "solid 2px rgb(44, 131, 158)",
+                          borderRadius: "5px",
+                          cursor: "pointer",
+                          fontSize: "20px",
+                          fontWeight: "bold",
+
+                          /** Căn giữa chữ theo cả hai chiều */
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textAlign: "center",
+                        }}
+                        onClick={() => navigate("/sign-in")}
+                      >
+                        LOGIN
+                      </button>
+                    )}
+                  </Col>
+
+                  {!isHiddenShoppingCard && (
+                    <Col>
+                      <ShoppingCartOutlined
+                        style={{ fontSize: "45px", color: "rgb(36, 31, 31)" }}
+                      />
+                    </Col>
+                  )}
+                </>
+              )}
             </>
           )}
         </WrapperHeader>

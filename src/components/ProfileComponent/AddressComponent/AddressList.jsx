@@ -90,10 +90,10 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
   //Sau khi thêm mới địa chỉ thành công thành công
 
-  useEffect(() => {
-    // Đây sẽ là cách để theo dõi sự thay đổi của Redux state
-    console.log("Đã cập nhật địa chỉ mới trong Redux:", addresses);
-  }, [addresses]);
+  // useEffect(() => {
+  //   // Đây sẽ là cách để theo dõi sự thay đổi của Redux state
+  //   console.log("Đã cập nhật địa chỉ mới trong Redux:", addresses);
+  // }, [addresses]);
 
   // Xử lý chọn vị trí địa lý
   useEffect(() => {
@@ -106,8 +106,8 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
         if (data.data && Array.isArray(data.data)) {
           dispatch(setUserAddresses(data.data));
-          console.log("data", data.data);
-          console.log("✅ Đã cập nhật vào Redux:", data.data);
+          // console.log("data", data.data);
+          // console.log("✅ Đã cập nhật vào Redux:", data.data);
         } else {
           console.error("❌ API trả về dữ liệu không hợp lệ:", data);
         }
@@ -120,7 +120,12 @@ const AddressList = ({ userId, accessToken, addressId }) => {
   }, [userId, accessToken, dispatch]);
 
   const handleAddAddress = async () => {
-    console.log("Thêm địa chỉ");
+    //console.log("Thêm địa chỉ");
+    if (addressesInStore.length >= 6) {
+      message.warning("Bạn chỉ có thể lưu tối đa 6 địa chỉ!");
+      setIsModalOpen(false); // Đóng modal nếu vượt quá giới hạn
+      return;
+    }
     setSelectedAddress(null); //Không chọn địa chỉ nào vì là thêm mới
     setIsEditing(false); // Không phải là chỉnh sửa mà là thêm mới
     setIsModalOpen(true); // Mở Modal
@@ -176,10 +181,10 @@ const AddressList = ({ userId, accessToken, addressId }) => {
     setSelectedDefault(checked ? addressId : null); // Cập nhật state
 
     setButtonUpdate(checked ? addr._id : null);
-    console.log("📌BUTTON Ở ĐÂY SẼ ĐỔI THÀNH CẬP NHẬT :", ButtonUpdate);
+    //console.log("📌BUTTON Ở ĐÂY SẼ ĐỔI THÀNH CẬP NHẬT :", ButtonUpdate);
 
-    console.log("📌SelectedDefault :", selectedDefault);
-    console.log("Địa chỉ đang chọn có ID:", addressId); // Kiểm tra giá trị checked}
+    //console.log("📌SelectedDefault :", selectedDefault);
+    //console.log("Địa chỉ đang chọn có ID:", addressId); // Kiểm tra giá trị checked}
   };
 
   //Sửa
@@ -203,8 +208,7 @@ const AddressList = ({ userId, accessToken, addressId }) => {
             newAddress: { isDefault: true },
           })
         ).unwrap();
-        console.log("✅ Đã chọn địa chỉ làm mặc định:", addressId);
-
+        message.success("Đã chọn địa chi mặc định mới!");
         // Cập nhật tất cả các địa chỉ khác thành `isDefault = false`
         const updatePromises = address
           .filter((item) => item._id !== addressId)
@@ -611,9 +615,14 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 };
 
 const Container = styled.div`
-  max-width: 100%;
-  background: #f9f9f9;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(300px, 1fr)
+  ); /* Tự động điều chỉnh số cột dựa trên kích thước màn hình */
+  gap: 40px;
   padding: 20px;
+  background: #f9f9f9;
   border-radius: 10px;
 `;
 
@@ -646,8 +655,9 @@ const AddressCard = styled.div`
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  position: relative; /* Đảm bảo các phần tử con có thể sử dụng position absolute */
+  gap: 10px;
+  position: relative;
+  width: 100%; /* Đảm bảo chiều rộng linh hoạt */
 `;
 
 const Row = styled.div`

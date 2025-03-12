@@ -55,15 +55,16 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: "Avatar phải là một chuỗi!" });
     }
 
-    // Mã hóa mật khẩu
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // const saltRounds = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    // console.log("Mật khẩu gốc:", password);
+    // console.log("Mật khẩu hash:", hashedPassword);
     // Tạo người dùng mới
     const newUser = await UserService.createUser({
       username,
       email,
-      password: hashedPassword,
+      password,
       phone: String(phone),
       dob,
       gender,
