@@ -6,10 +6,10 @@ const createProduct = async (newProduct) => {
     const { name, image, type, price, countInStock, rating, description } =
       newProduct;
 
-    const existingProduct = await Product.findOne({ name });
-    if (existingProduct) {
-      return { status: "ERROR", message: "Product already exists" };
-    }
+    // const existingProduct = await Product.findOne({ name });
+    // if (existingProduct) {
+    //   return { status: "ERROR", message: "Product already exists" };
+    // }
 
     const createdProduct = await Product.create({
       name,

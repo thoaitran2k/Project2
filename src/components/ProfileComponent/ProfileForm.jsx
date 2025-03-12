@@ -56,7 +56,7 @@ const ProfileForm = () => {
     const formData = new FormData();
     formData.append("avatar", file.originFileObj);
 
-    console.log("File gửi lên backend:", file.originFileObj);
+    // console.log("File gửi lên backend:", file.originFileObj);
 
     try {
       const response = await axios.post(
@@ -66,7 +66,7 @@ const ProfileForm = () => {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
-      console.log("Response từ server:", response.data);
+      // console.log("Response từ server:", response.data);
       setAvatar(response.data.imageUrl);
     } catch (error) {
       console.error("Lỗi khi tải ảnh lên:", error);

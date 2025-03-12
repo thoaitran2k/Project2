@@ -5,7 +5,6 @@ import { updateAddress } from "../../Services/UserService";
 // ✅ Lấy user từ localStorage nếu có
 const getUserFromLocalStorage = () => {
   const storedUser = localStorage.getItem("user");
-  console.log("Dữ liệu từ localStorage:", storedUser);
   return storedUser ? JSON.parse(storedUser) : null;
 };
 
@@ -96,8 +95,6 @@ const userSlice = createSlice({
     setUser: (state, action) => {
       const userData = action.payload;
 
-      console.log("API response:", userData);
-
       if (!userData) {
         console.error("Payload không hợp lệ!");
         return;
@@ -115,14 +112,11 @@ const userSlice = createSlice({
       state.avatar = userData.avatar || "";
       state.dob = userData.dob;
       state.gender = userData.gender;
-      console.log("Dữ liệu userData từ API:", userData);
+
       state.isAdmin =
         userData.isAdmin !== undefined ? userData.isAdmin : state.isAdmin;
       state.createdAt = userData.createdAt;
       state.updatedAt = userData.updatedAt;
-
-      //console.log("API response:", userData);
-      console.log("User isAdmin", userData.isAdmin);
 
       if (userData.accessToken) state.accessToken = userData.accessToken;
       if (userData.refreshToken) state.refreshToken = userData.refreshToken;

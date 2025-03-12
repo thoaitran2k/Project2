@@ -47,6 +47,7 @@ const generateRefreshToken = (payload) => {
 
 const refreshTokenJwtService = async (token) => {
   //console.log("Received refresh token:", token);
+  //if (!token) return;
 
   try {
     if (!process.env.REFRESH_TOKEN) {

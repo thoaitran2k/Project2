@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CustomUpload, WrapperHeader } from "./style";
 import { Button, Descriptions, Form, Modal, Upload, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
@@ -7,6 +7,11 @@ import InputComponent from "../InputComponent/InputComponent";
 import { getBase64 } from "../../utils/UploadAvatar";
 import axios from "axios";
 import Swal from "sweetalert2/dist/sweetalert2.js";
+import { useDispatch, useSelector } from "react-redux";
+import { createProduct } from "../../redux/slices/productSlice";
+import Loading from "../LoadingComponent/Loading";
+import { setLoading } from "../../redux/slices/loadingSlice";
+//import { createProduct } from "../../Services/ProductService";
 
 const AdminProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,12 +22,92 @@ const AdminProduct = () => {
     rating: "",
     image: "",
     type: "",
-    countInstock: "",
+    countInStock: "",
   });
   const [fileList, setFileList] = useState([]);
+  const dispatch = useDispatch();
+  const { products, loading } = useSelector((state) => state.product);
+  const isLoading = useSelector((state) => state.loading.isLoading);
 
-  const onFinish = () => {
-    console.log("Đã thêm thành công", stateProduct);
+  const [form] = Form.useForm();
+  useEffect(() => {
+    //console.log("📌 Trạng thái sau khi reset:", stateProduct);
+  }, [stateProduct]);
+
+  useEffect(() => {
+    //console.log("Redux products:", products);
+  }, [products]);
+
+  const onFinish = async () => {
+    //console.log("📤 Trạng thái stateProduct trước khi gửi:", stateProduct);
+    //const dispatch = useDispatch();
+    //const { loading, error } = useSelector((state) => state.product);
+
+    try {
+      const newProduct = {
+        name: stateProduct.name,
+        image: stateProduct.image,
+        type: stateProduct.type,
+        price: Number(stateProduct.price),
+        countInStock: Number(stateProduct.countInStock),
+        rating: Number(stateProduct.rating),
+        description: stateProduct.description,
+      };
+
+      //   console.log("📤 Gửi sản phẩm:", newProduct);
+
+      // Kiểm tra dữ liệu trước khi gửi
+      if (Object.entries(newProduct).some(([key, value]) => value === "")) {
+        console.error("🚨 Lỗi: Thiếu trường dữ liệu");
+        message.error("Vui lòng điền đầy đủ thông tin!");
+        return;
+      }
+
+      dispatch(setLoading(true));
+
+      // 🔥 Dispatch gọi API
+      const resultAction = await dispatch(createProduct(newProduct));
+
+      if (createProduct.fulfilled.match(resultAction)) {
+        // Swal.fire({
+        //   icon: "success",
+        //   title: "Tạo sản phẩm thành công!",
+        // });
+
+        // Reset form sau khi tạo thành công
+
+        setStateProduct((prev) => ({
+          ...prev,
+          name: "",
+          price: "",
+          description: "",
+          rating: "",
+          image: "",
+          type: "",
+          countInStock: "",
+        }));
+
+        // Kiểm tra lại bằng useEffect
+
+        console.log("📌 Trạng thái sau khi reset:", stateProduct);
+        setFileList([]);
+        message.success("Thêm sản phẩm thành công!");
+
+        setTimeout(() => {
+          dispatch(setLoading(false));
+          setIsModalOpen(false);
+        }, 1500);
+      } else {
+        throw new Error(resultAction.payload);
+      }
+    } catch (error) {
+      console.error("⚠️ Lỗi khi gọi API:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: error.message || "Không thể tạo sản phẩm.",
+      });
+    }
   };
 
   const handleOnchange = (e) => {
@@ -30,7 +115,6 @@ const AdminProduct = () => {
       ...stateProduct,
       [e.target.name]: e.target.value,
     });
-    console.log("e.target.name", e.target.name, e.target.value);
   };
 
   const handleChangeImage = async ({ fileList }) => {
@@ -45,11 +129,11 @@ const AdminProduct = () => {
     const formData = new FormData();
     formData.append("image", file.originFileObj); // ✅ Đảm bảo key là "image"
 
-    console.log("File gửi lên backend:", file.originFileObj);
+    // console.log("File gửi lên backend:", file.originFileObj);
 
     // Kiểm tra dữ liệu trong FormData
     for (let [key, value] of formData.entries()) {
-      console.log(`Key: ${key}, Value:`, value);
+      //   console.log(`Key: ${key}, Value:`, value);
     }
 
     try {
@@ -64,7 +148,7 @@ const AdminProduct = () => {
         }
       );
 
-      console.log("Response từ server:", response.data);
+      //   console.log("Response từ server:", response.data);
       setStateProduct((prev) => ({
         ...prev,
         image: response.data.imageUrl,
@@ -91,7 +175,20 @@ const AdminProduct = () => {
             fontSize: "60px",
           }}
           onClick={() => {
-            setIsModalOpen(true);
+            setStateProduct({
+              name: "",
+              price: "",
+              description: "",
+              rating: "",
+              image: "",
+              type: "",
+              countInStock: "",
+            });
+            //setStateProduct(newProduct);
+            setFileList([]);
+            form.resetFields();
+            //form.setFieldsValue(newProduct); // Xóa danh sách file nếu có
+            setTimeout(() => setIsModalOpen(true), 50); // ⏳ Delay mở modal để React cập nhật state
           }}
         >
           <PlusOutlined />
@@ -116,14 +213,15 @@ const AdminProduct = () => {
         <Form
           name="basic"
           labelCol={{
-            span: 8,
+            span: 6,
           }}
           wrapperCol={{
-            span: 16,
+            span: 18,
           }}
-          initialValues={{
-            remember: true,
-          }}
+          //   initialValues={{
+          //     remember: true,
+          form={form}
+          //   }}
           onFinish={onFinish}
           autoComplete="off"
         >
@@ -170,9 +268,9 @@ const AdminProduct = () => {
             ]}
           >
             <InputComponent
-              value={stateProduct.countInstock}
+              value={stateProduct.countInStock}
               onChange={handleOnchange}
-              name="countInstock"
+              name="countInStock"
             />
           </Form.Item>
 
@@ -256,9 +354,9 @@ const AdminProduct = () => {
                   overflow: "hidden",
                 }}
               >
-                {stateProduct.image ? (
+                {stateProduct?.image ? (
                   <img
-                    src={stateProduct.image}
+                    src={stateProduct?.image}
                     alt="Product"
                     style={{
                       width: "100%",
@@ -288,7 +386,7 @@ const AdminProduct = () => {
 
           <Form.Item
             wrapperCol={{
-              offset: 8,
+              offset: 6,
               span: 16,
             }}
           >
