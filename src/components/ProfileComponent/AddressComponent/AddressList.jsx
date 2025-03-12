@@ -319,11 +319,13 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
     try {
       let result;
+      const isAlreadyDefault = isEditing && selectedAddress?.isDefault;
+
       let newAddressData = {
         name: values.name || "",
         phoneDelivery: values.phoneDelivery || "",
         address: fullAddress,
-        isDefault: values.isDefault || false,
+        isDefault: isAlreadyDefault ? true : values.isDefault || false, // Giữ nguyên nếu đang là mặc định
       };
 
       if (isEditing) {
