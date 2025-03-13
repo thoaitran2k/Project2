@@ -38,3 +38,16 @@ export const createProduct = async (data) => {
     throw new Error("Tạo sản phẩm thất bại!");
   }
 };
+
+export const getDetailProduct = async (id) => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-details/${id}`
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("🚨 API lỗi:", error.response?.data || error.message); // Hiển thị lỗi chi tiết
+    throw new Error("Load sản phẩm thất bại!"); // ✅ Thêm thông báo lỗi cụ thể
+  }
+};

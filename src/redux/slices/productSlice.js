@@ -1,7 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// 🔥 Action gọi API tạo sản phẩm
+// 🔥 Action gọi API lấy tất cả sản phẩm_____________________________________
+export const getAllProduct = createAsyncThunk(
+  "product/getAllProduct",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Lấy sản phẩm thất bại");
+    }
+  }
+);
+
+// 🔥 Action gọi API tạo sản phẩm_______________________________________________
 export const createProduct = createAsyncThunk(
   "product/createProduct",
   async (newProduct, { rejectWithValue }) => {
@@ -13,17 +28,92 @@ export const createProduct = createAsyncThunk(
           headers: { "Content-Type": "application/json" },
         }
       );
-      return response.data; // ✅ Trả về dữ liệu khi thành công
+      return response.data; // ✅ Trả về một đối tượng sản phẩm mới
     } catch (error) {
       return rejectWithValue(error.response?.data || "Tạo sản phẩm thất bại");
     }
   }
 );
 
+//Action gọi API lấy sản phẩm theo ID_____________________________________________________________
+export const getDetailsProductById = createAsyncThunk(
+  "product/getProductById",
+  async (productId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_URL_BACKEND}/product/get-details/${productId}`
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Lấy sản phẩm thất bại");
+    }
+  }
+);
+
+//Action gọi API cập nhật sản phẩm_________________________________________________________
+export const updateProduct = createAsyncThunk(
+  "product/updateProduct",
+  async (
+    { productId, updatedData, accessToken },
+    { rejectWithValue, getState }
+  ) => {
+    try {
+      const accessToken = getState().user.accessToken;
+
+      if (!accessToken) {
+        return rejectWithValue("Bạn cần đăng nhập để thực hiện hành động này.");
+      }
+      const response = await axios.put(
+        `${import.meta.env.VITE_URL_BACKEND}/product/update/${productId}`,
+        updatedData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Cập nhật sản phẩm thất bại"
+      );
+    }
+  }
+);
+
+//Action gọi API xóa sản phẩm_____________________________________________________________
+export const deleteProduct = createAsyncThunk(
+  "product/deleteProduct",
+  async (productId, { rejectWithValue, getState }) => {
+    // ✅ Không dùng destructuring { productId }
+    try {
+      const accessToken = getState().user.accessToken;
+
+      if (!accessToken) {
+        return rejectWithValue("Bạn cần đăng nhập để thực hiện hành động này.");
+      }
+
+      await axios.delete(
+        `${import.meta.env.VITE_URL_BACKEND}/product/delete/${productId}`, // ✅ Đảm bảo productId không undefined
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      return productId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Xóa sản phẩm thất bại");
+    }
+  }
+);
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
 const productSlice = createSlice({
   name: "product",
   initialState: {
     products: [],
+    productDetail: null,
     loading: false,
     error: null,
   },
@@ -31,18 +121,87 @@ const productSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      // ✅ Xử lý cập nhật sản phẩm________________________________________________________
+      .addCase(updateProduct.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        // Cập nhật sản phẩm trong danh sách
+        console.log("State Product", state.products);
+
+        if (!Array.isArray(state.products)) {
+          state.products = [];
+        }
+
+        // Cập nhật sản phẩm trong danh sách
+        state.products = state.products.map((product) =>
+          product._id === action.payload._id ? action.payload : product
+        );
+      })
+      .addCase(updateProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      //Xử lý xóa sản phẩm___________________________________________________
+      .addCase(deleteProduct.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        if (!Array.isArray(state.products)) {
+          state.products = []; // Đảm bảo products luôn là mảng
+        }
+
+        state.products = state.products.filter(
+          (product) => product._id !== action.payload
+        );
+      })
+      .addCase(deleteProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ Xử lý lấy tất cả sản phẩm__________________________________________________________
+      .addCase(getAllProduct.pending, (state) => {
+        //state.loading = true;
+      })
+      .addCase(getAllProduct.fulfilled, (state, action) => {
+        //console.log("Dữ liệu từ API getAllProduct:", action.payload);
+        state.loading = false;
+        state.products = action.payload;
+      })
+      .addCase(getAllProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ Xử lý tạo sản phẩm mới___________________________________________________
       .addCase(createProduct.pending, (state) => {
         state.loading = true;
       })
       .addCase(createProduct.fulfilled, (state, action) => {
+        if (!Array.isArray(state.products)) {
+          state.products = [];
+        }
+        // Thêm sản phẩm mới vào mảng products
+        state.products = [...state.products, action.payload];
         state.loading = false;
-        state.products.push(action.payload);
       })
-      .addCase(createProduct.rejected, (state, action) => {
+
+      // ✅ Xử lý lấy sản phẩm theo ID________________________________________________________
+      .addCase(getDetailsProductById.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getDetailsProductById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.productDetail = action.payload; // Lưu sản phẩm chi tiết
+      })
+      .addCase(getDetailsProductById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
   },
 });
-
 export default productSlice.reducer;

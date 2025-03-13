@@ -32,6 +32,8 @@ const updateProduct = async (req, res) => {
     }
 
     const response = await ProductService.updateProduct(productId, req.body);
+    console.log("Cập nhật...");
+
     return res.status(200).json(response);
   } catch (e) {
     return res

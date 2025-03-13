@@ -81,6 +81,10 @@ const AdminPage = () => {
           style={styles.menu}
           items={items}
           onClick={handleOnClick}
+          styles={{
+            height: "75vh",
+            boxShadow: "1px 1px 2px #ccc",
+          }}
         />
 
         {/* Nội dung hiển thị */}

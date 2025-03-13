@@ -1,51 +1,34 @@
-import { Divider, Radio, Table } from "antd";
-import React, { useState } from "react";
+import { Table } from "antd";
+import React, { useEffect, useState } from "react";
+import PagingLoading from "../LoadingComponent/PagingLoading";
+import { useSelector } from "react-redux";
 
-const TableComponent = (props) => {
-  const { selectionType = "checkbox" } = props;
-  //const [selectionType, setSelectionType] = useState("checkbox");
+const TableComponent = ({
+  selectionType = "checkbox",
+  data = [],
+  columns = [],
+  isloading = false,
+  ...props
+}) => {
+  const [isPagingLoading, setIsPagingLoading] = useState(true);
+  const isLoading = useSelector((state) => state.loading.isLoading);
 
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      render: (text) => <a>{text}</a>,
-    },
-    {
-      title: "Age",
-      dataIndex: "age",
-    },
-    {
-      title: "Address",
-      dataIndex: "address",
-    },
-  ];
-  const data = [
-    {
-      key: "1",
-      name: "John Brown",
-      age: 32,
-      address: "New York No. 1 Lake Park",
-    },
-    {
-      key: "2",
-      name: "Jim Green",
-      age: 42,
-      address: "London No. 1 Lake Park",
-    },
-    {
-      key: "3",
-      name: "Joe Black",
-      age: 32,
-      address: "Sydney No. 1 Lake Park",
-    },
-    {
-      key: "4",
-      name: "Disabled User",
-      age: 99,
-      address: "Sydney No. 1 Lake Park",
-    },
-  ];
+  // Ẩn hiệu ứng loading khi dữ liệu đã tải xong
+  useEffect(() => {
+    if (!isloading) {
+      setTimeout(() => {
+        setIsPagingLoading(false);
+      }, 1000); // Giả lập hiệu ứng tải lần đầu
+    }
+  }, [isloading]);
+
+  // Xử lý loading khi đổi trang
+  const handleTableChange = () => {
+    setIsPagingLoading(true);
+    setTimeout(() => {
+      setIsPagingLoading(false);
+    }, 1000);
+  };
 
   const rowSelection = {
     onChange: (selectedRowKeys, selectedRows) => {
@@ -57,23 +40,32 @@ const TableComponent = (props) => {
     },
     getCheckboxProps: (record) => ({
       disabled: record.name === "Disabled User",
-      // Column configuration not to be checked
       name: record.name,
     }),
   };
 
   return (
-    <div>
-      <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", position: "relative" }}>
+      {/* Bảng dữ liệu */}
+      <div
+        style={{
+          position: "relative",
+          opacity: isloading || isPagingLoading ? 0.5 : 1,
+        }}
+      >
         <Table
-          rowSelection={{
-            type: selectionType,
-            ...rowSelection,
-          }}
+          rowSelection={{ type: selectionType, ...rowSelection }}
           columns={columns}
           dataSource={data}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: "max-content" }}
+          onChange={handleTableChange}
+          {...props}
         />
       </div>
+
+      {/* Hiển thị hiệu ứng loading khi tải dữ liệu */}
+      {(isloading || isPagingLoading) && <PagingLoading />}
     </div>
   );
 };
