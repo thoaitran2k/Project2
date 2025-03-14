@@ -3,16 +3,14 @@ import { Button } from "antd";
 
 export const ProductsContainer = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center; /* 🔥 Căn giữa card theo chiều ngang */
   gap: 20px;
-
-  max-width: 1200px; /* Giới hạn chiều rộng */
-  margin: 0 auto; /* Căn giữa toàn bộ container */
+  max-width: 1800px;
+  margin: 0 auto;
   padding: 20px;
   width: 100%;
-  box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước */
-  // background: rgb(184, 65, 65);
+  box-sizing: border-box;
+  border: solid 4px white;
+  justify-content: flex-start; /* 🔥 Sidebar bên trái */
 `;
 
 export const WrapperButtonContainer = styled.div`
@@ -41,4 +39,12 @@ export const WrapperButtonMore = styled(Button)`
       color: #fff;
     }
   }
+`;
+export const SidebarContainer = styled.div`
+  width: 250px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
 `;

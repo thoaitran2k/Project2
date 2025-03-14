@@ -8,6 +8,7 @@ import {
   WrapperButtonContainer,
   WrapperButtonMore,
 } from "./style";
+import SideBar from "../../components/SideBar/SideBar";
 
 const ProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,16 +39,13 @@ const ProductsPage = () => {
   return (
     <div>
       <ProductsContainer>
+        <SideBar />
         {isLoading ? (
           <p>Loading...</p>
         ) : (
           <CardComponent products={products?.data || []} />
         )}
       </ProductsContainer>
-
-      <WrapperButtonContainer>
-        <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
-      </WrapperButtonContainer>
     </div>
   );
 };

@@ -34,7 +34,10 @@ export default function Home() {
       <Row gutter={[16, 16]} justify="center">
         {collections.map((collection, index) => (
           <Col key={index} xs={12} sm={12} md={8} lg={6} xl={6}>
-            <StyledLink to="/search" state={{ category: collection.category }}>
+            <StyledLink
+              to="/products"
+              state={{ category: collection.category }}
+            >
               <StyledCard
                 hoverable
                 cover={

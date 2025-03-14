@@ -6,6 +6,9 @@ import styled from "styled-components";
 import { StarFilled } from "@ant-design/icons";
 
 import { Link } from "react-router-dom";
+import SideBar from "../SideBar/SideBar";
+
+import { WrapperButtonMore, WrapperButtonContainer } from "./style";
 
 // import {
 //   WrapperReportText,
@@ -111,10 +114,7 @@ const CardComponent = ({ products }) => {
             <StyledLink to={`/product/${product._id}`} key={product._id}>
               <ProductCard>
                 <div>
-                  <img
-                    src="https://res.cloudinary.com/dxwqi77i8/image/upload/v1741608612/avatars/txzp6yrziauf8xepxiim.jpg"
-                    alt={product.name}
-                  />
+                  <img src={product.image} alt={product.name} />
                   <div style={{ fontSize: "25px", marginTop: "100px" }}>
                     {product.name}
                   </div>
@@ -158,6 +158,9 @@ const CardComponent = ({ products }) => {
             </StyledLink>
           ))
         )}
+        <WrapperButtonContainer>
+          <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
+        </WrapperButtonContainer>
       </ProductWrapper>
     </WrapperCardProduct>
   );
@@ -165,41 +168,39 @@ const CardComponent = ({ products }) => {
 
 const WrapperCardProduct = styled.div`
   display: flex;
+  justify-content: center; /* 🔥 Căn giữa toàn bộ sản phẩm */
   flex-wrap: wrap;
-  justify-content: center; /* 🔥 Căn giữa các card theo chiều ngang */
   gap: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  margin: 0 auto; /* 🔥 Đảm bảo căn giữa */
+  max-width: 1300px; /* 🔥 Định nghĩa giới hạn chiều rộng để có 4 cột */
 `;
 
 const ProductWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 60px;
-  max-width: 90vw;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* 🔥 Căn giữa sản phẩm theo hàng ngang */
+  gap: 20px;
   margin: 0 auto;
-  padding: 20px;
-  place-content: center; /* 🔥 Căn giữa các card */
+  max-width: 100%;
+  padding: 10px;
 `;
-
 const ProductCard = styled.div`
   display: flex;
   flex-direction: column;
-  //align-items: center;
-  justify-content: space-between; /* Giữ nội dung cân đối */
+  justify-content: center;
   background: #f5f5fa;
   border-radius: 10px;
+
   padding: 20px;
-  width: 100%;
+  width: 13vw; /* Giữ kích thước cố định */
   min-height: 500px;
-  max-height: 550px; /* Đặt giới hạn chiều cao */
   //text-align: center;
 
   img {
-    width: 100%;
-    height: 200px; /* Giữ kích thước ảnh đồng nhất */
-    object-fit: cover;
+    width: 100%; /* Chiều rộng vẫn giữ nguyên */
+    height: 250px; /* 🔥 Giảm chiều cao xuống */
+    min-height: 250px; /* 🔥 Đảm bảo không nhỏ hơn mức này */
+    object-fit: contain; /* 🔥 Giữ nguyên tỷ lệ ảnh, không bị mất nội dung */
     border-radius: 5px;
   }
 `;

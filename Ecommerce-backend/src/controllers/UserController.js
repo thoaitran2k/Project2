@@ -16,11 +16,11 @@ const createUser = async (req, res) => {
       req.body;
 
     // Kiểm tra các trường bắt buộc
-    if (!username || !email || !password || !phone || !dob || !gender) {
-      return res
-        .status(400)
-        .json({ message: "Tất cả các trường đều bắt buộc!" });
-    }
+    // if (!username || !email || !password || !phone || !dob || !gender) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Tất cả các trường đều bắt buộc!" });
+    // }
 
     // Kiểm tra định dạng email
     if (!emailRegex.test(email)) {

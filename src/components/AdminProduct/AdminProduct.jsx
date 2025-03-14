@@ -1,7 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CustomUpload, WrapperHeader } from "./style";
-import { Button, Descriptions, Form, Modal, Upload, message } from "antd";
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  Button,
+  Descriptions,
+  Form,
+  Modal,
+  Space,
+  Upload,
+  message,
+} from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  FilterFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
 import { getBase64 } from "../../utils/UploadAvatar";
@@ -59,31 +73,30 @@ const AdminProduct = () => {
   const [isModalOpenDeleteProduct, setIsModalOpenDeleteProduct] =
     useState(false);
 
-  // const [stateProductEdit, setStateProductEdit] = useState({
-  //   name: "",
-  //   type: "",
-  //   countInStock: "",
-  //   price: "",
-  //   rating: "",
-  //   description: "",
-  //   image: "",
-  // });
+  //_______________________________________________________XÁC ĐỊNH TRANG SẢN PHẨM BỊ UPDATE
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // useEffect(() => {
-  //   if (selectedProductId) {
-  //     const fetchProductDetails = async () => {
-  //       try {
-  //         const product = await getDetailProduct(selectedProductId); // Gọi API
-  //         setStateProduct(product); // Lưu dữ liệu vào state form
-  //         form.setFieldsValue(product); // Điền dữ liệu vào form
-  //       } catch (error) {
-  //         console.error("Lỗi khi tải sản phẩm:", error);
-  //       }
-  //     };
+  //______________________SEARCH AND FILTER
+  const [searchText, setSearchText] = useState("");
+  const [searchedColumn, setSearchedColumn] = useState("");
+  const searchInput = useRef(null);
+  const [filteredInfo, setFilteredInfo] = useState({
+    price: null,
+    rating: null,
+    type: null,
+  }); //________________________Giá trị filter
 
-  //     fetchProductDetails();
-  //   }
-  // }, [selectedProductId]);
+  //______________________________________ResetFilter khi click Filter
+  const handleResetFilter = (field, confirm) => {
+    setFilteredInfo((prev) => ({ ...prev, [field]: null }));
+    confirm();
+  };
+
+  //_____________________________________RESETFILTER trên Bảng
+  const handleTableChange = (pagination, filters) => {
+    setFilteredInfo(filters);
+    setCurrentPage(pagination.current);
+  };
 
   useEffect(() => {
     if (rowSelected && isOpenDrawer) {
@@ -141,27 +154,294 @@ const AdminProduct = () => {
   useEffect(() => {
     dispatch(getAllProduct());
   }, [dispatch]);
+
+  //_____________GỌI API VỚI TRANG HIỆN TẠI SAU KHI CHỈNH SỬA HOẶC XÓA
+  useEffect(() => {
+    dispatch(getAllProduct({ page: currentPage }));
+  }, [dispatch, currentPage]);
+
+  //_____________________________________________SEARCHFILTER
+
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText("");
+  };
+  const getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+      <div
+        style={{
+          padding: 8,
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <InputComponent
+          ref={searchInput}
+          placeholder={`Search ${dataIndex}`}
+          value={`${selectedKeys[0] || ""}`}
+          onChange={(e) =>
+            setSelectedKeys(e.target.value ? [e.target.value] : [])
+          }
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{
+            marginBottom: 8,
+            display: "block",
+          }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{
+              width: 90,
+            }}
+          >
+            Search
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{
+              width: 90,
+            }}
+          >
+            Reset
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered) => (
+      <SearchOutlined
+        style={{
+          color: filtered ? "#1890ff" : undefined,
+        }}
+      />
+    ),
+    onFilter: (value, record) =>
+      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
+    onFilterDropdownOpenChange: (visible) => {
+      if (visible) {
+        setTimeout(() => searchInput.current?.select(), 100);
+      }
+    },
+    // render: (text) =>
+    //   searchedColumn === dataIndex ? (
+    //     <Highlighter
+    //       highlightStyle={{
+    //         backgroundColor: "#ffc069",
+    //         padding: 0,
+    //       }}
+    //       searchWords={[searchText]}
+    //       autoEscape
+    //       textToHighlight={text ? text.toString() : ""}
+    //     />
+    //   ) : (
+    //     text
+    //   ),
+  });
+
+  //________________________________________HÀM FILTER
+  const handleFilter = (field, value, confirm, setSelectedKeys) => {
+    setFilteredInfo((prev) => ({ ...prev, [field]: [value] }));
+    setSelectedKeys([value]); // Giữ lại duy nhất một bộ lọc
+    confirm();
+  };
+
+  //________________________________________________________DỮ LIỆU BẢNG
+  //_________________________________________________CÁCH FILTER
+  //__________________________________________SERACH
   const columns = [
     {
       title: "Name",
       dataIndex: "name",
-      render: (text) => <a>{text}</a>,
       width: "15vw",
+      sorter: (a, b) => a.name.length - b.name.length,
     },
     {
       title: "Price",
       dataIndex: "price",
       width: "15vw",
+      sorter: (a, b) => a.price - b.price,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <Button
+            onClick={() =>
+              handleFilter("price", "300000-500000", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            300,000 - 500,000
+          </Button>
+          <Button
+            onClick={() =>
+              handleFilter("price", "500000-1000000", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            500,000 - 1,000,000
+          </Button>
+          <Button
+            onClick={() =>
+              handleFilter("price", "<300000", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            {"< 300,000"}
+          </Button>
+          <Button
+            onClick={() => handleResetFilter("price", confirm)}
+            size="small"
+            type="link"
+            style={{ width: "100%", color: "red" }}
+          >
+            Reset Filter
+          </Button>
+        </div>
+      ),
+      filterIcon: () => (
+        <FilterFilled
+          style={{
+            color: filteredInfo.price?.length ? "#1890ff" : "#ccc",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            if (filteredInfo.price?.length)
+              setFilteredInfo((prev) => ({ ...prev, price: null }));
+          }}
+        />
+      ),
+      onFilter: (value, record) => {
+        if (value === "300000-500000")
+          return record.price >= 300000 && record.price <= 500000;
+        if (value === "500000-1000000")
+          return record.price >= 500000 && record.price <= 1000000;
+        if (value === "<300000") return record.price < 300000;
+      },
+      filteredValue: filteredInfo.price || null,
     },
     {
       title: "Rating",
       dataIndex: "rating",
       width: "15vw",
+      sorter: (a, b) => a.rating - b.rating,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          <Button
+            onClick={() =>
+              handleFilter("rating", "3-4", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            ⭐ 3 - 4 sao
+          </Button>
+          <Button
+            onClick={() =>
+              handleFilter("rating", "4-5", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            ⭐ 4 - 5 sao
+          </Button>
+          <Button
+            onClick={() =>
+              handleFilter("rating", "<3", confirm, setSelectedKeys)
+            }
+            size="small"
+            style={{ display: "block", marginBottom: 8, width: "100%" }}
+          >
+            ⭐ Dưới 3 sao
+          </Button>
+          <Button
+            onClick={() => handleResetFilter("rating", confirm)}
+            size="small"
+            type="link"
+            style={{ width: "100%", color: "red" }}
+          >
+            Reset Filter
+          </Button>
+        </div>
+      ),
+      filterIcon: () => (
+        <FilterFilled
+          style={{
+            color: filteredInfo.rating?.length ? "#1890ff" : "#ccc",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            if (filteredInfo.rating?.length)
+              setFilteredInfo((prev) => ({ ...prev, rating: null }));
+          }}
+        />
+      ),
+      onFilter: (value, record) => {
+        if (value === "3-4") return record.rating >= 3 && record.rating < 4;
+        if (value === "4-5") return record.rating >= 4 && record.rating < 5;
+        if (value === "<3") return record.rating < 3;
+      },
+      filteredValue: filteredInfo.rating || null,
     },
     {
       title: "Type",
       dataIndex: "type",
       width: "15vw",
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
+        <div style={{ padding: 8 }}>
+          {[
+            "Áo nam",
+            "Áo nữ",
+            "Đồng hồ",
+            "Túi xách",
+            "Ví",
+            "Trang sức",
+            "Quần nam",
+            "Quần nữ",
+          ].map((type) => (
+            <Button
+              key={type}
+              onClick={() =>
+                handleFilter("type", type, confirm, setSelectedKeys)
+              }
+              size="small"
+              style={{ display: "block", marginBottom: 8, width: "100%" }}
+            >
+              {type}
+            </Button>
+          ))}
+          <Button
+            onClick={() => handleResetFilter("type", confirm)}
+            size="small"
+            type="link"
+            style={{ width: "100%", color: "red" }}
+          >
+            Reset Filter
+          </Button>
+        </div>
+      ),
+      filterIcon: () => (
+        <FilterFilled
+          style={{
+            color: filteredInfo.type?.length ? "#1890ff" : "#ccc",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            if (filteredInfo.type?.length)
+              setFilteredInfo((prev) => ({ ...prev, type: null }));
+          }}
+        />
+      ),
+      onFilter: (value, record) => record.type === value,
+      filteredValue: filteredInfo.type || null,
     },
     {
       title: "Action",
@@ -171,6 +451,8 @@ const AdminProduct = () => {
       render: renderAction,
     },
   ];
+
+  //____________________________________________Dữ liệu bảng
   const dataTable =
     Array.isArray(products?.data) && products.data.length > 0
       ? products.data.map((product) => ({
@@ -179,7 +461,7 @@ const AdminProduct = () => {
         }))
       : [];
 
-  //console.log("Product", products.data);
+  console.log("Product", products);
   //console.log("Product data being passed to TableComponent:", products?.data);
 
   useEffect(() => {
@@ -201,9 +483,9 @@ const AdminProduct = () => {
 
   //________________________________________________________________________Update sản phẩm
   const onApply = async (updatedProduct, productId) => {
-    console.log("Cập nhật sản phẩm");
-    console.log("updatedProduct", updatedProduct);
-    console.log("id", productId);
+    // console.log("Cập nhật sản phẩm");
+    // console.log("updatedProduct", updatedProduct);
+    // console.log("id", productId);
 
     try {
       dispatch(setLoading(true));
@@ -216,7 +498,7 @@ const AdminProduct = () => {
 
       if (updateProduct.fulfilled.match(resultAction)) {
         message.success("Cập nhật sản phẩm thành công!");
-        dispatch(getAllProduct()); // Cập nhật lại danh sách sản phẩm
+        dispatch(getAllProduct({ page: currentPage })); // Cập nhật lại danh sách sản phẩm
         setIsOpenDrawer(false); // Đóng Drawer sau khi cập nhật thành công
       } else {
         throw new Error(resultAction.payload);
@@ -431,7 +713,7 @@ const AdminProduct = () => {
       await dispatch(deleteProduct(productId)).unwrap();
       message.success("Xóa sản phẩm thành công!");
 
-      dispatch(getAllProduct());
+      dispatch(getAllProduct({ page: currentPage }));
     } catch (error) {
       alert(error || "Xóa sản phẩm thất bại!");
     }
@@ -475,6 +757,12 @@ const AdminProduct = () => {
           products={products?.data}
           isloading={isloading}
           data={dataTable}
+          onChange={handleTableChange}
+          pagination={{
+            current: currentPage,
+            pageSize: 10, // Số lượng sản phẩm mỗi trang
+            total: products?.total || 0, // Tổng số sản phẩm
+          }}
           onRow={(record, rowIndex) => {
             return {
               onClick: (event) => {

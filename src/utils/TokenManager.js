@@ -22,7 +22,7 @@ export const startTokenRefresh = () => {
       const newAccessToken = await refreshTokenApi();
       console.log("Kiểm tra refresh Token");
       if (newAccessToken) {
-        store.dispatch(setUser(newAccessToken)); // Cập nhật Redux
+        // store.dispatch(setUser(newAccessToken)); // Cập nhật Redux
         console.log("Có accessToken mới");
       } else {
         //store.dispatch(logoutUser()); // Đăng xuất nếu lỗi

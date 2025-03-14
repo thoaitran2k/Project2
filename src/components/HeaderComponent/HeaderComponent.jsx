@@ -143,10 +143,19 @@ const HeaderComponent = ({
         console.log("Refresh Token thất bại");
       } else {
         dispatch(setUser({ ...user, accessToken: newToken }));
-        console.log("Refresh thành công và đang lưu Token");
+        console.log("Refresh thành công và đang lưu Token", newToken);
+
+        await fetchUserDetails();
       }
     }
   };
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      dispatch(setUser(storedUser));
+    }
+  }, []);
 
   // Hàm tự động logout khi token hết hạn
   const AutoLogoutTokenExpired = () => {
@@ -159,53 +168,60 @@ const HeaderComponent = ({
 
   // Hàm lấy thông tin người dùng từ server
   const fetchUserDetails = async () => {
+    console.log("🔍 Bắt đầu gọi fetchUserDetails()......................."); // Debug
+
     try {
       const token = localStorage.getItem("accessToken");
 
-      if (token && !isAuthenticated) {
-        const decodedToken = JSON.parse(atob(token.split(".")[1]));
-        const userId = decodedToken.id;
-
-        // Gửi yêu cầu API để lấy thông tin người dùng
-        const response = await axios.get(
-          `http://localhost:3002/api/user/get-details/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const {
-          _id,
-          email,
-          phone,
-          dob,
-          username,
-          gender,
-          address,
-          avatar,
-          isAdmin,
-        } = response.data.data;
-
-        // Lưu thông tin người dùng vào Redux
-        dispatch(
-          setUser({
-            _id,
-            accessToken: token,
-            refreshToken: localStorage.getItem("refreshToken"),
-            isAuthenticated: true,
-            username,
-            email,
-            phone,
-            dob,
-            gender,
-            address,
-            avatar,
-            isAdmin,
-          })
-        );
+      if (!token) {
+        console.log("🚨 Không có token, thoát khỏi fetchUserDetails()");
+        return;
       }
+
+      const decodedToken = JSON.parse(atob(token.split(".")[1]));
+      const userId = decodedToken.id;
+      console.log(`📡 Gửi request lấy thông tin user: ${userId}`);
+
+      // Gửi yêu cầu API để lấy thông tin người dùng
+      const response = await axios.get(
+        `http://localhost:3002/api/user/get-details/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const {
+        _id,
+        email,
+        phone,
+        dob,
+        username,
+        gender,
+        address,
+        avatar,
+        isAdmin,
+      } = response.data.data;
+
+      const newUserData = {
+        _id,
+        accessToken: token,
+        refreshToken: localStorage.getItem("refreshToken"),
+        isAuthenticated: true,
+        username,
+        email,
+        phone,
+        dob,
+        gender,
+        address,
+        avatar,
+        isAdmin,
+      };
+
+      // Lưu thông tin người dùng vào Redux & localStorage
+      dispatch(setUser(newUserData));
+      localStorage.setItem("user", JSON.stringify(newUserData));
     } catch (error) {
       console.error("Lỗi khi lấy thông tin người dùng:", error);
       AutoLogoutTokenExpired(); // Nếu có lỗi, tự động logout
@@ -242,11 +258,13 @@ const HeaderComponent = ({
   };
 
   useEffect(() => {
-    if (
-      !isAuthenticated &&
-      !isUserDetailsFetched &&
-      localStorage.getItem("accessToken")
-    ) {
+    // console.log("🔥 useEffect đang chạy...");
+    // console.log("isAuthenticated:", isAuthenticated);
+    // console.log("isUserDetailsFetched:", isUserDetailsFetched);
+    // console.log("accessToken:", localStorage.getItem("accessToken"));
+
+    if (!isUserDetailsFetched && localStorage.getItem("accessToken")) {
+      // console.log("🚀 Gọi fetchUserDetails() từ useEffect");
       fetchUserDetails();
       setIsUserDetailsFetched(true);
     }
@@ -256,11 +274,9 @@ const HeaderComponent = ({
     // Kiểm tra lại token mỗi phút
     const intervalId = setInterval(() => {
       checkTokenExpiration();
-    }, 1000 * 60); // 1 phút
+    }, 1000 * 60);
 
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [dispatch, isAuthenticated, isUserDetailsFetched]);
 
   const handleLogoClick = () => {

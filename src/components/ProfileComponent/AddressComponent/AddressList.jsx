@@ -555,7 +555,15 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
             {/* Chọn tỉnh/thành phố */}
             <Form.Item label="Tỉnh/Thành phố" name="city">
-              <Select onChange={handleProvinceChange}>
+              <Select
+                showSearch
+                placeholder="Chọn tỉnh/thành phố"
+                optionFilterProp="children"
+                onChange={handleProvinceChange}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+              >
                 {provinces.map((province) => (
                   <Option key={province.code} value={province.code}>
                     {province.name}
@@ -566,7 +574,15 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
             {/* Chọn quận/huyện */}
             <Form.Item label="Quận/Huyện" name="district">
-              <Select onChange={handleDistrictChange}>
+              <Select
+                showSearch
+                placeholder="Chọn quận/huyện"
+                optionFilterProp="children"
+                onChange={handleDistrictChange}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+              >
                 {districts.map((district) => (
                   <Option key={district.code} value={district.code}>
                     {district.name}
@@ -577,7 +593,14 @@ const AddressList = ({ userId, accessToken, addressId }) => {
 
             {/* Chọn phường/xã */}
             <Form.Item label="Phường/Xã" name="ward">
-              <Select>
+              <Select
+                showSearch
+                placeholder="Chọn phường/xã"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+              >
                 {wards.map((ward) => (
                   <Option key={ward.code} value={ward.code}>
                     {ward.name}

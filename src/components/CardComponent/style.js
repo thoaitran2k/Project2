@@ -1,40 +1,31 @@
 import styled from "styled-components";
-import { Card } from "antd";
+import { Button } from "antd";
 
-export const WrapperCardStyle = styled(Card)`
-  width: 200px;
-
-  & .ant-card-cover img {
-    height: 200px;
-    width: 200px;
-    // object-fit: cover; /* Đảm bảo ảnh không bị méo */
-    border-radius: 5px;
-  }
-`;
-
-export const CardNameProduct = styled.div`
-  font-weight: 800;
-  font-size: 20px;
-  line-height: 25px;
-  color: rgb(56, 56, 61);
-`;
-
-export const WrapperReportText = styled.div`
-  margin: 20px 0 5px;
-  font-size: 13px;
-  color: rgb(128, 128, 137);
+export const WrapperButtonContainer = styled.div`
   display: flex;
-  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 50px;
+  text-align: center;
 `;
 
-export const WrapperPriceText = styled.div`
-  font-size: 17px;
-  color: rgb(255, 56, 78);
+export const WrapperButtonMore = styled(Button)`
+  border: 1px solid rgb(11, 116, 229);
+  color: rgb(11, 116, 229);
+  width: 240px;
+  height: 38px;
   font-weight: 500;
-`;
-
-export const WrapperDiscountText = styled.span`
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
   font-size: 16px;
-  color: rgb(32, 22, 23);
-  font-weight: 500;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #fff;
+    background: rgb(18, 96, 190) !important;
+    span {
+      color: #fff;
+    }
+  }
 `;
