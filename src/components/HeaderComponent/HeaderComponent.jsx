@@ -168,7 +168,7 @@ const HeaderComponent = ({
 
   // Hàm lấy thông tin người dùng từ server
   const fetchUserDetails = async () => {
-    console.log("🔍 Bắt đầu gọi fetchUserDetails()......................."); // Debug
+    //console.log("🔍 Bắt đầu gọi fetchUserDetails()......................."); // Debug
 
     try {
       const token = localStorage.getItem("accessToken");

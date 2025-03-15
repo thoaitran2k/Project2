@@ -39,10 +39,10 @@ export const createProduct = async (data) => {
   }
 };
 
-export const getDetailProduct = async (id) => {
+export const getDetailProduct = async (productId) => {
   try {
     const response = await axios.get(
-      `${import.meta.env.VITE_URL_BACKEND}/product/get-details/${id}`
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-details/${productId}`
     );
 
     return response.data;

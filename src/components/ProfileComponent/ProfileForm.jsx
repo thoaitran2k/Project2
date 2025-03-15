@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+
 import {
   Form,
   Input,
@@ -46,6 +47,19 @@ const ProfileForm = () => {
   const [avatar, setAvatar] = useState(user.avatar || "");
   const API_BASE_URL = import.meta.env.VITE_URL_BACKEND;
 
+  const handleDateChange = (date, dateString) => {
+    // if (!dayjs(dateString, "DD-MM-YYYY", true).isValid()) {
+    //   message.error(
+    //     "❌ Ngày tháng không hợp lệ! Vui lòng nhập theo định dạng DD-MM-YYYY."
+    //   );
+    //   return;
+    // }
+
+    form.setFieldsValue({
+      dob: dayjs(dateString, "DD-MM-YYYY"),
+    });
+  };
+
   const handleChangeImage = async ({ fileList }) => {
     const file = fileList[0];
     if (!file.url && !file.preview) {
@@ -91,21 +105,35 @@ const ProfileForm = () => {
 
   useEffect(() => {
     if (user) {
-      const formattedAddress = Array.isArray(user.address)
-        ? user.address.map((addr) => ({
-            address: addr.address || "", // Đảm bảo address là chuỗi
-            isDefault: addr.isDefault || false, // Đảm bảo isDefault là boolean
-          }))
-        : [];
+      console.log("DOB từ API:", user.dob);
+
+      let formattedDob = null;
+
+      if (typeof user.dob === "string") {
+        if (/^\d{2}-\d{2}-\d{4}$/.test(user.dob)) {
+          // Nếu dob có định dạng DD-MM-YYYY
+          formattedDob = dayjs(user.dob, "DD-MM-YYYY");
+        } else if (/^\d{4}-\d{2}-\d{2}T/.test(user.dob)) {
+          // Nếu dob có định dạng ISO (YYYY-MM-DDTHH:mm:ss.SSSZ)
+          formattedDob = dayjs(user.dob);
+        }
+      }
+
       form.setFieldsValue({
         username: user.username || "",
         phone: user.phone ? String(user.phone) : "",
         email: user.email || "",
-        dob: user.dob && dayjs(user.dob).isValid() ? dayjs(user.dob) : null,
+        dob: formattedDob, // Gán dob đã chuẩn hóa
         gender: user.gender || null,
-        address: formattedAddress,
+        address: user.address || [],
         avatar: user.avatar || null,
       });
+
+      if (!formattedDob && user.dob) {
+        console.error(
+          "Ngày tháng không hợp lệ! Vui lòng nhập theo định dạng DD-MM-YYYY"
+        );
+      }
     }
   }, [user, form]);
 
@@ -162,9 +190,8 @@ const ProfileForm = () => {
       } catch (error) {
         console.error("🔥 Lỗi FE:", error);
         message.error(error); // In toàn bộ lỗi để xem chi tiết
-        const errorMessage =
-          error.response?.data?.message || "Lỗi khi đổi mật khẩu!";
-        message.error(errorMessage); // Hiển thị thông báo lỗi từ backend
+        const errorMessage = error.response?.data?.message;
+        //message.error(errorMessage); // Hiển thị thông báo lỗi từ backend
       }
     } finally {
       dispatch(setLoading(false));
@@ -180,64 +207,38 @@ const ProfileForm = () => {
     try {
       dispatch(setLoading(true));
 
-      // Kiểm tra giá trị date hợp lệ
-      const formattedDob =
-        values.dob && dayjs(values.dob).isValid()
-          ? dayjs(values.dob).format("YYYY-MM-DD")
-          : null;
-
-      // Kiểm tra và xử lý trường address
-      let updatedAddress = [];
-      if ("address" in values) {
-        if (Array.isArray(values.address)) {
-          updatedAddress = values.address.map((addr) => ({
-            address: addr.address || "",
-            isDefault: addr.isDefault || false,
-          }));
-        } else if (typeof values.address === "string") {
-          updatedAddress = [{ address: values.address, isDefault: true }];
-        } else {
-          updatedAddress = [];
-        }
-      } else {
-        // Nếu người dùng không chỉnh sửa address, giữ nguyên địa chỉ cũ
-        updatedAddress = user.address || [];
-      }
-
+      // Chuyển đổi `dob` thành format `YYYY-MM-DD`
+      const formattedDob = values.dob
+        ? dayjs(values.dob).format("DD-MM-YYYY")
+        : null;
       const updatedData = {
         username: values.username,
         avatar: avatar,
-        dob: formattedDob,
+        dob: formattedDob, // Định dạng `YYYY-MM-DD` cho backend
         gender: values.gender,
-        address: updatedAddress, // Sử dụng address đã được xử lý
+        address: values.address || user.address || [],
       };
 
       const response = await updateUser(user._id, updatedData, accessToken);
       message.success(response.message || "Cập nhật thông tin thành công!");
 
+      // Cập nhật Redux store
       dispatch(
         setUser({
           ...user,
           ...updatedData,
-          username: values.username,
         })
       );
 
-      setTimeout(() => {
-        dispatch(setLoading(false));
-      }, 1500);
-
-      // Cập nhật lại form sau khi lưu thành công
+      // Cập nhật lại Form hiển thị
       form.setFieldsValue({
         ...values,
-        dob: formattedDob ? dayjs(formattedDob) : null,
+        dob: formattedDob ? dayjs(formattedDob) : null, // Chuyển về dayjs để hiển thị đúng trong DatePicker
       });
     } catch (error) {
       message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     } finally {
-      setTimeout(() => {
-        dispatch(setLoading(false));
-      }, 1000);
+      dispatch(setLoading(false));
     }
   };
 
@@ -293,7 +294,7 @@ const ProfileForm = () => {
                 { required: true, message: "Vui lòng chọn ngày sinh!" },
                 {
                   validator: (_, value) => {
-                    if (value && !value.isValid()) {
+                    if (value && !dayjs(value).isValid()) {
                       return Promise.reject("Ngày sinh không hợp lệ!");
                     }
                     return Promise.resolve();
@@ -301,7 +302,12 @@ const ProfileForm = () => {
                 },
               ]}
             >
-              <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY"
+                //value={dayjs(dob)}
+                onChange={handleDateChange}
+              />
             </Form.Item>
             <Form.Item name="gender" label="Giới tính">
               <Select placeholder="Chọn giới tính">

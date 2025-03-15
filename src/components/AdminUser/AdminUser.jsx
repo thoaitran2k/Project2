@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { WrapperHeader } from "./style";
-import { Button, Form, Input, Modal, Space, Upload, message } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  Modal,
+  Space,
+  Upload,
+  message,
+  DatePicker,
+  Select,
+} from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
@@ -23,10 +33,14 @@ import {
 } from "../../redux/reducers/adminUserSlice";
 import axios from "axios";
 import { Swal } from "sweetalert2/dist/sweetalert2";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 
 const AdminUser = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [CopyUserDetails, setCopyStateUser] = useState(null);
+  const [errorFormatDate, setErrorFormatDate] = useState("");
 
   const [stateUser, setStateUser] = useState({
     email: "",
@@ -39,6 +53,7 @@ const AdminUser = () => {
   });
 
   const [form] = Form.useForm();
+  const { Option } = Select;
 
   //Chỉnh sửa
   const [stateDetailsUser, setStateDetailsUser] = useState({
@@ -57,10 +72,9 @@ const AdminUser = () => {
   const [rowSelected, setRowSelected] = useState(null);
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
-  const productDetail = useSelector((state) => state.product.productDetail);
+  const userDetail = useSelector((state) => state.user.userDetail);
   const { users, data } = useSelector((state) => state.adminUsers);
-  const [isModalOpenDeleteProduct, setIsModalOpenDeleteProduct] =
-    useState(false);
+  const [isModalOpenDeleteUser, setIsModalOpenDeleteUser] = useState(false);
 
   //_______________________________________________________XÁC ĐỊNH TRANG SẢN PHẨM BỊ UPDATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,6 +89,29 @@ const AdminUser = () => {
     type: null,
   }); //________________________Giá trị filter
 
+  //_________________________________________HÀM HANDLE KHI CHỌN NGÀY
+  const handleDateChange = (date, dateString) => {
+    // Kiểm tra nếu ngày nhập vào không hợp lệ
+    if (!dayjs(dateString, "DD/MM/YYYY", true).isValid()) {
+      message.error(
+        "❌ Ngày tháng không hợp lệ! Vui lòng nhập theo định dạng DD/MM/YYYY."
+      );
+      return;
+    }
+
+    // Lưu trữ giá trị `dob` dưới dạng DD-MM-YYYY
+    const formattedDate = dayjs(dateString, "DD/MM/YYYY").format("DD-MM-YYYY");
+    setStateDetailsUser((prev) => ({
+      ...prev,
+      dob: formattedDate,
+    }));
+  };
+
+  //_________________________________VALIDDATE
+  const isValidDate = (dateString) => {
+    return dayjs(dateString, "DD-MM-YYYY", true).isValid();
+  };
+
   //______________________________________ResetFilter khi click Filter
   const handleResetFilter = (field, confirm) => {
     setFilteredInfo((prev) => ({ ...prev, [field]: null }));
@@ -88,23 +125,30 @@ const AdminUser = () => {
   };
 
   useEffect(() => {
-    console.log("adminUsers từ Redux Store:", users);
+    //console.log("adminUsers từ Redux Store:", users);
   }, [users]);
 
   useEffect(() => {
     if (rowSelected && isOpenDrawer) {
       dispatch(getDetailsUserById(rowSelected)).then((response) => {
         if (response.payload) {
-          const userDetails = response.payload.data; // Dữ liệu người dùng từ API
+          const userDetails = response.payload.data;
+
+          // Chuyển đổi `dob` từ chuỗi ISO 8601 sang định dạng DD-MM-YYYY
+          const formattedDob = userDetails.dob
+            ? dayjs(userDetails.dob).format("DD-MM-YYYY")
+            : null;
+
+          // Cập nhật state và form
           setStateDetailsUser({
-            email: userDetails.email,
-            username: userDetails.username,
-            phone: userDetails.phone,
-            dob: userDetails.dob,
-            gender: userDetails.gender,
-            isAdmin: userDetails.isAdmin,
+            ...userDetails,
+            dob: formattedDob,
           });
-          form.setFieldsValue(userDetails); // Điền dữ liệu vào form
+
+          form.setFieldsValue({
+            ...userDetails,
+            dob: formattedDob ? dayjs(formattedDob, "DD-MM-YYYY") : null,
+          });
         }
       });
     }
@@ -120,29 +164,35 @@ const AdminUser = () => {
   //______________________________________________Set ID cho hàng sản phẩm cần lấy thông tin
   const handleDetailsUser = (id) => {
     setRowSelected(id);
-    setTimeout(() => {
-      setIsOpenDrawer(true);
-      dispatch(getDetailsUserById(id));
-    }, 0);
-    console.log("CHỈNH SỬA NGƯỜI DÙNG");
+    setIsOpenDrawer(true); // Mở Drawer
+    dispatch(getDetailsUserById(id)); // Gọi API lấy thông tin người dùng
   };
 
   useEffect(() => {
-    if (productDetail?.data) {
-      setCopyStateUser(productDetail.data);
+    if (userDetail?.data) {
+      // Thay productDetail bằng userDetail
+      setCopyStateUser(userDetail.data);
       setStateDetailsUser({
-        name: productDetail.data.name,
-        price: productDetail.data.price,
-        description: productDetail.data.description,
-        rating: productDetail.data.rating,
-        image: productDetail.data.image,
-        type: productDetail.data.type,
-        countInStock: productDetail.data.countInStock,
+        email: userDetail.data.email,
+        username: userDetail.data.username,
+        phone: userDetail.data.phone,
+        dob: userDetail.data.dob, // Định dạng DD-MM-YYYY
+        gender: userDetail.data.gender,
+        isAdmin: userDetail.data.isAdmin,
+        avatar: userDetail.data.avatar,
       });
 
-      form.setFieldsValue(productDetail.data);
+      form.setFieldsValue({
+        email: userDetails.email,
+        username: userDetails.username,
+        phone: userDetails.phone,
+        dob: userDetails.dob ? dayjs(userDetails.dob, "DD-MM-YYYY") : null, // Parse dob thành dayjs
+        gender: userDetails.gender,
+        isAdmin: userDetails.isAdmin,
+        avatar: userDetails.avatar,
+      });
     }
-  }, [productDetail]);
+  }, [userDetail, form]);
 
   const renderAction = (id) => {
     return (
@@ -164,6 +214,7 @@ const AdminUser = () => {
   }, [stateUser]);
 
   useEffect(() => {
+    console.log("DỮ LIỆU TỪ BECKEND", users);
     dispatch(getAllUsers());
   }, [dispatch]);
 
@@ -259,6 +310,10 @@ const AdminUser = () => {
     {
       title: "Date of Birth",
       dataIndex: "dob",
+      render: (dob) =>
+        dob && dayjs(dob, "DD-MM-YYYY").isValid()
+          ? dayjs(dob, "DD-MM-YYYY").format("DD-MM-YYYY")
+          : "",
       ...getColumnSearchProps("dob"),
     },
     {
@@ -316,17 +371,26 @@ const AdminUser = () => {
   const handleDeleteUser = async (id) => {
     setRowSelected(id);
     setIsModalOpenDeleteUser(true);
+    console.log("Xóa user với ID:", id);
   };
 
   //________________________________________________________________________Update sản phẩm
   const onApply = async (updatedUser, userId) => {
     try {
       dispatch(setLoading(true));
-      const { email, ...dataWithoutEmail } = updatedUser;
 
-      const resultAction = await dispatch(
-        updateUser({ userId, updatedData: dataWithoutEmail })
-      );
+      // Kiểm tra và định dạng lại `dob` nếu cần
+      const formattedDob = updatedUser.dob
+        ? dayjs(updatedUser.dob, "DD-MM-YYYY").format("DD-MM-YYYY")
+        : null;
+
+      const updatedData = {
+        ...updatedUser,
+        dob: formattedDob,
+      };
+
+      const resultAction = await dispatch(updateUser({ userId, updatedData }));
+
       if (updateUser.fulfilled.match(resultAction)) {
         message.success("Cập nhật người dùng thành công!");
         dispatch(getAllUsers());
@@ -339,83 +403,6 @@ const AdminUser = () => {
       message.error("Cập nhật người dùng thất bại!");
     } finally {
       dispatch(setLoading(false));
-    }
-  };
-
-  const onFinish = async () => {
-    //console.log("📤 Trạng thái stateUser trước khi gửi:", stateUser);
-    //const dispatch = useDispatch();
-    //const { loading, error } = useSelector((state) => state.product);
-
-    try {
-      const newUser = {
-        email: stateUser.email,
-        avatar: stateUser.avatar,
-        phone: stateUser.phone,
-        username: stateUser.username,
-        isAdmin: stateUser.isAdmin,
-        dob: stateUser.dob,
-        gender: stateUser.gender,
-      };
-
-      //   console.log("📤 Gửi sản phẩm:", newProduct);
-
-      // Kiểm tra dữ liệu trước khi gửi
-      // if (Object.entries(newUser).some(([key, value]) => value === "")) {
-      //   console.error("🚨 Lỗi: Thiếu trường dữ liệu");
-      //   message.error("Vui lòng điền đầy đủ thông tin!");
-      //   return;
-      // }
-
-      // dispatch(setLoading(true));
-
-      // 🔥 Dispatch gọi API
-      const resultAction = await dispatch(createUser(newUser));
-
-      if (createUser.fulfilled.match(resultAction)) {
-        // Swal.fire({
-        //   icon: "success",
-        //   title: "Tạo sản phẩm thành công!",
-        // });
-
-        // Reset form sau khi tạo thành công
-
-        setStateUser((prev) => ({
-          ...prev,
-          email: "",
-          username: "",
-          phone: "",
-          gender: "",
-          avatar: "",
-          dob: "",
-          isAdmin: "",
-        }));
-
-        // setStateUser((prev) => {
-        //   const newState = { ...prev, image: response.data.imageUrl };
-        //   console.log("Cập nhật state product:", newState);
-        //   return newState;
-        // });
-
-        // Kiểm tra lại bằng useEffect
-        setIsModalOpen(false);
-        // console.log("📌 Trạng thái sau khi reset:", stateUser);
-        setFileList([]);
-        message.success("Thêm sản phẩm thành công!");
-        dispatch(getAllUsers());
-        // setTimeout(() => {
-        //   dispatch(setLoading(false));
-        // }, 1500);
-      } else {
-        throw new Error(resultAction.payload);
-      }
-    } catch (error) {
-      console.error("⚠️ Lỗi khi gọi API:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Lỗi!",
-        text: error.message || "Không thể tạo sản phẩm.",
-      });
     }
   };
 
@@ -533,48 +520,29 @@ const AdminUser = () => {
     console.log("cancel");
   };
 
-  const handleCancelDeleteProduct = () => {
-    setIsModalOpenDeleteProduct(false);
+  const handleCancelDeleteUser = () => {
+    setIsModalOpenDeleteUser(false);
   };
 
   const onConfirmDelete = async (userId) => {
     setIsModalOpenDeleteUser(false);
     try {
-      await dispatch(deleteUser(userId)).unwrap();
+      const response = await dispatch(deleteUser(userId)).unwrap();
+
+      console.log("Response từ API:", response); // Debug để kiểm tra
+
       message.success("Xóa người dùng thành công!");
       dispatch(getAllUsers());
     } catch (error) {
-      alert(error.message || "Xóa người dùng thất bại!");
+      console.error("Lỗi từ Redux:", error);
+      message.error(error || "Xóa người dùng thất bại!");
     }
   };
 
   return (
     <div style={{ width: "100%" }}>
       <WrapperHeader>Quản lý người dùng</WrapperHeader>
-      <div style={{ marginTop: "10px" }}>
-        <Button
-          style={{
-            height: "150px",
-            width: "150px",
-            borderStyle: "dashed",
-            fontSize: "60px",
-          }}
-          onClick={() => {
-            setStateUser({
-              email: "",
-              username: "",
-              phone: "",
-              dob: "",
-              avatar: "",
-              gender: "",
-              isAdmin: false,
-            });
-            setIsModalOpen(true);
-          }}
-        >
-          <PlusOutlined />
-        </Button>
-      </div>
+      <div style={{ marginTop: "10px" }}></div>
       <div style={{ marginTop: "20px" }}>
         <TableComponent
           columns={columns}
@@ -598,191 +566,12 @@ const AdminUser = () => {
       </div>
 
       {/* Modal thêm sản phẩm */}
-      <Modal
-        title="Tạo sản phẩm mới"
-        open={isModalOpen}
-        //onOk={handleOk}
-        onCancel={handleCancel}
-        footer={[
-          <Button key="cancel" onClick={handleCancel}>
-            Cancel
-          </Button>,
-        ]}
-      >
-        <Form
-          name="basic"
-          labelCol={{
-            span: 6,
-          }}
-          wrapperCol={{
-            span: 18,
-          }}
-          //   initialValues={{
-          //     remember: true,
-          form={form}
-          //   }}
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              {
-                required: true,
-                message: "Please input your name!",
-              },
-            ]}
-          >
-            <InputComponent
-              value={stateUser.name}
-              onChange={handleOnchange}
-              name="email"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Username"
-            name="username"
-            rules={[
-              {
-                required: true,
-                message: "Please input your type!",
-              },
-            ]}
-          >
-            <InputComponent
-              value={stateUser.type}
-              onChange={handleOnchange}
-              name="username"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Phone"
-            name="phone"
-            rules={[
-              {
-                required: true,
-                message: "Please input your count InStock!",
-              },
-            ]}
-          >
-            <InputComponent
-              value={stateUser.countInStock}
-              onChange={handleOnchange}
-              name="phone"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Birthday"
-            name="dob"
-            rules={[
-              {
-                required: true,
-                message: "Please input your count price!",
-              },
-            ]}
-          >
-            <InputComponent
-              value={stateUser.price}
-              onChange={handleOnchange}
-              name="dob"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Gender"
-            name="gender"
-            rules={[
-              {
-                required: true,
-                message: "Please input your count rating!",
-              },
-            ]}
-          >
-            <InputComponent
-              value={stateUser.rating}
-              onChange={handleOnchange}
-              name="gender"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Avatar"
-            name="avatar"
-            rules={[
-              {
-                required: true,
-                message: "Please upload an image!",
-              },
-            ]}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              {/* Ô chứa ảnh hoặc khung trống */}
-              <div
-                style={{
-                  width: "200px",
-                  height: "200px",
-                  border: "2px dashed #ccc",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {stateUser?.avatar ? (
-                  <img
-                    src={stateUser?.avatar}
-                    alt="User"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <span style={{ color: "#aaa" }}>No image</span>
-                )}
-              </div>
-
-              {/* Nút chọn ảnh */}
-              <Upload
-                beforeUpload={() => false} // Không upload ngay lập tức
-                onChange={handleChangeImage} // Nhận `fileList`
-                maxCount={1}
-                showUploadList={false}
-              >
-                <Button icon={<PlusOutlined />}>Select Image</Button>
-              </Upload>
-            </div>
-          </Form.Item>
-
-          <Form.Item
-            wrapperCol={{
-              offset: 6,
-              span: 16,
-            }}
-          >
-            <Button type="primary" htmlType="apply">
-              Apply
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* ________________MODAL CHỌN XÓA SẢN PHẨM_________________ */}
       <Modal
         title="Xác nhận xóa sản phẩm"
-        open={isModalOpenDeleteProduct}
-        onCancel={handleCancelDeleteProduct}
+        open={isModalOpenDeleteUser}
+        onCancel={handleCancelDeleteUser}
         footer={null}
         centered
       >
@@ -819,7 +608,7 @@ const AdminUser = () => {
                 color: "#333",
                 fontWeight: "bold",
               }}
-              onClick={handleCancelDeleteProduct}
+              onClick={handleCancelDeleteUser}
             >
               Hủy
             </Button>
@@ -886,28 +675,32 @@ const AdminUser = () => {
             />
           </Form.Item>
           <Form.Item label="Date of Birth" name="dob">
-            <InputComponent
-              value={stateDetailsUser.dob}
-              onChange={(e) =>
-                setStateDetailsUser((prev) => ({
-                  ...prev,
-                  dob: e.target.value,
-                }))
+            <DatePicker
+              format="DD/MM/YYYY" // Hiển thị ngày theo định dạng DD/MM/YYYY
+              value={
+                stateDetailsUser.dob
+                  ? dayjs(stateDetailsUser.dob, "MM-DD-YYYY")
+                  : null
               }
+              onChange={handleDateChange}
             />
           </Form.Item>
+
           <Form.Item label="Gender" name="gender">
-            <InputComponent
+            <Select
               value={stateDetailsUser.gender}
-              onChange={(e) =>
+              onChange={(value) =>
                 setStateDetailsUser((prev) => ({
                   ...prev,
-                  gender: e.target.value,
+                  gender: value,
                 }))
               }
-            />
+            >
+              <Option value="Nam">Nam</Option>
+              <Option value="Nữ">Nữ</Option>
+            </Select>
           </Form.Item>
-          <Form.Item label="Admin" name="isAdmin">
+          <Form.Item label="Admin" name="isAdmin" style={{ textAlign: "left" }}>
             <InputComponent
               type="checkbox"
               checked={stateDetailsUser.isAdmin}

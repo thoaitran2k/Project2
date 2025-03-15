@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Pagination } from "antd";
 import CardComponent from "../../components/CardComponent/CardComponent";
 import * as ProductService from "../../Services/ProductService";
-import {
-  ProductsContainer,
-  WrapperButtonContainer,
-  WrapperButtonMore,
-} from "./style";
+import { ProductsContainer } from "./style";
 import SideBar from "../../components/SideBar/SideBar";
 
 const ProductsPage = () => {

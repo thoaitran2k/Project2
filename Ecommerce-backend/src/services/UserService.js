@@ -2,6 +2,11 @@ const User = require("../models/UserModel");
 const bcrypt = require("bcrypt");
 const { generateAccessToken, generateRefreshToken } = require("./jwtService");
 const moment = require("moment");
+const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+
+// Extend plugin customParseFormat
+dayjs.extend(customParseFormat);
 
 const createUser = async ({
   username,
@@ -13,8 +18,15 @@ const createUser = async ({
   address = [],
   avatar = "",
 }) => {
-  const hashedPassword = await bcrypt.hash(password, 10); // Mã hóa mật khẩu
+  // Kiểm tra độ dài mật khẩu
+  if (password.length < 5) {
+    throw new Error("Mật khẩu phải có ít nhất 5 ký tự!");
+  }
 
+  // Hash mật khẩu
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Tạo người dùng mới
   const newUser = new User({
     username,
     email,
@@ -36,7 +48,7 @@ const checkUserExistsByEmail = async (email) => {
 
 const forgotPassword = async (email, newPassword, confirmPassword) => {
   try {
-    // Kiểm tra xem email có trong hệ thống không
+    // Kiểm tra email tồn tại
     const user = await User.findOne({ email });
     if (!user) {
       return {
@@ -45,7 +57,15 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       };
     }
 
-    // Kiểm tra mật khẩu nhập vào có trùng khớp không
+    // Kiểm tra độ dài mật khẩu
+    if (newPassword.length < 5) {
+      return {
+        status: "WARNING",
+        message: "Mật khẩu phải có ít nhất 5 ký tự!",
+      };
+    }
+
+    // Kiểm tra xác nhận mật khẩu
     if (newPassword !== confirmPassword) {
       return {
         status: "ERROR",
@@ -53,10 +73,8 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       };
     }
 
-    // Hash mật khẩu mới
+    // Hash mật khẩu và cập nhật
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Cập nhật mật khẩu mới vào database
     user.password = hashedPassword;
     await user.save();
 
@@ -143,6 +161,16 @@ const updateUser = async (id, data) => {
 
 const deleteUser = async (id) => {
   try {
+    const user = await User.findById(id);
+    if (!user) {
+      return { status: "ERROR", message: "User not found" };
+    }
+
+    // Kiểm tra nếu user là admin
+    if (user.isAdmin) {
+      return { status: "ERROR", message: "Không thể xóa Admin!" };
+    }
+
     await User.findByIdAndDelete(id);
     return { status: "OK", message: "User deleted successfully" };
   } catch (e) {
@@ -153,58 +181,41 @@ const deleteUser = async (id) => {
 const getAllUser = async () => {
   try {
     const users = await User.find().select("-password");
-    //const allUsers = await User.find(); // Lấy danh sách user từ DB
-    console.log("allUsers", users);
+
+    console.log("Raw Users:", users); // Kiểm tra dữ liệu gốc
+
+    const formattedUsers = users.map((user) => {
+      let formattedDob = null;
+
+      if (user.dob) {
+        if (dayjs(user.dob).isValid()) {
+          // Nếu `dob` là Date object, format luôn
+          formattedDob = dayjs(user.dob).format("DD-MM-YYYY");
+        } else if (typeof user.dob === "string") {
+          // Nếu `dob` là string, thử parse lại
+          formattedDob = dayjs(user.dob, [
+            "YYYY-MM-DD",
+            "MM-DD-YYYY",
+            "DD-MM-YYYY",
+          ]).format("DD-MM-YYYY");
+        }
+      }
+
+      return {
+        ...user.toObject(),
+        dob: formattedDob,
+      };
+    });
+
+    console.log("Formatted Users:", formattedUsers); // Kiểm tra dữ liệu sau khi format
+
     return {
       status: "OK",
       message: "Lấy danh sách người dùng thành công!",
-      data: users,
+      data: formattedUsers,
     };
   } catch (e) {
     throw new Error("Lỗi khi lấy danh sách người dùng: " + e.message);
-  }
-};
-
-const changePasswordUser = async (userId, oldPassword, newPassword) => {
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      console.log("❌ Người dùng không tồn tại!");
-      return { success: false, message: "Người dùng không tồn tại!" };
-    }
-
-    console.log("🔍 Mật khẩu cũ từ client:", oldPassword);
-    console.log("🔍 Mật khẩu hash trong database:", user.password);
-
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      //console.log("❌ Mật khẩu cũ không khớp!");
-      return { success: false, message: "Mật khẩu cũ không chính xác!" };
-    }
-
-    if (newPassword.length < 3) {
-      //console.log("❌ Mật khẩu mới quá ngắn!");
-      return {
-        success: false,
-        message: "Mật khẩu mới phải có ít nhất 3 ký tự!",
-      };
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    user.password = hashedPassword;
-    await user.save();
-
-    //console.log("✅ Đổi mật khẩu thành công!");
-    return { success: true, message: "Đổi mật khẩu thành công!" };
-  } catch (error) {
-    console.error("🔥 Lỗi khi đổi mật khẩu:", error.message);
-    return {
-      success: false,
-      message: "Lỗi khi đổi mật khẩu!",
-      error: error.message,
-    };
   }
 };
 
@@ -228,6 +239,49 @@ const getDetailsUser = async (id) => {
     };
   } catch (e) {
     throw e;
+  }
+};
+
+const changePasswordUser = async (userId, oldPassword, newPassword) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log("❌ Người dùng không tồn tại!");
+      return { success: false, message: "Người dùng không tồn tại!" };
+    }
+
+    console.log("🔍 Mật khẩu cũ từ client:", oldPassword);
+    console.log("🔍 Mật khẩu hash trong database:", user.password);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      //console.log("❌ Mật khẩu cũ không khớp!");
+      return { success: false, message: "Mật khẩu cũ không chính xác!" };
+    }
+
+    if (newPassword.length < 5) {
+      //console.log("❌ Mật khẩu mới quá ngắn!");
+      return {
+        success: false,
+        message: "Mật khẩu mới phải có ít nhất 5 ký tự!",
+      };
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    //console.log("✅ Đổi mật khẩu thành công!");
+    return { success: true, message: "Đổi mật khẩu thành công!" };
+  } catch (error) {
+    //console.error("🔥 Lỗi khi đổi mật khẩu:", error.message);
+    return {
+      success: false,
+      // message: "Lỗi khi đổi mật khẩu!",
+      error: error.message,
+    };
   }
 };
 

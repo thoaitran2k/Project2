@@ -3,6 +3,9 @@ const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
 const { changePasswordUser } = require("../services/UserService");
 const bcrypt = require("bcrypt");
+const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 
 const User = require("../models/UserModel");
 
@@ -16,70 +19,104 @@ const createUser = async (req, res) => {
       req.body;
 
     // Kiểm tra các trường bắt buộc
-    // if (!username || !email || !password || !phone || !dob || !gender) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "Tất cả các trường đều bắt buộc!" });
-    // }
+    if (!username || !email || !password || !phone || !dob || !gender) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Tất cả các trường đều bắt buộc!",
+      });
+    }
 
     // Kiểm tra định dạng email
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Email không hợp lệ!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Email không hợp lệ!",
+      });
+    }
+
+    // Kiểm tra độ dài mật khẩu
+    if (password.length < 5) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Mật khẩu phải có ít nhất 5 ký tự!",
+      });
     }
 
     // Kiểm tra định dạng số điện thoại
     if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: "Số điện thoại không hợp lệ!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Số điện thoại không hợp lệ!",
+      });
     }
 
     // Kiểm tra xem email đã tồn tại chưa
     const userExists = await UserService.checkUserExistsByEmail(email);
     if (userExists) {
-      return res.status(400).json({ message: "Email đã tồn tại!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Email đã tồn tại!",
+      });
     }
 
-    // Xử lý trường address
+    // Kiểm tra và xử lý địa chỉ
     let userAddress = [];
     if (Array.isArray(address)) {
-      userAddress = address; // Nếu address là một mảng, sử dụng nó
+      userAddress = address;
     } else if (typeof address === "string") {
-      userAddress = [{ address, isDefault: true }]; // Nếu address là chuỗi, chuyển đổi thành mảng
-    } else if (address === undefined || address === null) {
-      userAddress = []; // Nếu address là undefined hoặc null, đặt lại thành mảng rỗng
+      userAddress = [{ address, isDefault: true }];
+    } else if (!address) {
+      userAddress = [];
     } else {
-      return res.status(400).json({ message: "Địa chỉ không hợp lệ!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Địa chỉ không hợp lệ!",
+      });
     }
 
-    // Kiểm tra trường avatar
+    // Kiểm tra avatar
     if (avatar && typeof avatar !== "string") {
-      return res.status(400).json({ message: "Avatar phải là một chuỗi!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Avatar phải là một chuỗi!",
+      });
     }
 
-    // const saltRounds = await bcrypt.genSalt(10);
-    // const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Kiểm tra và chuyển đổi ngày sinh
+    let isoDob = null;
+    if (dob) {
+      const parsedDob = dayjs(dob, "DD-MM-YYYY");
+      if (!parsedDob.isValid()) {
+        return res.status(400).json({
+          status: "ERROR",
+          message: "Định dạng ngày tháng không hợp lệ! Sử dụng DD-MM-YYYY.",
+        });
+      }
+      isoDob = parsedDob.format("YYYY-MM-DD");
+    }
 
-    // console.log("Mật khẩu gốc:", password);
-    // console.log("Mật khẩu hash:", hashedPassword);
     // Tạo người dùng mới
     const newUser = await UserService.createUser({
       username,
       email,
       password,
       phone: String(phone),
-      dob,
+      dob: isoDob,
       gender,
-      address: userAddress, // Sử dụng address đã được xử lý
+      address: userAddress,
       avatar,
     });
 
-    res
-      .status(201)
-      .json({ message: "Tạo người dùng thành công!", user: newUser });
+    return res.status(201).json({
+      status: "OK",
+      message: "Tạo người dùng thành công!",
+      user: newUser,
+    });
   } catch (error) {
     console.error("Lỗi khi tạo người dùng:", error);
-    res.status(500).json({
+    return res.status(500).json({
+      status: "ERROR",
       message: "Đã có lỗi xảy ra trong khi tạo người dùng.",
-      error: error.message,
     });
   }
 };
@@ -308,17 +345,24 @@ const updateUser = async (req, res) => {
     }
 
     let { phone, dob } = req.body;
+
+    // Kiểm tra số điện thoại
     if (phone && !phoneRegex.test(phone)) {
       return res
         .status(400)
         .json({ status: "ERROR", message: "Số điện thoại không hợp lệ!" });
     }
 
-    if (dob && isNaN(Date.parse(dob))) {
-      return res.status(400).json({
-        status: "ERROR",
-        message: "Invalid date format",
-      });
+    // Kiểm tra và chuyển đổi định dạng ngày tháng
+    if (dob) {
+      const parsedDob = dayjs(dob, "DD-MM-YYYY"); // Phân tích ngày tháng từ định dạng DD-MM-YYYY
+      if (!parsedDob.isValid()) {
+        return res.status(400).json({
+          status: "ERROR",
+          message: "Invalid date format. Use DD-MM-YYYY.",
+        });
+      }
+      req.body.dob = parsedDob.toISOString(); // Chuyển đổi sang định dạng ISO
     }
 
     if (phone) req.body.phone = String(phone);
@@ -377,6 +421,7 @@ const deleteUser = async (req, res) => {
 const getAllUser = async (req, res) => {
   try {
     const response = await UserService.getAllUser();
+    //console.log("dob", response.dob);
     return res.status(200).json(response);
   } catch (e) {
     return res
@@ -406,6 +451,8 @@ const getDetailsUser = async (req, res) => {
 const refreshToken = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
+    console.log("Authorization Header:", authHeader); // Kiểm tra header có đúng không
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(400).json({
         status: "ERROR",
@@ -414,10 +461,14 @@ const refreshToken = async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
+    console.log("Extracted Token:", token); // Kiểm tra token có được tách đúng không
+
     const response = await JwtService.refreshTokenJwtService(token);
+    console.log("Refresh Token Response:", response); // Kiểm tra kết quả từ JwtService
 
     return res.status(200).json(response);
   } catch (e) {
+    console.error("Error refreshing token:", e.message);
     return res.status(500).json({
       status: "ERROR",
       message: "Server error when refreshing token",

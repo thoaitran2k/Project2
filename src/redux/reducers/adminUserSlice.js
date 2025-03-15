@@ -20,7 +20,7 @@ export const getAllUsers = createAsyncThunk(
           },
         }
       );
-      console.log("response.data", response.data);
+      //console.log("response.data", response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -48,6 +48,7 @@ export const getDetailsUserById = createAsyncThunk(
         }
       );
 
+      console.log("DATA:", response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -122,16 +123,20 @@ export const deleteUser = createAsyncThunk(
         return rejectWithValue("Bạn cần đăng nhập để thực hiện hành động này.");
       }
 
-      await axios.delete(
+      const response = await axios.delete(
         `${import.meta.env.VITE_URL_BACKEND}/user/delete-user/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
+
+      if (response.data.status === "ERROR") {
+        return rejectWithValue(response.data.message); // Nếu API báo lỗi, reject luôn
+      }
 
       return userId;
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Xóa người dùng thất bại");
+      return rejectWithValue(
+        error.response?.data.message || "Xóa người dùng thất bại"
+      );
     }
   }
 );

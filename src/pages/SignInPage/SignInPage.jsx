@@ -9,6 +9,7 @@ import {
   PhoneOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
+import { CustomDatePicker } from "./style";
 import styled from "styled-components";
 import axios from "axios";
 import * as message from "../../components/Message/Message";
@@ -77,6 +78,23 @@ export default function SignInPage() {
       newPassword: "",
       confirmNewPassword: "",
     });
+  };
+
+  const handleDateChange = (date, dateString) => {
+    // Kiểm tra nếu ngày nhập vào không hợp lệ
+    if (!dayjs(dateString, "DD/MM/YYYY", true).isValid()) {
+      message.error(
+        "❌ Ngày tháng không hợp lệ! Vui lòng nhập theo định dạng DD/MM/YYYY."
+      );
+      return;
+    }
+
+    // Lưu trữ giá trị `birthDate` dưới dạng DD-MM-YYYY
+    const formattedDate = dayjs(dateString, "DD/MM/YYYY").format("DD-MM-YYYY");
+    setFormData((prev) => ({
+      ...prev,
+      birthDate: formattedDate, // Sửa từ `dob` thành `birthDate`
+    }));
   };
 
   const handleUpdatePassword = async () => {
@@ -222,8 +240,9 @@ export default function SignInPage() {
       }
 
       try {
-        const response = await signUpUser(formData);
         dispatch(setLoading(true));
+        const response = await signUpUser(formData);
+
         message.success(response.message || "Đăng ký thành công!");
 
         setTimeout(() => {
@@ -240,8 +259,14 @@ export default function SignInPage() {
             gender: "",
           });
         }, 1500);
-      } catch (errorMsg) {
-        message.error(errorMsg);
+      } catch (error) {
+        dispatch(setLoading(false));
+        if (error) {
+          console.log("ERROR", error);
+          message.warning(error);
+        } else {
+          message.warning("Vui lòng kiểm tra lại thông tin!");
+        }
       }
     }
   };
@@ -468,12 +493,14 @@ export default function SignInPage() {
                       />
                     </InputWrapper>
                     <InputWrapper>
-                      <CalendarOutlined />
-                      <Input
-                        type="date"
-                        name="birthDate"
-                        value={formData.birthDate}
-                        onChange={handleChange}
+                      <CustomDatePicker
+                        format="DD/MM/YYYY"
+                        value={
+                          formData.birthDate
+                            ? dayjs(formData.birthDate, "MM-DD-YYYY")
+                            : null
+                        }
+                        onChange={handleDateChange}
                         required
                       />
                     </InputWrapper>
