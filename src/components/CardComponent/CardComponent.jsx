@@ -7,8 +7,9 @@ import { StarFilled } from "@ant-design/icons";
 
 import { Link } from "react-router-dom";
 import SideBar from "../SideBar/SideBar";
+import { WrapperButtonContainer, WrapperButtonMore } from "./style";
 
-import { WrapperButtonMore, WrapperButtonContainer } from "./style";
+// import { WrapperButtonMore, WrapperButtonContainer } from "./style";
 
 // import {
 //   WrapperReportText,
@@ -67,6 +68,8 @@ import { WrapperButtonMore, WrapperButtonContainer } from "./style";
 //     category: "Túi xách",
 //   },
 // ];
+const columns = 4;
+
 const StarRating = ({ rating }) => {
   const stars = Array(5).fill(0); // Tạo mảng 5 ngôi sao trống
   const fullStars = Math.floor(rating); // Số sao đầy
@@ -103,111 +106,138 @@ const StarRating = ({ rating }) => {
 };
 
 const { Meta } = Card;
-const CardComponent = ({ products }) => {
+const CardComponent = ({ products, totalProducts }) => {
+  console.log("Tổng số sản phẩm:", totalProducts);
+
+  const createSlug = (name, id) => {
+    return (
+      name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, "-") + `-${id}`
+    );
+  };
+  const columns = 4;
+
   return (
-    <WrapperCardProduct>
-      <ProductWrapper>
+    <>
+      <WrapperCardProduct>
         {products.length === 0 ? (
           <p>Không có sản phẩm nào!</p>
         ) : (
-          products.map((product) => (
-            <StyledLink to={`/product/${product._id}`} key={product._id}>
-              <ProductCard>
-                <div>
-                  <img src={product.image} alt={product.name} />
-                  <div style={{ fontSize: "25px", marginTop: "100px" }}>
-                    {product.name}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "22px" }}>
-                    <div
-                      style={{
-                        padding: " 10px 0",
-                        display: "flex",
-                        flexDirection: "row",
-                        // justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span style={{ fontSize: "13px" }}>
-                        <StarRating rating={product.rating ?? 0} />
-                      </span>
+          products.map((product, index) => (
+            <StyledLink
+              to={`/product-details/${createSlug(product.name, product._id)}`}
+              key={product._id}
+            >
+              <ProductCard index={index} columns={columns}>
+                <img src={product.image} alt={product.name} />
 
-                      <span
-                        style={{
-                          fontSize: "17px",
-                          color: "rgb(107, 101, 101)",
-                          padding: "0 8px",
-                        }}
-                      >
-                        {" "}
-                        | Đã bán {product.selled}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ color: "#FF4259", fontSize: "20px" }}>
+                <ProductInfo>
+                  <ProductName>{product.name}</ProductName>
+                  <RatingRow>
+                    <StarRating rating={product.rating ?? 0} />
+                    <SoldText>
+                      |{" "}
+                      <span style={{ color: "rgb(54, 50, 50)" }}>Đã bán </span>
+                      {product.selled}
+                    </SoldText>
+                  </RatingRow>
+                  <ProductPrice>
                     {product.price.toLocaleString("vi-VN")}₫
-                    <span style={{ fontSize: "20px", padding: "10px" }}>
-                      - {product.discount || 5} %
-                    </span>
-                  </div>
-                </div>
+                    <Discount> - {product.discount || 5}%</Discount>
+                  </ProductPrice>
+                </ProductInfo>
               </ProductCard>
             </StyledLink>
           ))
         )}
-        <WrapperButtonContainer>
-          <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
-        </WrapperButtonContainer>
-      </ProductWrapper>
-    </WrapperCardProduct>
+      </WrapperCardProduct>
+      <WrapperButtonContainer>
+        <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
+      </WrapperButtonContainer>
+    </>
   );
 };
 
 const WrapperCardProduct = styled.div`
-  display: flex;
-  justify-content: center; /* 🔥 Căn giữa toàn bộ sản phẩm */
-  flex-wrap: wrap;
-  gap: 20px;
-  margin: 0 auto; /* 🔥 Đảm bảo căn giữa */
-  max-width: 1300px; /* 🔥 Định nghĩa giới hạn chiều rộng để có 4 cột */
-`;
-
-const ProductWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center; /* 🔥 Căn giữa sản phẩm theo hàng ngang */
-  gap: 20px;
-  margin: 0 auto;
-  max-width: 100%;
-  padding: 10px;
-`;
-const ProductCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: #f5f5fa;
-  border-radius: 10px;
-
-  padding: 20px;
-  width: 13vw; /* Giữ kích thước cố định */
-  min-height: 500px;
-  //text-align: center;
-
-  img {
-    width: 100%; /* Chiều rộng vẫn giữ nguyên */
-    height: 250px; /* 🔥 Giảm chiều cao xuống */
-    min-height: 250px; /* 🔥 Đảm bảo không nhỏ hơn mức này */
-    object-fit: contain; /* 🔥 Giữ nguyên tỷ lệ ảnh, không bị mất nội dung */
-    border-radius: 5px;
-  }
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  //gap: 20px;
+  width: 100%;
 `;
 
 const StyledLink = styled(Link)`
   text-decoration: none;
   color: inherit;
+`;
+
+const ProductCard = styled.div`
+  background: ${({ index, columns }) =>
+    (Math.floor(index / columns) + index) % 2 === 0
+      ? "linear-gradient(to bottom, #D0CECE, #EAE9E9)"
+      : "linear-gradient(to bottom, #EAE9E9, #D0CECE)"};
+  // border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 450px; /* Điều chỉnh chiều cao */
+  justify-content: space-between;
+
+  img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+`;
+
+const ProductInfo = styled.div`
+  width: 100%; /* Đảm bảo chiếm toàn bộ chiều rộng */
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start; /* Căn trái nội dung */
+  padding: 10px 0;
+`;
+
+const ProductName = styled.div`
+  font-size: 18px;
+  font-weight: bold;
+  text-align: left;
+  width: 100%;
+`;
+
+const RatingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-start;
+  width: 100%;
+`;
+
+const ProductPrice = styled.div`
+  font-size: 18px;
+  color: #ff4259;
+  font-weight: bold;
+  text-align: left;
+  width: 100%;
+`;
+
+const SoldText = styled.span`
+  font-size: 14px;
+  color: gray;
+`;
+
+const Discount = styled.span`
+  font-size: 14px;
+  color: #ff4259;
+  margin-left: 5px;
 `;
 
 export default CardComponent;

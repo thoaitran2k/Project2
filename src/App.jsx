@@ -15,6 +15,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { setUser } from "./redux/slices/userSlice";
 import { startTokenRefresh, stopTokenRefresh } from "./utils/TokenManager";
+import ProductDetailsComponent from "./components/ProductDetailsComponent/ProductDetailsComponent";
 
 function App() {
   const dispatch = useDispatch();
@@ -67,6 +68,10 @@ function App() {
                 />
               );
             })}
+            <Route
+              path="/product-details/:id"
+              element={<ProductDetailsComponent />}
+            />
           </Routes>
         </MainContent>
         {/* <FooterComponent /> */}
@@ -93,7 +98,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(to right, rgb(165, 152, 152), rgb(201, 174, 174));
+  background: linear-gradient(to right, #dddcdb, #f7f6f5);
 `;
 
 const MainContent = styled.main`
