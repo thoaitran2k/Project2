@@ -15,6 +15,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   FilterFilled,
+  LockOutlined,
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -51,6 +52,24 @@ const AdminUser = () => {
     gender: "",
     isAdmin: false,
   });
+
+  const handleToggleBlockUser = async (id, isBlocked) => {
+    try {
+      await axios.put(`http://localhost:3002/api/user/block/${id}`, {
+        isBlocked: !isBlocked,
+      });
+
+      message.success(
+        !isBlocked ? "Đã khóa tài khoản!" : "Đã mở khóa tài khoản!"
+      );
+
+      // Gọi lại danh sách người dùng sau khi cập nhật
+      dispatch(getAllUsers());
+    } catch (error) {
+      message.error("error");
+      console.log("Lỗi?", error);
+    }
+  };
 
   const [form] = Form.useForm();
   const { Option } = Select;
@@ -305,11 +324,13 @@ const AdminUser = () => {
     {
       title: "Phone",
       dataIndex: "phone",
+      align: "center",
       ...getColumnSearchProps("phone"),
     },
     {
       title: "Date of Birth",
       dataIndex: "dob",
+      align: "center",
       render: (dob) =>
         dob && dayjs(dob, "DD-MM-YYYY").isValid()
           ? dayjs(dob, "DD-MM-YYYY").format("DD-MM-YYYY")
@@ -319,17 +340,20 @@ const AdminUser = () => {
     {
       title: "Gender",
       dataIndex: "gender",
+      align: "center",
       ...getColumnSearchProps("gender"),
     },
     {
       title: "Admin",
       dataIndex: "isAdmin",
+      align: "center",
       render: (isAdmin) => (isAdmin ? "Yes" : "No"),
     },
     {
       title: "Action",
       dataIndex: "_id",
-      render: (id) => (
+      align: "center",
+      render: (id, record) => (
         <div>
           <EditOutlined
             style={{ color: "#9FCBFF", fontSize: "20px", cursor: "pointer" }}
@@ -338,6 +362,14 @@ const AdminUser = () => {
           <DeleteOutlined
             style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
             onClick={() => handleDeleteUser(id)}
+          />
+          <LockOutlined
+            style={{
+              color: record.isBlocked ? "red" : "green",
+              fontSize: "20px",
+              cursor: "pointer",
+            }}
+            onClick={() => handleToggleBlockUser(id, record.isBlocked)}
           />
         </div>
       ),

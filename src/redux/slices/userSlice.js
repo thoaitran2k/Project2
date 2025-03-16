@@ -86,6 +86,7 @@ const initialState = getUserFromLocalStorage() || {
   gender: null,
   isLoggingOut: false,
   isAdmin: false,
+  isBlocked: false,
 };
 
 const userSlice = createSlice({
@@ -115,6 +116,7 @@ const userSlice = createSlice({
 
       state.isAdmin =
         userData.isAdmin !== undefined ? userData.isAdmin : state.isAdmin;
+      state.isBlocked = userData.isBlocked ?? false;
       state.createdAt = userData.createdAt;
       state.updatedAt = userData.updatedAt;
 

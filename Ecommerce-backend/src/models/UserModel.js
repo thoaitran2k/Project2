@@ -34,11 +34,13 @@ const userSchema = new mongoose.Schema(
     address: [AddressSchema],
     // Trường address là một mảng
     avatar: { type: String, default: "" },
+    //Khóa tài khoản người dùng nếu vi phạm
+    isBlocked: { type: Boolean, default: false },
   },
   {
     timestamps: true,
   }
 );
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("users", userSchema);
 module.exports = User;

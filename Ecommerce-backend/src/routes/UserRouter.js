@@ -81,4 +81,8 @@ router.put(
 
 router.get("/:userId/address-info/:addressId", userController.getInfoAddress);
 
+//API mở/khóa tài khoản người dùng
+
+router.put("/block/:userId", userController.blockUser);
+
 module.exports = router;

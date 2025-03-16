@@ -13,6 +13,29 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^0\d{9,10}$/;
 const { uploadImageToCloudinary } = require("../services/uploadService");
 
+//___________________________________________MỞ - KHÓA TÀI KHOẢN NGƯỜI DÙNG
+const blockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isBlocked } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isBlocked },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại!" });
+    }
+
+    res.status(200).json({ message: "Cập nhật trạng thái thành công!", user });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server!", error });
+  }
+};
+
+//________________________________________________ĐĂNG KÝ TÀI KHOẢN
 const createUser = async (req, res) => {
   try {
     const { username, email, password, phone, dob, gender, address, avatar } =
@@ -121,6 +144,7 @@ const createUser = async (req, res) => {
   }
 };
 
+//________________________________________________THAY ĐỔI MẬT KHẨU
 const changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword, confirmPassword } = req.body;
@@ -162,6 +186,7 @@ const changePassword = async (req, res) => {
   }
 };
 
+//_________________________________________________XỬ LÝ QUÊN MẬT KHẨU
 const forgotPassword = async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
@@ -213,6 +238,8 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+//___________________________________________________ĐĂNG NHẬP
+
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -231,6 +258,13 @@ const loginUser = async (req, res) => {
     }
 
     const checkUser = await UserService.loginUser({ email, password });
+
+    if (checkUser.status === "BLOCKED") {
+      return res.status(403).json({
+        status: "BLOCKED",
+        message: checkUser.message,
+      });
+    }
 
     if (checkUser.status === "OK") {
       return res.status(200).json({
@@ -668,4 +702,5 @@ module.exports = {
   deleteAddress,
   updateAddress,
   getInfoAddress,
+  blockUser,
 };

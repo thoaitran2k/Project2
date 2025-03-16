@@ -7,7 +7,7 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
-
+//_______________________________________________ĐĂNG KÝ TÀI KHOẢN
 const createUser = async ({
   username,
   email,
@@ -46,6 +46,7 @@ const checkUserExistsByEmail = async (email) => {
   return await User.exists({ email });
 };
 
+//__________________________________________________QUÊN MẬT KHẨU
 const forgotPassword = async (email, newPassword, confirmPassword) => {
   try {
     // Kiểm tra email tồn tại
@@ -87,12 +88,17 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
   }
 };
 
+//_______________________________________________________________ĐĂNG NHẬP
 const loginUser = async ({ email, password }) => {
   try {
     const checkUser = await User.findOne({ email });
 
     if (!checkUser) {
       return { status: "ERROR", message: "Người dùng không tồn tại" };
+    }
+
+    if (checkUser.isBlocked) {
+      return { status: "BLOCKED", message: "Tài khoản của bạn đã bị khóa." };
     }
 
     const isMatch = await bcrypt.compare(password, checkUser.password);
