@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     //Khóa tài khoản người dùng nếu vi phạm
     isBlocked: { type: Boolean, default: false },
+    failedAttempts: { type: Number, default: 0 },
+    blockedUntil: { type: Date, default: null },
   },
   {
     timestamps: true,

@@ -11,7 +11,10 @@ const updateUsers = async () => {
       }
     );
 
-    const result = await User.updateMany({}, { $set: { isBlocked: false } });
+    const result = await User.updateMany(
+      {},
+      { $set: { failedAttempts: 0, blockedUntil: null } }
+    );
     console.log(`✅ Đã cập nhật ${result.modifiedCount} user!`);
 
     mongoose.connection.close();

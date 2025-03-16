@@ -363,14 +363,16 @@ const AdminUser = () => {
             style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
             onClick={() => handleDeleteUser(id)}
           />
-          <LockOutlined
-            style={{
-              color: record.isBlocked ? "red" : "green",
-              fontSize: "20px",
-              cursor: "pointer",
-            }}
-            onClick={() => handleToggleBlockUser(id, record.isBlocked)}
-          />
+          {!record.isAdmin && (
+            <LockOutlined
+              style={{
+                color: record.isBlocked ? "red" : "green",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+              onClick={() => handleToggleBlockUser(id, record.isBlocked)}
+            />
+          )}
         </div>
       ),
     },

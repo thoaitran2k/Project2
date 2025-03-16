@@ -4,6 +4,7 @@ const { generateAccessToken, generateRefreshToken } = require("./jwtService");
 const moment = require("moment");
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
+const { message } = require("antd");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
@@ -97,15 +98,45 @@ const loginUser = async ({ email, password }) => {
       return { status: "ERROR", message: "Người dùng không tồn tại" };
     }
 
+    // 🛑 Nếu tài khoản đã bị khóa, không cho đăng nhập
     if (checkUser.isBlocked) {
-      return { status: "BLOCKED", message: "Tài khoản của bạn đã bị khóa." };
+      return {
+        status: "BLOCKED",
+        message:
+          "Tài khoản của bạn đã bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng liên hệ quản trị viên để mở khóa.",
+      };
     }
 
     const isMatch = await bcrypt.compare(password, checkUser.password);
 
     if (!isMatch) {
-      return { status: "ERROR", message: "Mật khẩu không chính xác" };
+      checkUser.failedAttempts += 1;
+      console.log("SỐ LẦN SAI MẬT KHẨU:", checkUser.failedAttempts);
+
+      if (checkUser.failedAttempts >= 5) {
+        checkUser.isBlocked = true;
+        await checkUser.save();
+        return {
+          status: "BLOCKED",
+          message:
+            "Bạn đã nhập sai mật khẩu quá 5 lần, tài khoản của bạn đã bị khóa.",
+        };
+      }
+
+      await checkUser.save();
+
+      return {
+        status: "ERROR",
+        message: `Tài khoản hoặc mật khẩu không chính xác! Bạn còn ${
+          5 - checkUser.failedAttempts
+        } lần thử.`,
+      };
     }
+
+    // ✅ Nếu đăng nhập đúng, reset số lần nhập sai và mở khóa tài khoản
+    checkUser.failedAttempts = 0;
+    checkUser.isBlocked = false;
+    await checkUser.save();
 
     const accessToken = generateAccessToken({
       id: checkUser.id,
@@ -122,8 +153,9 @@ const loginUser = async ({ email, password }) => {
       accessToken,
       refreshToken,
     };
-  } catch (e) {
-    throw e;
+  } catch (error) {
+    console.error("Lỗi khi xử lý đăng nhập:", error);
+    return { status: "ERROR", message: "Đã xảy ra lỗi, vui lòng thử lại sau!" };
   }
 };
 
