@@ -1,9 +1,40 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ProductDetailsComponent from "../../components/ProductDetailsComponent/ProductDetailsComponent";
-import { BreadcrumbWrapper } from "./style";
+import { BreadcrumbWrapper, MainContent } from "./style";
 import { Breadcrumb } from "antd";
+import { useParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
+import { getDetailsProductById } from "../../redux/slices/productSlice";
 
 const ProductDetailsPage = () => {
+  const { id } = useParams();
+  const dispatch = useDispatch();
+  const { productDetail, loading, error } = useSelector(
+    (state) => state.product
+  );
+
+  const productId = id.split("-").pop();
+
+  console.log("ID từ URL:", productId);
+
+  //____________________________________LẤY DỮ LIỆU CHI TIẾT SẢN PHẨM
+
+  useEffect(() => {
+    if (productId) {
+      dispatch(getDetailsProductById(productId)); // 🚀 Gọi API lấy sản phẩm chi tiết
+    }
+  }, [dispatch, productId]);
+
+  // const { isLoading, data: product } = useQuery({
+  //   queryKey: ["product", id],
+  //   queryFn: fetchProductDetails,
+  //   retry: 3,
+  //   retryDelay: 1000,
+  // });
+
+  console.log("Dữ liệu sản phẩm:", productDetail.data);
+
   return (
     <div style={{ margin: "20px 0" }}>
       <>
@@ -23,7 +54,15 @@ const ProductDetailsPage = () => {
             </Breadcrumb.Item>
           </Breadcrumb>
         </BreadcrumbWrapper>
-        <ProductDetailsComponent />
+        <MainContent>
+          {loading ? (
+            <p>Loading...</p>
+          ) : productDetail ? (
+            <ProductDetailsComponent product={productDetail.data} />
+          ) : (
+            <p>Không tìm thấy sản phẩm</p>
+          )}
+        </MainContent>
       </>
     </div>
   );

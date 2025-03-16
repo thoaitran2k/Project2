@@ -397,7 +397,7 @@ const HeaderComponent = ({
                                 <img
                                   src={
                                     gender === "Nữ"
-                                      ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
+                                      ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742141833/avatars/cf5iyblengym8et8pone.jpg"
                                       : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
                                   }
                                   alt="Default Avatar"

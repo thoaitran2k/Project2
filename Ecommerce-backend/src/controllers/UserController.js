@@ -486,11 +486,16 @@ const getDetailsUser = async (req, res) => {
     }
 
     const response = await UserService.getDetailsUser(userId);
+    if (!response) {
+      return res
+        .status(404)
+        .json({ status: "ERROR", message: "User not found" });
+    }
     return res.status(200).json(response);
   } catch (e) {
     return res
       .status(500)
-      .json({ message: "Error deleting user", error: e.message });
+      .json({ message: "Internal server error", error: e.message });
   }
 };
 

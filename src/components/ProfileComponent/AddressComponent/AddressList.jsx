@@ -547,7 +547,7 @@ const AddressList = ({ userId, accessToken, addressId }) => {
               <Input />
             </Form.Item>
 
-            <Form.Item label="Số điện thoại" name="phoneDelivery">
+            <Form.Item label="Số điện thoại" name="phoneDelivery" required>
               <Input />
             </Form.Item>
 

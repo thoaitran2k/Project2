@@ -37,7 +37,7 @@ export const WrapperStylePriceTextProduct = styled.h1`
 
 export const WrapperStylePriceProduct = styled.div`
   border-radius: 4px;
-  background: rgb(250, 250, 250);
+  //background: rgb(250, 250, 250);
 `;
 
 export const WrapperAdressProduct = styled.div`
@@ -94,5 +94,15 @@ export const StyledButton = styled(ButtonComponent)`
         props.primary ? "rgb(202, 10, 58)" : "rgb(9, 9, 65)"};
       color: ${(props) => (props.primary ? "white" : "white")};
     }
+  }
+`;
+
+export const StyledImagePreview = styled(Image)`
+  .ant-image-preview-wrap {
+    background-color: white !important;
+  }
+
+  .ant-image-preview-img {
+    background-color: white !important;
   }
 `;
