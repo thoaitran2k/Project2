@@ -5,6 +5,7 @@ const moment = require("moment");
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 const { message } = require("antd");
+const MailService = require("../services/MailService");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
@@ -89,6 +90,39 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
   }
 };
 
+//____________________________GỬI MAIL KHÓA TÀI KHOẢN
+const sendNotificationBlockUserMail = async ({ email }) => {
+  try {
+    // Kiểm tra xem email có tồn tại không
+    const user = await User.findOne({ email });
+    if (!user) {
+      return { status: "ERROR", message: "Người dùng không tồn tại!" };
+    }
+
+    // Kiểm tra xem tài khoản có bị khóa không
+    if (!user.isBlocked) {
+      return { status: "ERROR", message: "Tài khoản này chưa bị khóa!" };
+    }
+
+    // Gửi email thông báo khóa tài khoản
+    const response = await MailService.sendVerificationCode(
+      email,
+      null, // Không cần mã xác nhận
+      "account-blocked" // Loại email thông báo khóa tài khoản
+    );
+
+    if (response.status === "ERROR") {
+      console.error("Lỗi khi gửi email thông báo:", response.message);
+      return { status: "ERROR", message: "Không thể gửi email thông báo!" };
+    }
+
+    return { status: "SUCCESS", message: "Email thông báo đã được gửi!" };
+  } catch (error) {
+    console.error("Lỗi khi gửi email thông báo:", error);
+    return { status: "ERROR", message: "Không thể gửi email thông báo!" };
+  }
+};
+
 //_______________________________________________________________ĐĂNG NHẬP
 const loginUser = async ({ email, password }) => {
   try {
@@ -114,8 +148,23 @@ const loginUser = async ({ email, password }) => {
       console.log("SỐ LẦN SAI MẬT KHẨU:", checkUser.failedAttempts);
 
       if (checkUser.failedAttempts >= 5) {
+        const wasBlockedBefore = checkUser.isBlocked;
+
         checkUser.isBlocked = true;
         await checkUser.save();
+        if (!wasBlockedBefore) {
+          const emailResponse = await sendNotificationBlockUserMail({
+            email: checkUser.email,
+          });
+
+          if (emailResponse.status === "ERROR") {
+            console.error(
+              "Lỗi khi gửi email thông báo:",
+              emailResponse.message
+            );
+          }
+        }
+
         return {
           status: "BLOCKED",
           message:
@@ -537,4 +586,5 @@ module.exports = {
   deleteAddress,
   updateAddress,
   getInfoAddress,
+  sendNotificationBlockUserMail,
 };

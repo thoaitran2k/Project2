@@ -50,6 +50,11 @@ router.post(
   "/send-forgot-password-code",
   userController.sendForgotPasswordCode
 );
+
+router.post(
+  "/send-mail-notification-block-user",
+  userController.sendNotificationBlockUserMail
+);
 router.post("/forgot-password", userController.forgotPassword);
 
 router.post(

@@ -36,6 +36,7 @@ const ProfileForm = () => {
   const [passwordForm] = Form.useForm();
   const dispatch = useDispatch();
   const [fileList, setFileList] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
@@ -158,7 +159,9 @@ const ProfileForm = () => {
     } catch (error) {
       message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     } finally {
-      dispatch(setLoading(false));
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 1500);
     }
   };
 
@@ -194,7 +197,9 @@ const ProfileForm = () => {
         //message.error(errorMessage); // Hiển thị thông báo lỗi từ backend
       }
     } finally {
-      dispatch(setLoading(false));
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 1500);
     }
   };
 
@@ -229,6 +234,7 @@ const ProfileForm = () => {
           ...updatedData,
         })
       );
+      setRefreshKey((prevKey) => prevKey + 1);
 
       // Cập nhật lại Form hiển thị
       form.setFieldsValue({
@@ -238,7 +244,9 @@ const ProfileForm = () => {
     } catch (error) {
       message.error(error.response?.data?.message || "Có lỗi xảy ra!");
     } finally {
-      dispatch(setLoading(false));
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 1500);
     }
   };
 

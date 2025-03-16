@@ -289,6 +289,18 @@ const loginUser = async (req, res) => {
 
 const verificationCodes = {}; // Lưu mã xác minh theo email
 
+//Gửi mail thông báo kháo tài khoản
+const sendNotificationBlockUserMail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const response = await UserService.sendNotificationBlockUserMail({ email });
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ status: "ERROR", message: error.message });
+  }
+};
+
+//Gửi mã đăng ký xác nhận
 const sendRegisterVerificationCode = async (req, res) => {
   const { email } = req.body;
   if (!email) {
@@ -703,4 +715,5 @@ module.exports = {
   updateAddress,
   getInfoAddress,
   blockUser,
+  sendNotificationBlockUserMail,
 };

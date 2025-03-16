@@ -29,7 +29,18 @@ const sendVerificationCode = async (email, code, type = "register") => {
         <p>Chào bạn,</p>
         <p>Bạn đã yêu cầu đặt lại mật khẩu. Mã xác minh của bạn là: <strong>${code}</strong></p>
         <p>Vui lòng nhập mã này để tiếp tục.</p>
-        <p>Nếu không phải là bạn, vui lòng bỏ qua mail này!.</p>
+        <p>Nếu không phải là bạn, vui lòng bỏ qua mail này!</p>
+      `;
+    } else if (type === "account-blocked") {
+      subject = "Thông báo tài khoản bị khóa";
+      htmlContent = `
+        <p>Chào bạn,</p>
+        <p>Chúng tôi phát hiện tài khoản của bạn đã vi phạm các điều khoản dịch vụ.</p>
+        <p>Do đó, tài khoản của bạn đã bị khóa và bạn không thể tiếp tục sử dụng dịch vụ.</p>
+        <p>Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ để được giúp đỡ.</p>
+        <p>Trân trọng,</p>
+        <p>Đội ngũ hỗ trợ</p>
+        <p>Hotline:0794330648 - Liên hệ: Trần Phú Thoại</p>
       `;
     } else {
       return { status: "ERROR", message: "Loại xác minh không hợp lệ" };
