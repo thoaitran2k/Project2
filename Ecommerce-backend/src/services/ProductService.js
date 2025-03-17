@@ -3,8 +3,18 @@ const Product = require("../models/ProductModel");
 
 const createProduct = async (newProduct) => {
   try {
-    const { name, image, type, price, countInStock, rating, description } =
-      newProduct;
+    const {
+      name,
+      image,
+      imagesPreview,
+      type,
+      price,
+      countInStock,
+      rating,
+      description,
+      selled,
+      variants,
+    } = newProduct;
 
     // const existingProduct = await Product.findOne({ name });
     // if (existingProduct) {
@@ -14,11 +24,14 @@ const createProduct = async (newProduct) => {
     const createdProduct = await Product.create({
       name,
       image,
+      imagesPreview,
       type,
       price,
       countInStock,
       rating,
       description,
+      selled,
+      variants,
     });
 
     return {

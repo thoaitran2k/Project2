@@ -14,13 +14,27 @@ import {
   WrapperQualityProduct,
   StyledButton,
   StyledImagePreview,
+  WrapperSizeOptions,
+  WrapperSizeButton,
 } from "./style";
+import { useSelector } from "react-redux";
 
 const ProductDetailsComponent = ({ product }) => {
-  const [quantity, setQuantity] = useState(1);
+  const [quantityPay, setQuantityPay] = useState(1);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const allSizes = ["S", "M", "L", "XL", "XXL"];
 
-  const increaseQuantity = () => setQuantity((prev) => Math.min(prev + 1, 10));
-  const decreaseQuantity = () => setQuantity((prev) => Math.max(prev - 1, 1));
+  const address = useSelector((state) => state.user.address);
+  const defaultAddress = address?.find((addr) => addr.isDefault) || null;
+
+  console.log("ADDRESS", address);
+  console.log("ADDRESS DEFAULT", defaultAddress);
+
+  const increaseQuantity = () =>
+    setQuantityPay((prev) => Math.min(prev + 1, 10));
+  const decreaseQuantity = () =>
+    setQuantityPay((prev) => Math.max(prev - 1, 1));
 
   const rating = product.rating; // Giả sử rating là một số từ 0 đến 5
   const fullStars = Math.floor(rating); // Số sao đầy
@@ -33,38 +47,88 @@ const ProductDetailsComponent = ({ product }) => {
     return 0; // < 25% -> 0%
   };
 
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const defaultImages = [
+    imageProduct,
+    imageSmallProduct,
+    "https://res-console.cloudinary.com/dxwqi77i8/thumbnails/v1/image/upload/v1742212680/YXZhdGFycy9tem9neWl2b2dtY2tnZXd1bmNneg==/drilldown",
+    "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742212842/avatars/clpwb1rpi1u5vptyyb2n.webp",
+  ];
+
+  const imagesPreview = product?.imagesPreview?.length
+    ? [...product.imagesPreview.slice(0, 4)]
+    : [...defaultImages.slice(0, 4)];
+
+  const imageList = [
+    product?.image || imagesPreview[0] || imageProduct, // Ảnh chính (fallback nếu không có)
+    ...imagesPreview, // Các ảnh còn lại
+  ];
+
+  console.log("CHECK", product.imagesPreview);
   const partialStarWidth = getPartialStarWidth(partialStar);
 
   return (
-    <Row style={{ padding: "16px", background: "white" }}>
+    <Row style={{ padding: "16px", background: "rgba(224, 221, 221, 0.27)" }}>
       <Col xs={24} sm={24} md={10} lg={10} xl={10}>
+        {/* Ảnh lớn hiển thị theo ảnh nhỏ được chọn */}
         <StyledImagePreview
           className="custom-image-preview"
-          style={{ width: "100%", maxWidth: "400px" }}
-          src={product?.image || imageProduct}
+          style={{
+            width: "100%",
+            maxWidth: "400px",
+            height: "400px", // Đảm bảo khung ảnh lớn có kích thước cố định
+            display: "flex", // Dùng flexbox để căn giữa ảnh bên trong
+            justifyContent: "center",
+            alignItems: "center",
+            objectFit: "contain", // Đảm bảo ảnh giữ nguyên tỷ lệ mà không bị méo
+            backgroundColor: "#f5f5f5", // Tạo nền để nhìn rõ ảnh hơn nếu ảnh nhỏ
+          }}
+          src={imageList[selectedImageIndex]}
           alt="image product"
           preview={true}
         />
         <Row
           style={{
-            borderTop: "3px solid #ccc",
+            border: "3px solid #ccc",
             width: "100%",
             maxWidth: "400px",
             display: "flex",
             flexDirection: "row",
-            background: "#ccc",
+            justifyContent: "center",
+            background: "#fff",
             marginTop: "16px",
+            gap: "18px",
+            padding: "8px",
           }}
         >
-          {[...Array(6)].map((_, index) => (
-            <WrapperStyleImage key={index} xs={4} sm={4} md={4} lg={4} xl={4}>
-              <WrapperStyleImageSmall
-                src={product?.image || imageSmallProduct}
-                alt="image small product"
-                preview={true}
-              />
-            </WrapperStyleImage>
-          ))}
+          {imageList.slice(0, 5).map(
+            (
+              image,
+              index // Đảm bảo chỉ hiển thị 5 ảnh
+            ) => (
+              <WrapperStyleImage
+                key={index}
+                style={{ flex: "1", textAlign: "center" }}
+              >
+                <WrapperStyleImageSmall
+                  src={image}
+                  alt="image small product"
+                  preview={{ mask: false }}
+                  onMouseEnter={() => setSelectedImageIndex(index)}
+                  onClick={() => setSelectedImageIndex(index)}
+                  style={{
+                    width: "60px", // Đặt kích thước ảnh nhỏ
+                    height: "60px",
+                    borderRadius: "8px",
+                    border:
+                      selectedImageIndex === index ? "2px solid red" : "none",
+                    cursor: "pointer",
+                  }}
+                />
+              </WrapperStyleImage>
+            )
+          )}
         </Row>
       </Col>
 
@@ -155,7 +219,10 @@ const ProductDetailsComponent = ({ product }) => {
               )
             )}
           </div>
-          <WrapperStyleTextSell> | Đã bán 1000+</WrapperStyleTextSell>
+          <WrapperStyleTextSell>
+            {" "}
+            | Đã bán {product.selled}
+          </WrapperStyleTextSell>
         </div>
 
         <WrapperStylePriceProduct>
@@ -167,20 +234,84 @@ const ProductDetailsComponent = ({ product }) => {
         <WrapperAdressProduct>
           <span>Giao đến </span>
           <span className="address">
-            KP6, P. Linh Trung, TP Thủ Đức, TP.HCM
+            {defaultAddress
+              ? defaultAddress.address
+              : "Chưa có địa chỉ mặc định"}
           </span>{" "}
           -<span className="change-address"> Đổi địa chỉ</span>
         </WrapperAdressProduct>
 
         <WrapperQualityProduct>
+          {/* Chọn màu sắc */}
+          <div style={{ marginTop: "20px" }}>
+            <div
+              style={{
+                fontWeight: "300",
+                fontSize: "20px",
+                marginBottom: "10px",
+              }}
+            >
+              Chọn màu sắc:
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {product?.colors?.map((color, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    backgroundColor: color,
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border:
+                      selectedColor === color
+                        ? "2px solid black"
+                        : "1px solid #ccc",
+                  }}
+                  onClick={() => setSelectedColor(color)}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Chọn size */}
+          <div style={{ marginTop: "20px" }}>
+            <div
+              style={{
+                fontWeight: "300",
+                fontSize: "20px",
+                marginBottom: "10px",
+              }}
+            >
+              Chọn size:
+            </div>
+            <WrapperSizeOptions>
+              {allSizes.map((size, index) => {
+                const isAvailable = product?.sizes?.includes(size);
+
+                return (
+                  <WrapperSizeButton
+                    key={index}
+                    className={selectedSize === size ? "selected" : ""}
+                    onClick={() => isAvailable && setSelectedSize(size)}
+                    disabled={!isAvailable}
+                  >
+                    {size}
+                  </WrapperSizeButton>
+                );
+              })}
+            </WrapperSizeOptions>
+          </div>
           <div
             style={{
               fontWeight: "300",
-              fontSize: "25px",
+              fontSize: "20px",
+              marginBottom: "10px",
+              marginTop: "25px",
             }}
           >
-            Số lượng
+            Số lượng:
           </div>
+
           <div
             style={{
               display: "flex",
@@ -190,7 +321,6 @@ const ProductDetailsComponent = ({ product }) => {
               alignItems: "center",
               padding: "5px",
               borderRadius: "7px",
-              margin: "30px 20px",
             }}
           >
             <MinusOutlined
@@ -212,7 +342,7 @@ const ProductDetailsComponent = ({ product }) => {
                 justifyContent: "center",
               }}
             >
-              {quantity}
+              {quantityPay}
             </span>
             <PlusOutlined
               onClick={increaseQuantity}
@@ -225,7 +355,14 @@ const ProductDetailsComponent = ({ product }) => {
             />
           </div>
         </WrapperQualityProduct>
-        <div style={{ display: "flex", gap: "30px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "30px",
+            flexWrap: "wrap",
+            margin: "30px 0",
+          }}
+        >
           <StyledButton primary textButton="Chọn mua" />
           <StyledButton textButton="Mua trả sau" />
         </div>

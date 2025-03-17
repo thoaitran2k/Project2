@@ -6,6 +6,9 @@ import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { getDetailsProductById } from "../../redux/slices/productSlice";
+import ReviewComponent from "../../components/ReviewComponent/ReviewComponent";
+
+import SimilarProductList from "../../components/SimilarProductComponent/SimilarProduct";
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
@@ -62,6 +65,10 @@ const ProductDetailsPage = () => {
           ) : (
             <p>Không tìm thấy sản phẩm</p>
           )}
+
+          <SimilarProductList />
+
+          <ReviewComponent />
         </MainContent>
       </>
     </div>

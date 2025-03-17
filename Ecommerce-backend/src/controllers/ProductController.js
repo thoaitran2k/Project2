@@ -4,10 +4,29 @@ const uploadImageProductService = require("../services/uploadImageProductService
 const createProduct = async (req, res) => {
   try {
     console.log("Request Body:", req.body);
-    const { name, image, type, price, countInStock, rating, description } =
-      req.body;
+    const {
+      name,
+      image,
+      //imagesPreview,
+      type,
+      price,
+      countInStock,
+      rating,
+      description,
+      selled,
+      variants,
+    } = req.body;
 
-    if (!name || !image || !type || !price || !countInStock || !rating) {
+    if (
+      !name ||
+      !image ||
+      //!imagesPreview ||
+      !type ||
+      !price ||
+      !countInStock ||
+      !rating ||
+      !variants
+    ) {
       return res
         .status(400)
         .json({ status: "ERROR", message: "All fields are required" });

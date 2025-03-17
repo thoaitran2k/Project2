@@ -10,6 +10,7 @@ export const WrapperStyleImageSmall = styled(Image)`
 export const WrapperStyleImage = styled(Col)`
   flex-basis: unset;
   display: flex;
+  //border: solid 1px #ccc;
 `;
 
 export const WrapperStyleNameProduct = styled.h1`
@@ -62,8 +63,9 @@ export const WrapperAdressProduct = styled.div`
 
 export const WrapperQualityProduct = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  align-items: center;
+  align-items: left;
 `;
 
 export const WrapperButtonComponent = styled(ButtonComponent)`
@@ -106,3 +108,32 @@ export const StyledImagePreview = styled(Image)`
     background-color: white !important;
   }
 `;
+
+export const WrapperSizeButton = styled.button`
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: white;
+  color: black;
+
+  &:hover {
+    border: 2px solid black;
+  }
+
+  &.selected {
+    border: 2px solid black;
+    background-color: black;
+    color: white;
+  }
+
+  &:disabled {
+    background-color: #ddd !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+  }
+`;
+
+export const WrapperSizeOptions = styled.div``;

@@ -4,15 +4,18 @@ import {
   Button,
   Descriptions,
   Form,
+  Input,
   Modal,
   Space,
   Upload,
   message,
+  Select,
 } from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
   FilterFilled,
+  MinusCircleOutlined,
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -22,6 +25,7 @@ import { getBase64 } from "../../utils/UploadAvatar";
 import axios from "axios";
 import Swal from "sweetalert2/dist/sweetalert2.js";
 import { useDispatch, useSelector } from "react-redux";
+
 import {
   createProduct,
   deleteProduct,
@@ -49,6 +53,7 @@ const AdminProduct = () => {
     image: "",
     type: "",
     countInStock: "",
+    variants: [], // Thêm trường variants
   });
 
   //Chỉnh sửa
@@ -60,7 +65,24 @@ const AdminProduct = () => {
     image: "",
     type: "",
     countInStock: "",
+    variants: [], // Thêm trường variants
   });
+
+  //__________________________________MÀU VÀ SIZE
+  const colorOptions = [
+    { value: "red", label: "Đỏ" },
+    { value: "white", label: "Trắng" },
+    { value: "black", label: "Đen" },
+    { value: "blue", label: "Xanh" },
+  ];
+
+  const sizeOptions = [
+    { value: "S", label: "S" },
+    { value: "M", label: "M" },
+    { value: "L", label: "L" },
+    { value: "XL", label: "XL" },
+    { value: "XXL", label: "XXL" },
+  ];
 
   const [fileList, setFileList] = useState([]);
   const dispatch = useDispatch();
@@ -444,6 +466,56 @@ const AdminProduct = () => {
       filteredValue: filteredInfo.type || null,
     },
     {
+      title: "Color",
+      dataIndex: "color",
+      align: "center",
+      render: (_, record) => {
+        const colorOrder = ["white", "black", "blue", "red"]; // Định nghĩa thứ tự sắp xếp
+
+        return (
+          <div
+            style={{ display: "flex", gap: "5px", justifyContent: "center" }}
+          >
+            {[...record.variants] // Tạo bản sao mảng trước khi sắp xếp
+              .sort(
+                (a, b) =>
+                  colorOrder.indexOf(a.color.toLowerCase()) -
+                  colorOrder.indexOf(b.color.toLowerCase())
+              )
+              .map((variant, index) => {
+                const color = variant.color.toLowerCase();
+                const borderColor = color === "white" ? "#000" : "#ccc"; // Viền đen nếu màu trắng
+
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: color,
+                      border: `1px solid ${borderColor}`,
+                    }}
+                  />
+                );
+              })}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Size",
+      dataIndex: "size",
+      align: "center",
+      render: (_, record) => {
+        const sizeOrder = ["S", "M", "L", "XL", "XXL"]; // Định nghĩa thứ tự sắp xếp
+        return record.variants
+          .map((variant) => variant.size)
+          .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)) // Sắp xếp theo thứ tự size
+          .join(", ");
+      },
+    },
+    {
       title: "Action",
       dataIndex: "action",
       width: "5vw",
@@ -512,10 +584,6 @@ const AdminProduct = () => {
   };
 
   const onFinish = async () => {
-    //console.log("📤 Trạng thái stateProduct trước khi gửi:", stateProduct);
-    //const dispatch = useDispatch();
-    //const { loading, error } = useSelector((state) => state.product);
-
     try {
       const newProduct = {
         name: stateProduct.name,
@@ -525,9 +593,10 @@ const AdminProduct = () => {
         countInStock: Number(stateProduct.countInStock),
         rating: Number(stateProduct.rating),
         description: stateProduct.description,
+        variants: stateProduct.variants,
       };
 
-      //   console.log("📤 Gửi sản phẩm:", newProduct);
+      console.log("Dữ liệu sản phẩm trước khi gửi:", newProduct);
 
       // Kiểm tra dữ liệu trước khi gửi
       if (Object.entries(newProduct).some(([key, value]) => value === "")) {
@@ -536,19 +605,9 @@ const AdminProduct = () => {
         return;
       }
 
-      // dispatch(setLoading(true));
-
-      // 🔥 Dispatch gọi API
       const resultAction = await dispatch(createProduct(newProduct));
 
       if (createProduct.fulfilled.match(resultAction)) {
-        // Swal.fire({
-        //   icon: "success",
-        //   title: "Tạo sản phẩm thành công!",
-        // });
-
-        // Reset form sau khi tạo thành công
-
         setStateProduct((prev) => ({
           ...prev,
           name: "",
@@ -558,23 +617,14 @@ const AdminProduct = () => {
           image: "",
           type: "",
           countInStock: "",
+          variants: [],
         }));
 
-        // setStateProduct((prev) => {
-        //   const newState = { ...prev, image: response.data.imageUrl };
-        //   console.log("Cập nhật state product:", newState);
-        //   return newState;
-        // });
-
-        // Kiểm tra lại bằng useEffect
         setIsModalOpen(false);
-        // console.log("📌 Trạng thái sau khi reset:", stateProduct);
+
         setFileList([]);
         message.success("Thêm sản phẩm thành công!");
         dispatch(getAllProduct());
-        // setTimeout(() => {
-        //   dispatch(setLoading(false));
-        // }, 1500);
       } else {
         throw new Error(resultAction.payload);
       }
@@ -589,9 +639,29 @@ const AdminProduct = () => {
   };
 
   const handleOnchange = (e) => {
-    setStateProduct({
-      ...stateProduct,
-      [e.target.name]: e.target.value,
+    const { name, value } = e.target;
+
+    setStateProduct((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleOnchangeVariants = (index, field, value) => {
+    setStateProduct((prev) => {
+      const updatedVariants = [...prev.variants];
+
+      // Nếu phần tử chưa tồn tại, tạo một object mặc định
+      updatedVariants[index] = updatedVariants[index] || {
+        color: "",
+        size: "",
+        quantity: 0,
+      };
+
+      // Cập nhật giá trị cho field cụ thể
+      updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+
+      return { ...prev, variants: updatedVariants };
     });
   };
 
@@ -740,6 +810,7 @@ const AdminProduct = () => {
               image: "",
               type: "",
               countInStock: "",
+              variants: [],
             });
             //setStateProduct(newProduct);
             setFileList([]);
@@ -832,6 +903,121 @@ const AdminProduct = () => {
               name="type"
             />
           </Form.Item>
+
+          <Form.Item label="Variants">
+            <Form.List name="variants">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }, index) => (
+                    <Space
+                      key={key}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {/* Select Color */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "color"]}
+                        rules={[
+                          { required: true, message: "Vui lòng chọn màu!" },
+                        ]}
+                      >
+                        <Select
+                          placeholder="Chọn màu"
+                          options={colorOptions}
+                          onChange={(value) =>
+                            handleOnchangeVariants(index, "color", value)
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Hiển thị màu */}
+                      <div
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            stateProduct.variants[index]?.color ||
+                            "transparent",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+
+                      {/* Select Size */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "size"]}
+                        rules={[
+                          { required: true, message: "Vui lòng chọn size!" },
+                        ]}
+                      >
+                        <Select
+                          placeholder="Chọn size"
+                          options={sizeOptions}
+                          onChange={(value) =>
+                            handleOnchangeVariants(index, "size", value)
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Input Quantity */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "quantity"]}
+                        rules={[
+                          {
+                            required: true,
+                            message: "Vui lòng nhập số lượng!",
+                          },
+                        ]}
+                      >
+                        <Input
+                          placeholder="Số lượng"
+                          type="number"
+                          onChange={(e) =>
+                            handleOnchangeVariants(
+                              index,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Nút xóa variant */}
+                      <MinusCircleOutlined onClick={() => remove(name)} />
+                    </Space>
+                  ))}
+
+                  {/* Nút thêm variant mới */}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => {
+                        add();
+                        setStateProduct((prev) => ({
+                          ...prev,
+                          variants: [
+                            ...prev.variants,
+                            { color: "", size: "", quantity: 0 },
+                          ],
+                        }));
+                      }}
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Thêm biến thể
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+          </Form.Item>
+
           <Form.Item
             label="Count inStock"
             name="countInStock"
