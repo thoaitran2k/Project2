@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { WrapperHeader } from "./style";
+import { TableProduct, WrapperHeader } from "./style";
 import {
   Button,
   Form,
@@ -10,6 +10,7 @@ import {
   message,
   DatePicker,
   Select,
+  Tooltip,
 } from "antd";
 import {
   DeleteOutlined,
@@ -94,6 +95,7 @@ const AdminUser = () => {
   const userDetail = useSelector((state) => state.user.userDetail);
   const { users, data } = useSelector((state) => state.adminUsers);
   const [isModalOpenDeleteUser, setIsModalOpenDeleteUser] = useState(false);
+  const [isModalOpenBlockUser, setIsModalOpenBlockUser] = useState(false);
 
   //_______________________________________________________XÁC ĐỊNH TRANG SẢN PHẨM BỊ UPDATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -213,28 +215,20 @@ const AdminUser = () => {
     }
   }, [userDetail, form]);
 
-  const renderAction = (id) => {
-    return (
-      <div>
-        <EditOutlined
-          style={{ color: "#9FCBFF", fontSize: "20px", cursor: "pointer" }}
-          onClick={() => handleDetailsUser(id)}
-        />{" "}
-        <DeleteOutlined
-          style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
-          onClick={() => handleDeleteUser(id)}
-        />
-      </div>
-    );
-  };
-
   useEffect(() => {
     //console.log("📌 Trạng thái sau khi reset:", stateUser);
   }, [stateUser]);
 
   useEffect(() => {
-    console.log("DỮ LIỆU TỪ BECKEND", users);
-    dispatch(getAllUsers());
+    dispatch(getAllUsers()).then((response) => {
+      if (response.payload) {
+        const usersWithBlockedStatus = response.payload.data.map((user) => ({
+          ...user,
+          isBlocked: user.isBlocked || false, // Thêm thuộc tính isBlocked nếu chưa có
+        }));
+        // Cập nhật state hoặc store với dữ liệu đã xử lý
+      }
+    });
   }, [dispatch]);
 
   //_____________GỌI API VỚI TRANG HIỆN TẠI SAU KHI CHỈNH SỬA HOẶC XÓA
@@ -356,7 +350,11 @@ const AdminUser = () => {
       render: (id, record) => (
         <div>
           <EditOutlined
-            style={{ color: "#9FCBFF", fontSize: "20px", cursor: "pointer" }}
+            style={{
+              color: "rgb(47, 85, 155)",
+              fontSize: "20px",
+              cursor: "pointer",
+            }}
             onClick={() => handleDetailsUser(id)}
           />{" "}
           <DeleteOutlined
@@ -370,10 +368,22 @@ const AdminUser = () => {
                 fontSize: "20px",
                 cursor: "pointer",
               }}
-              onClick={() => handleToggleBlockUser(id, record.isBlocked)}
+              onClick={() => handleBlockUser(id, record.isBlocked)}
             />
           )}
         </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "isBlocked",
+      align: "center",
+      render: (isBlocked) => (
+        <Tooltip
+          title={isBlocked ? "Tài khoản bị khóa" : "Tài khoản hoạt động"}
+        >
+          {isBlocked ? "🔒" : "✅"}
+        </Tooltip>
       ),
     },
   ];
@@ -381,10 +391,13 @@ const AdminUser = () => {
   //____________________________________________Dữ liệu bảng
   const dataTable =
     Array.isArray(users) && users.length > 0
-      ? users.map((user) => ({
-          ...user,
-          key: user._id,
-        }))
+      ? users
+          .map((user) => ({
+            ...user,
+            key: user._id,
+            isBlocked: user.isBlocked || false,
+          }))
+          .sort((a, b) => (b.isAdmin ? 1 : -1)) // Đưa admin lên đầu
       : [];
 
   // console.log("USERS", users);
@@ -406,6 +419,13 @@ const AdminUser = () => {
     setRowSelected(id);
     setIsModalOpenDeleteUser(true);
     console.log("Xóa user với ID:", id);
+  };
+
+  //__________________________________KHÓA NGƯỜI DÙNG
+  const handleBlockUser = async (id) => {
+    setRowSelected(id);
+    setIsModalOpenBlockUser(true);
+    console.log("Khóa user với ID:", id);
   };
 
   //________________________________________________________________________Update sản phẩm
@@ -558,6 +578,10 @@ const AdminUser = () => {
     setIsModalOpenDeleteUser(false);
   };
 
+  const handleCancelBlockUser = () => {
+    setIsModalOpenBlockUser(false);
+  };
+
   const onConfirmDelete = async (userId) => {
     setIsModalOpenDeleteUser(false);
     try {
@@ -573,17 +597,37 @@ const AdminUser = () => {
     }
   };
 
+  const onConfirmBlock = async (userId, isBlocked) => {
+    setIsModalOpenBlockUser(false);
+    try {
+      await axios.put(`http://localhost:3002/api/user/block/${userId}`, {
+        isBlocked: !isBlocked,
+      });
+
+      message.success(
+        !isBlocked ? "Đã khóa tài khoản!" : "Đã mở khóa tài khoản!"
+      );
+
+      // Gọi lại danh sách người dùng sau khi cập nhật
+      dispatch(getAllUsers());
+    } catch (error) {
+      message.error("error");
+      console.log("Lỗi?", error);
+    }
+  };
+
   return (
     <div style={{ width: "100%" }}>
       <WrapperHeader>Quản lý người dùng</WrapperHeader>
       <div style={{ marginTop: "10px" }}></div>
       <div style={{ marginTop: "20px" }}>
-        <TableComponent
+        <TableProduct
           columns={columns}
           products={products?.data}
           isloading={isloading}
           data={dataTable}
           onChange={handleTableChange}
+          rowClassName={(record) => (record.isBlocked ? "row-blocked" : "")}
           pagination={{
             current: currentPage,
             pageSize: 10, // Số lượng sản phẩm mỗi trang
@@ -598,14 +642,12 @@ const AdminUser = () => {
           }}
         />
       </div>
-
       {/* Modal thêm sản phẩm */}
-
-      {/* ________________MODAL CHỌN XÓA SẢN PHẨM_________________ */}
+      {/* ________________MODAL CHỌN XÓA NGƯỜI DÙNG _________________ */}
       <Modal
         title="Xác nhận xóa sản phẩm"
         open={isModalOpenDeleteUser}
-        onCancel={handleCancelDeleteUser}
+        closable={false}
         footer={null}
         centered
       >
@@ -616,7 +658,7 @@ const AdminUser = () => {
             marginBottom: "20px",
           }}
         >
-          Bạn có chắc chắn muốn xóa sản phẩm này không?
+          Bạn có chắc chắn muốn xóa người dùng này không?
         </p>
 
         <Form onFinish={() => onConfirmDelete(rowSelected)} autoComplete="off">
@@ -650,6 +692,61 @@ const AdminUser = () => {
         </Form>
       </Modal>
 
+      <Modal
+        title="Xác nhận khóa người dùng"
+        open={isModalOpenBlockUser}
+        footer={null}
+        closable={false}
+        centered
+      >
+        <p
+          style={{
+            textAlign: "center",
+            fontSize: "16px",
+            marginBottom: "20px",
+          }}
+        >
+          Bạn có chắc chắn muốn xóa người dùng này không?
+        </p>
+
+        <Form
+          onFinish={() => {
+            const user = users.find((u) => u._id === rowSelected);
+            if (user) {
+              onConfirmBlock(rowSelected, user.isBlocked);
+            }
+          }}
+          autoComplete="off"
+        >
+          <div
+            style={{ display: "flex", justifyContent: "center", gap: "15px" }}
+          >
+            <Button
+              type="primary"
+              danger
+              htmlType="submit"
+              style={{
+                minWidth: "100px",
+                fontWeight: "bold",
+              }}
+            >
+              Đồng ý
+            </Button>
+
+            <Button
+              style={{
+                minWidth: "100px",
+                background: "#f0f0f0",
+                color: "#333",
+                fontWeight: "bold",
+              }}
+              onClick={handleCancelBlockUser}
+            >
+              Hủy
+            </Button>
+          </div>
+        </Form>
+      </Modal>
       {/* Drawer chỉnh sửa sản phẩm */}
       <DrawerComponent
         title="Chỉnh sửa thông tin người dùng"
@@ -734,7 +831,7 @@ const AdminUser = () => {
               <Option value="Nữ">Nữ</Option>
             </Select>
           </Form.Item>
-          <Form.Item label="Admin" name="isAdmin" style={{ textAlign: "left" }}>
+          <Form.Item label="Admin" name="isAdmin">
             <InputComponent
               type="checkbox"
               checked={stateDetailsUser.isAdmin}

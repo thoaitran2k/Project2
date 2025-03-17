@@ -8,6 +8,8 @@ const TableComponent = ({
   data = [],
   columns = [],
   isloading = false,
+  rowClassName = "",
+
   ...props
 }) => {
   const [isPagingLoading, setIsPagingLoading] = useState(true);
@@ -60,6 +62,7 @@ const TableComponent = ({
           pagination={{ pageSize: 10 }}
           scroll={{ x: "max-content" }}
           onChange={handleTableChange}
+          rowClassName={rowClassName}
           {...props}
         />
       </div>

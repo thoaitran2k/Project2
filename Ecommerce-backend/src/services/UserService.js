@@ -123,8 +123,13 @@ const sendNotificationBlockUserMail = async ({ email }) => {
   }
 };
 
+//______________________HÀM TẠO CAPTCHA
+const validateCaptcha = (captcha) => {
+  // Kiểm tra mã CAPTCHA hợp lệ
+  return captcha === "1234"; // Thay bằng logic thật sự (Google reCAPTCHA)
+};
 //_______________________________________________________________ĐĂNG NHẬP
-const loginUser = async ({ email, password }) => {
+const loginUser = async ({ email, password, captcha }) => {
   try {
     const checkUser = await User.findOne({ email });
 
@@ -139,6 +144,16 @@ const loginUser = async ({ email, password }) => {
         message:
           "Tài khoản của bạn đã bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng liên hệ quản trị viên để mở khóa.",
       };
+    }
+
+    if (checkUser.failedAttempts >= 3 && checkUser.failedAttempts < 5) {
+      if (!captcha || !validateCaptcha(captcha)) {
+        console.log("CHECK CAPTCHA");
+        return {
+          status: "CAPTCHA_REQUIRED",
+          message: "Vui lòng nhập CAPTCHA để tiếp tục.",
+        };
+      }
     }
 
     const isMatch = await bcrypt.compare(password, checkUser.password);
@@ -208,7 +223,7 @@ const loginUser = async ({ email, password }) => {
   }
 };
 
-const updateUser = async (id, data) => {
+const updateUserService = async (id, data) => {
   try {
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
@@ -219,10 +234,7 @@ const updateUser = async (id, data) => {
     // Lấy user hiện tại để giữ lại address nếu không có trong data
     const existingUser = await User.findById(id);
     if (!existingUser) {
-      return {
-        status: "ERROR",
-        message: "User không tồn tại",
-      };
+      return { status: "ERROR", message: "User không tồn tại" };
     }
 
     // Giữ lại address nếu nó không có trong data
@@ -242,7 +254,7 @@ const updateUser = async (id, data) => {
       data: updatedUser,
     };
   } catch (e) {
-    throw e;
+    return { status: "ERROR", message: "Lỗi cập nhật", error: e.message };
   }
 };
 
@@ -573,7 +585,7 @@ const getInfoAddress = async (userId, addressId) => {
 module.exports = {
   createUser,
   loginUser,
-  updateUser,
+  updateUserService,
   deleteUser,
   getAllUser,
   getDetailsUser,

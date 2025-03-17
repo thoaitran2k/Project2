@@ -1,7 +1,10 @@
 const UserService = require("../services/UserService");
 const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
-const { changePasswordUser } = require("../services/UserService");
+const {
+  changePasswordUser,
+  updateUserService,
+} = require("../services/UserService");
 const bcrypt = require("bcrypt");
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
@@ -385,61 +388,48 @@ const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
     if (!userId) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "User ID is required" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "User ID is required",
+      });
     }
 
     let { phone, dob } = req.body;
 
     // Kiểm tra số điện thoại
     if (phone && !phoneRegex.test(phone)) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "Số điện thoại không hợp lệ!" });
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Số điện thoại không hợp lệ!",
+      });
     }
 
     // Kiểm tra và chuyển đổi định dạng ngày tháng
     if (dob) {
-      const parsedDob = dayjs(dob, "DD-MM-YYYY"); // Phân tích ngày tháng từ định dạng DD-MM-YYYY
+      const parsedDob = dayjs(dob, "DD-MM-YYYY");
       if (!parsedDob.isValid()) {
         return res.status(400).json({
           status: "ERROR",
           message: "Invalid date format. Use DD-MM-YYYY.",
         });
       }
-      req.body.dob = parsedDob.toISOString(); // Chuyển đổi sang định dạng ISO
+      req.body.dob = parsedDob.toISOString();
     }
 
     if (phone) req.body.phone = String(phone);
 
-    // Tìm user hiện tại để giữ lại address nếu nó không được gửi từ frontend
-    const existingUser = await User.findById(userId);
-    if (!existingUser) {
-      return res
-        .status(404)
-        .json({ status: "ERROR", message: "User not found" });
+    // Gọi service để cập nhật user (ĐÃ SỬA LỖI)
+    const result = await updateUserService(userId, req.body);
+
+    // Kiểm tra service trả về lỗi hay không
+    if (result.status === "ERROR") {
+      return res.status(400).json(result);
     }
 
-    // Giữ lại address nếu nó không có trong req.body
-    const updatedData = { ...req.body };
-    if (!req.body.address) {
-      updatedData.address = existingUser.address;
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updatedData },
-      { new: true } // Trả về dữ liệu đã cập nhật
-    );
-
-    return res.status(200).json({
-      status: "OK",
-      message: "Cập nhật thông tin thành công!",
-      data: updatedUser,
-    });
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({
+      status: "ERROR",
       message: "Lỗi khi cập nhật thông tin người dùng",
       error: e.message,
     });

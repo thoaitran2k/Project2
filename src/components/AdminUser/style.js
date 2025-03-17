@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import TableComponent from "../TableComponent/TableComponent";
 
 export const WrapperHeader = styled.h1`
   color: black;
@@ -21,5 +22,11 @@ export const CustomUpload = styled.div`
   }
   .ant-upload-list-item-container {
     display: none;
+  }
+`;
+
+export const TableProduct = styled(TableComponent)`
+  .row-blocked {
+    color: red !important;
   }
 `;
