@@ -3,11 +3,10 @@ const uploadImageProductService = require("../services/uploadImageProductService
 
 const createProduct = async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
     const {
       name,
       image,
-      //imagesPreview,
+      imagesPreview,
       type,
       price,
       countInStock,
@@ -20,7 +19,7 @@ const createProduct = async (req, res) => {
     if (
       !name ||
       !image ||
-      //!imagesPreview ||
+      !imagesPreview ||
       !type ||
       !price ||
       !countInStock ||
@@ -147,6 +146,25 @@ const uploadImageProduct = async (req, res) => {
   }
 };
 
+const uploadImagePreviewProduct = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const imageUrls = await Promise.all(
+      req.files.map((file) =>
+        uploadImageProductService.uploadImageToCloudinary(file)
+      )
+    );
+
+    res.json({ imageUrls }); // ✅ Trả về mảng URLs thay vì chỉ 1 URL
+  } catch (error) {
+    console.error("Lỗi upload ảnh:", error);
+    res.status(500).json({ message: "Lỗi tải ảnh lên" });
+  }
+};
+
 module.exports = {
   createProduct,
   updateProduct,
@@ -154,4 +172,5 @@ module.exports = {
   deleteProduct,
   getAllProduct,
   uploadImageProduct,
+  uploadImagePreviewProduct,
 };

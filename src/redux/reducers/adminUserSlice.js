@@ -48,7 +48,7 @@ export const getDetailsUserById = createAsyncThunk(
         }
       );
 
-      console.log("DATA:", response.data);
+      //"DATA:", response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(

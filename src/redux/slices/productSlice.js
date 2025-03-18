@@ -128,7 +128,7 @@ const productSlice = createSlice({
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.loading = false;
         // Cập nhật sản phẩm trong danh sách
-        console.log("State Product", state.products);
+        //console.log("State Product", state.products);
 
         if (!Array.isArray(state.products)) {
           state.products = [];

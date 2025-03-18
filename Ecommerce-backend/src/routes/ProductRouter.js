@@ -24,3 +24,11 @@ router.post(
 );
 
 module.exports = router;
+
+router.post(
+  "/upload-images",
+  upload.array("images", 4),
+  ProductController.uploadImagePreviewProduct
+);
+
+module.exports = router;

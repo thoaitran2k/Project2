@@ -160,7 +160,7 @@ export const getAddresses = async (userId, accessToken) => {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
-    console.log("Response từ API getAddresses:", response.data);
+    //console.log("Response từ API getAddresses:", response.data);
     return response.data;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách địa chỉ:", error);

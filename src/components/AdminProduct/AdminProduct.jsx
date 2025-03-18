@@ -10,6 +10,7 @@ import {
   Upload,
   message,
   Select,
+  Rate,
 } from "antd";
 import {
   DeleteOutlined,
@@ -51,6 +52,7 @@ const AdminProduct = () => {
     description: "",
     rating: "",
     image: "",
+    imagesPreview: [],
     type: "",
     countInStock: "",
     variants: [], // Thêm trường variants
@@ -275,6 +277,21 @@ const AdminProduct = () => {
     confirm();
   };
 
+  //________________________________________GỘP SỐ LƯỢNG VÀ SIZE TRÙNG NHAU
+  const groupVariants = (variants) => {
+    const grouped = {};
+
+    variants.forEach(({ color, size, quantity }) => {
+      const key = `${color}-${size}`;
+      if (!grouped[key]) {
+        grouped[key] = { color, size, quantity: 0 };
+      }
+      grouped[key].quantity += Number(quantity); // ✅ Cộng dồn số lượng
+    });
+
+    return Object.values(grouped); // Trả về danh sách biến thể đã gộp
+  };
+
   //________________________________________________________DỮ LIỆU BẢNG
   //_________________________________________________CÁCH FILTER
   //__________________________________________SERACH
@@ -288,7 +305,7 @@ const AdminProduct = () => {
     {
       title: "Price",
       dataIndex: "price",
-      width: "15vw",
+      width: "9vw",
       sorter: (a, b) => a.price - b.price,
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
         <div style={{ padding: 8 }}>
@@ -353,8 +370,11 @@ const AdminProduct = () => {
     {
       title: "Rating",
       dataIndex: "rating",
-      width: "15vw",
+      width: "8vw",
       sorter: (a, b) => a.rating - b.rating,
+      render: (rating) => (
+        <Rate disabled value={rating} style={{ fontSize: "12px" }} />
+      ),
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
         <div style={{ padding: 8 }}>
           <Button
@@ -408,7 +428,7 @@ const AdminProduct = () => {
       ),
       onFilter: (value, record) => {
         if (value === "3-4") return record.rating >= 3 && record.rating < 4;
-        if (value === "4-5") return record.rating >= 4 && record.rating < 5;
+        if (value === "4-5") return record.rating >= 4 && record.rating <= 5;
         if (value === "<3") return record.rating < 3;
       },
       filteredValue: filteredInfo.rating || null,
@@ -416,7 +436,7 @@ const AdminProduct = () => {
     {
       title: "Type",
       dataIndex: "type",
-      width: "15vw",
+      width: "8vw",
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => (
         <div style={{ padding: 8 }}>
           {[
@@ -470,35 +490,30 @@ const AdminProduct = () => {
       dataIndex: "color",
       align: "center",
       render: (_, record) => {
-        const colorOrder = ["white", "black", "blue", "red"]; // Định nghĩa thứ tự sắp xếp
+        const colorOrder = ["white", "black", "blue", "red"]; // Ưu tiên màu
+        const uniqueColors = [
+          ...new Set(record.variants.map((v) => v.color.toLowerCase())),
+        ].sort((a, b) => colorOrder.indexOf(a) - colorOrder.indexOf(b)); // Sắp xếp theo thứ tự
 
         return (
           <div
             style={{ display: "flex", gap: "5px", justifyContent: "center" }}
           >
-            {[...record.variants] // Tạo bản sao mảng trước khi sắp xếp
-              .sort(
-                (a, b) =>
-                  colorOrder.indexOf(a.color.toLowerCase()) -
-                  colorOrder.indexOf(b.color.toLowerCase())
-              )
-              .map((variant, index) => {
-                const color = variant.color.toLowerCase();
-                const borderColor = color === "white" ? "#000" : "#ccc"; // Viền đen nếu màu trắng
-
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      backgroundColor: color,
-                      border: `1px solid ${borderColor}`,
-                    }}
-                  />
-                );
-              })}
+            {uniqueColors.map((color, index) => {
+              const borderColor = color === "white" ? "#000" : "#ccc";
+              return (
+                <div
+                  key={index}
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    backgroundColor: color,
+                    border: `1px solid ${borderColor}`,
+                  }}
+                />
+              );
+            })}
           </div>
         );
       },
@@ -508,11 +523,33 @@ const AdminProduct = () => {
       dataIndex: "size",
       align: "center",
       render: (_, record) => {
-        const sizeOrder = ["S", "M", "L", "XL", "XXL"]; // Định nghĩa thứ tự sắp xếp
-        return record.variants
-          .map((variant) => variant.size)
-          .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)) // Sắp xếp theo thứ tự size
+        const sizeOrder = ["S", "M", "L", "XL", "XXL"]; // Thứ tự sắp xếp
+        const sizeMap = {};
+
+        // Gộp số lượng theo size
+        record.variants.forEach(({ size, quantity }) => {
+          sizeMap[size] = (sizeMap[size] || 0) + Number(quantity);
+        });
+
+        return Object.entries(sizeMap)
+          .sort((a, b) => sizeOrder.indexOf(a[0]) - sizeOrder.indexOf(b[0])) // Sắp xếp theo thứ tự size
+          .map(([size, quantity]) => `${size} (${quantity})`)
           .join(", ");
+      },
+    },
+    {
+      title: "Total Quantity",
+      dataIndex: "totalQuantity",
+      align: "center",
+      sorter: (a, b) =>
+        a.variants.reduce((sum, v) => sum + Number(v.quantity), 0) -
+        b.variants.reduce((sum, v) => sum + Number(v.quantity), 0),
+      render: (_, record) => {
+        const totalQuantity = record.variants.reduce(
+          (sum, variant) => sum + Number(variant.quantity),
+          0
+        );
+        return <strong>{totalQuantity}</strong>;
       },
     },
     {
@@ -533,7 +570,6 @@ const AdminProduct = () => {
         }))
       : [];
 
-  console.log("Product", products);
   //console.log("Product data being passed to TableComponent:", products?.data);
 
   useEffect(() => {
@@ -584,16 +620,22 @@ const AdminProduct = () => {
   };
 
   const onFinish = async () => {
+    console.log("stateProduct", stateProduct);
     try {
+      const validVariants = stateProduct.variants.filter(
+        (v) => v.color && v.size
+      );
+
       const newProduct = {
         name: stateProduct.name,
         image: stateProduct.image,
+        imagesPreview: stateProduct.imagesPreview,
         type: stateProduct.type,
         price: Number(stateProduct.price),
         countInStock: Number(stateProduct.countInStock),
         rating: Number(stateProduct.rating),
         description: stateProduct.description,
-        variants: stateProduct.variants,
+        variants: validVariants,
       };
 
       console.log("Dữ liệu sản phẩm trước khi gửi:", newProduct);
@@ -615,6 +657,7 @@ const AdminProduct = () => {
           description: "",
           rating: "",
           image: "",
+          imagesPreview: [],
           type: "",
           countInStock: "",
           variants: [],
@@ -661,6 +704,8 @@ const AdminProduct = () => {
       // Cập nhật giá trị cho field cụ thể
       updatedVariants[index] = { ...updatedVariants[index], [field]: value };
 
+      console.log("🛠 Biến thể sau khi cập nhật:", updatedVariants);
+
       return { ...prev, variants: updatedVariants };
     });
   };
@@ -674,7 +719,38 @@ const AdminProduct = () => {
     }));
   };
 
-  const handleChangeImage = async (info) => {
+  const handleChangePreviewImage = async (info) => {
+    const newFiles = info.fileList
+      .slice(0, 4)
+      .map((file) => file.originFileObj || file);
+
+    const formData = new FormData();
+    newFiles.forEach((file) => formData.append("images", file));
+
+    try {
+      const response = await axios.post(
+        `http://localhost:3002/api/product/upload-images`,
+        formData,
+        {
+          headers: { Accept: "application/json" },
+        }
+      );
+
+      if (response.data && response.data.imageUrls) {
+        setStateProduct((prev) => ({
+          ...prev,
+          imagesPreview: response.data.imageUrls,
+        }));
+      } else {
+        throw new Error("Không tìm thấy danh sách imageUrls trong response!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh lên:", error);
+      message.error("Tải ảnh lên thất bại!");
+    }
+  };
+
+  const handleChangeMainImage = async (info) => {
     const file = info.file.originFileObj || info.file;
 
     if (!(file instanceof Blob)) {
@@ -796,10 +872,10 @@ const AdminProduct = () => {
       <div style={{ marginTop: "10px" }}>
         <Button
           style={{
-            height: "150px",
-            width: "150px",
+            height: "100px",
+            width: "100px",
             borderStyle: "dashed",
-            fontSize: "60px",
+            fontSize: "30px",
           }}
           onClick={() => {
             setStateProduct({
@@ -989,7 +1065,20 @@ const AdminProduct = () => {
                       </Form.Item>
 
                       {/* Nút xóa variant */}
-                      <MinusCircleOutlined onClick={() => remove(name)} />
+                      <MinusCircleOutlined
+                        onClick={() => {
+                          remove(name);
+                          setStateProduct((prev) => {
+                            const updatedVariants = [...prev.variants];
+                            updatedVariants.splice(index, 1);
+                            console.log(
+                              "Danh sách biến thể sau khi xóa:",
+                              updatedVariants
+                            );
+                            return { ...prev, variants: updatedVariants };
+                          });
+                        }}
+                      />
                     </Space>
                   ))}
 
@@ -999,13 +1088,17 @@ const AdminProduct = () => {
                       type="dashed"
                       onClick={() => {
                         add();
-                        setStateProduct((prev) => ({
-                          ...prev,
-                          variants: [
-                            ...prev.variants,
+                        setStateProduct((prev) => {
+                          const newVariants = [
+                            ...(prev.variants || []),
                             { color: "", size: "", quantity: 0 },
-                          ],
-                        }));
+                          ];
+                          console.log(
+                            "✅ Danh sách biến thể sau khi thêm:",
+                            newVariants
+                          );
+                          return { ...prev, variants: newVariants };
+                        });
                       }}
                       block
                       icon={<PlusOutlined />}
@@ -1087,57 +1180,114 @@ const AdminProduct = () => {
           <Form.Item
             label="Image"
             name="image"
-            rules={[
-              {
-                required: true,
-                message: "Please upload an image!",
-              },
-            ]}
+            rules={[{ required: true, message: "Please upload an image!" }]}
           >
             <div
               style={{
                 display: "flex",
-                flexDirection: "row",
+                flexDirection: "column",
                 alignItems: "center",
                 gap: "10px",
               }}
             >
-              {/* Ô chứa ảnh hoặc khung trống */}
               <div
                 style={{
-                  width: "200px",
-                  height: "200px",
-                  border: "2px dashed #ccc",
                   display: "flex",
+                  flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  position: "relative",
-                  overflow: "hidden",
+                  gap: 10,
                 }}
               >
-                {stateProduct?.image ? (
-                  <img
-                    src={stateProduct?.image}
-                    alt="Product"
+                {/* Ảnh chính */}
+
+                <div
+                  style={{
+                    width: "200px",
+                    height: "200px",
+                    border: "2px dashed #ccc",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {stateProduct?.image ? (
+                    <img
+                      src={stateProduct?.image}
+                      alt="Main Product"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ color: "#aaa" }}>No image</span>
+                  )}
+                </div>
+
+                {/* Nút chọn ảnh chính */}
+                <Upload
+                  beforeUpload={() => false}
+                  onChange={handleChangeMainImage}
+                  maxCount={1}
+                  showUploadList={false}
+                >
+                  <Button icon={<PlusOutlined />}>Select</Button>
+                </Upload>
+              </div>
+              {/* Khu vực hiển thị ảnh preview */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
+              >
+                {[...Array(4)].map((_, index) => (
+                  <div
+                    key={index}
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
+                      width: "70px",
+                      height: "70px",
+                      border: "1px dashed #ddd",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      borderRadius: "5px",
+                      backgroundColor: "#f5f5f5",
                     }}
-                  />
-                ) : (
-                  <span style={{ color: "#aaa" }}>No image</span>
-                )}
+                  >
+                    {stateProduct?.imagesPreview?.[index] ? (
+                      <img
+                        src={stateProduct.imagesPreview[index]}
+                        alt={`Preview ${index}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <span style={{ color: "#aaa" }}>+</span> // Hiển thị dấu "+" nếu chưa có ảnh
+                    )}
+                  </div>
+                ))}
               </div>
 
-              {/* Nút chọn ảnh */}
+              {/* Nút chọn ảnh preview */}
               <Upload
-                beforeUpload={() => false} // Không upload ngay lập tức
-                onChange={handleChangeImage} // Nhận `fileList`
-                maxCount={1}
+                beforeUpload={() => false}
+                onChange={handleChangePreviewImage}
+                multiple // Cho phép chọn nhiều ảnh
+                maxCount={4} // Giới hạn tối đa 4 ảnh
                 showUploadList={false}
               >
-                <Button icon={<PlusOutlined />}>Select Image</Button>
+                <Button icon={<PlusOutlined />}>Select Preview Images</Button>
               </Upload>
             </div>
           </Form.Item>

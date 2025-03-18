@@ -143,7 +143,6 @@ const userSlice = createSlice({
       localStorage.setItem("user", JSON.stringify(state)); // Lưu lại vào localStorage
     },
     updateAddresses: (state, action) => {
-      console.log("Dữ liệu nhận vào Redux:", action.payload);
       const updatedAddress = action.payload;
       const index = state.address.findIndex(
         (addr) => addr._id === updatedAddress._id

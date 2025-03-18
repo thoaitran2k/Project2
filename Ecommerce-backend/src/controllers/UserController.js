@@ -541,7 +541,7 @@ const addAddress = async (req, res) => {
     const { userId } = req.params;
     const { address, isDefault, name, phoneDelivery } = req.body;
 
-    console.log("🟢 Dữ liệu nhận từ FE:", req.body);
+    //console.log("🟢 Dữ liệu nhận từ FE:", req.body);
 
     // Kiểm tra địa chỉ là bắt buộc
     if (!address) {
