@@ -1100,6 +1100,7 @@ const AdminProduct = () => {
       {/* Modal thêm sản phẩm */}
       <Modal
         title="Tạo sản phẩm mới"
+        style={{ top: 5 }}
         open={isModalOpen}
         //onOk={handleOk}
         onCancel={handleCancel}
@@ -1399,8 +1400,8 @@ const AdminProduct = () => {
 
                 <div
                   style={{
-                    width: "200px",
-                    height: "200px",
+                    width: "150px",
+                    height: "150px",
                     border: "2px dashed #ccc",
                     display: "flex",
                     alignItems: "center",
@@ -1842,8 +1843,8 @@ const AdminProduct = () => {
               {/* Ô chứa ảnh hoặc khung trống */}
               <div
                 style={{
-                  width: "200px",
-                  height: "200px",
+                  width: "120px",
+                  height: "120px",
                   border: "2px dashed #ccc",
                   display: "flex",
                   alignItems: "center",
@@ -1893,8 +1894,8 @@ const AdminProduct = () => {
                         src={image}
                         alt={`Preview ${index}`}
                         style={{
-                          width: "100px",
-                          height: "100px",
+                          width: "75px",
+                          height: "75px",
                           objectFit: "cover",
                           borderRadius: "5px",
                         }}

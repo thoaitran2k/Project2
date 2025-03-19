@@ -179,7 +179,7 @@ const ProductCard = styled.div`
     (Math.floor(index / columns) + index) % 2 === 0
       ? "linear-gradient(to bottom, #D0CECE, #EAE9E9)"
       : "linear-gradient(to bottom, #EAE9E9, #D0CECE)"};
-  // border-radius: 8px;
+
   padding: 15px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease-in-out;
