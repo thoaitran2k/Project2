@@ -32,7 +32,7 @@ export const startTokenRefresh = () => {
 
   checkAndRefreshToken(); // Kiểm tra ngay lúc đăng nhập
 
-  refreshInterval = setInterval(checkAndRefreshToken, 1000); // Kiểm tra mỗi 30 giây
+  refreshInterval = setInterval(checkAndRefreshToken, 30000); // Kiểm tra mỗi 30 giây
 };
 
 export const stopTokenRefresh = () => {

@@ -11,7 +11,7 @@ let isRefreshing = false;
 let refreshSubscribers = [];
 
 const onRefreshed = (newAccessToken) => {
-  refreshSubscribers.map((callback) => callback(newAccessToken));
+  refreshSubscribers.forEach((callback) => callback(newAccessToken));
   refreshSubscribers = [];
 };
 
@@ -21,12 +21,19 @@ axiosInstance.interceptors.response.use(
     console.log("Interceptor bắt lỗi:", error.response?.status);
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log("Token hết hạn, thử refresh...");
+    if (
+      error.response?.status === 401 &&
+      error.response.data.status === "TOKEN_EXPIRED" &&
+      !originalRequest._retry
+    ) {
+      console.log("🔄 Token hết hạn, đang refresh...");
+
       if (isRefreshing) {
         return new Promise((resolve) => {
           refreshSubscribers.push((newAccessToken) => {
-            originalRequest.headers["Token"] = `Bearer ${newAccessToken}`;
+            originalRequest.headers[
+              "Authorization"
+            ] = `Bearer ${newAccessToken}`;
             resolve(axiosInstance(originalRequest));
           });
         });
@@ -38,7 +45,10 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
+          console.log("🚨 Không tìm thấy refreshToken, đăng xuất...");
           store.dispatch(logoutUser());
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
           return Promise.reject(error);
         }
 
@@ -50,23 +60,29 @@ axiosInstance.interceptors.response.use(
         );
 
         if (res.status === 200) {
-          const newAccessToken = res.data.accessToken;
+          const newAccessToken = res.data.access_token; // ✅ Sửa thành `access_token`
           localStorage.setItem("accessToken", newAccessToken);
           store.dispatch(setUser(newAccessToken));
 
-          axiosInstance.defaults.headers["Token"] = `Bearer ${newAccessToken}`;
-          originalRequest.headers["Token"] = `Bearer ${newAccessToken}`;
+          axiosInstance.defaults.headers[
+            "Authorization"
+          ] = `Bearer ${newAccessToken}`;
+          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
 
           onRefreshed(newAccessToken);
           return axiosInstance(originalRequest);
         }
       } catch (err) {
+        console.log("❌ Refresh token thất bại, đăng xuất...");
         store.dispatch(logoutUser());
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );

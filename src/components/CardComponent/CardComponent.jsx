@@ -194,6 +194,7 @@ const ProductCard = styled.div`
     height: 260px;
     object-fit: cover;
     border-radius: 5px;
+    background: transparent;
   }
 `;
 

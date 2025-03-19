@@ -183,6 +183,7 @@ const AdminProduct = () => {
         description: productDetail.data.description,
         rating: productDetail.data.rating,
         image: productDetail.data.image,
+        imagesPreview: productDetail.data.imagesPreview,
         type: productDetail.data.type,
         countInStock: productDetail.data.variants.reduce(
           (sum, variant) => sum + Number(variant.quantity || 0),
@@ -200,6 +201,98 @@ const AdminProduct = () => {
       });
     }
   }, [productDetail]);
+  //________________XÓA ẢNH PREVIEW KHI CHỈNH SỬA
+
+  const handleRemovePreviewImage = (index) => {
+    setStateDetailsProduct((prev) => {
+      if (!prev?.imagesPreview) return prev; // Kiểm tra nếu mảng không tồn tại
+
+      const newImages = [...prev.imagesPreview];
+      newImages.splice(index, 1); // Xóa ảnh khỏi mảng
+
+      return { ...prev, imagesPreview: newImages }; // Cập nhật state mới
+    });
+  };
+  //________________THÊM ẢNH PREVIEW KHI CHỈNH SỬA
+  const handleAddPreviewImage = async (file) => {
+    if (!file) return;
+
+    // Kiểm tra số lượng ảnh tối đa (4 ảnh)
+    if (stateDetailsProduct?.imagesPreview?.length >= 4) {
+      message.warning("Bạn chỉ có thể thêm tối đa 4 ảnh!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      // Gửi ảnh lên Cloudinary thông qua API backend
+      const response = await axios.post(
+        `http://localhost:3002/api/product/upload-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.imageUrl) {
+        setStateDetailsProduct((prev) => ({
+          ...prev,
+          imagesPreview: [
+            ...(prev.imagesPreview || []),
+            response.data.imageUrl,
+          ], // Thêm ảnh mới vào mảng
+        }));
+      } else {
+        throw new Error("Không nhận được URL từ server!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh lên:", error);
+      message.error("Tải ảnh lên thất bại!");
+    }
+  };
+  //CHỈNH SỬA ẢNH PREVIEW CHI TIẾT SẢN PHẨM
+  const handleEditPreviewImage = async (index, file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:3002/api/product/upload-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.imageUrl) {
+        setStateDetailsProduct((prev) => {
+          const newImages = [...prev.imagesPreview];
+          newImages[index] = response.data.imageUrl; // Cập nhật ảnh mới vào vị trí cũ
+          return { ...prev, imagesPreview: newImages };
+        });
+      } else {
+        throw new Error("Không nhận được URL từ server!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi thay đổi ảnh:", error);
+      message.error("Thay đổi ảnh thất bại!");
+    }
+  };
+
+  //_________________________________________________________KIỂM TRA STATEDETAILSPRODUCT BIẾN ĐỘNG
+  useEffect(() => {
+    console.log("stateDetailsProduct", stateDetailsProduct);
+  }, [stateDetailsProduct]);
 
   //_____________________ĐẾM SỐ LƯỢNG TỒN KHO
 
@@ -624,18 +717,18 @@ const AdminProduct = () => {
 
   //console.log("Product data being passed to TableComponent:", products?.data);
 
-  useEffect(() => {
-    //console.log("Redux products:", products);
-  }, [products]);
+  // useEffect(() => {
+  //   //console.log("Redux products:", products);
+  // }, [products]);
 
-  if (isloading) return <p>Đang tải...</p>;
-  if (!products?.data || products.data.length === 0)
-    return (
-      <p style={{ justifyContent: "center", alignItems: "center" }}>
-        Không có sản phẩm nào.
-      </p>
-    );
-  //_______________________________________________________Xóa sản phẩm
+  // if (isloading) return <p>Đang tải...</p>;
+  // if (!products?.data || products.data.length === 0)
+  //   return (
+  //     <p style={{ justifyContent: "center", alignItems: "center" }}>
+  //       Không có sản phẩm nào.
+  //     </p>
+  //   );
+  // //_______________________________________________________Xóa sản phẩm
   const handleDeleteProduct = async (id) => {
     setRowSelected(id);
     setIsModalOpenDeleteProduct(true);
@@ -1786,6 +1879,70 @@ const AdminProduct = () => {
               >
                 <Button icon={<PlusOutlined />}>Select Image</Button>
               </Upload>
+            </div>
+          </Form.Item>
+
+          <Form.Item label="Preview Images">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {stateDetailsProduct?.imagesPreview?.length > 0 ? (
+                stateDetailsProduct.imagesPreview
+                  .slice(0, 4)
+                  .map((image, index) => (
+                    <div key={index} style={{ position: "relative" }}>
+                      <img
+                        src={image}
+                        alt={`Preview ${index}`}
+                        style={{
+                          width: "100px",
+                          height: "100px",
+                          objectFit: "cover",
+                          borderRadius: "5px",
+                        }}
+                      />
+                      {/* Xóa ảnh */}
+                      <Button
+                        type="link"
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemovePreviewImage(index)}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          color: "red",
+                        }}
+                      />
+                      {/* Chỉnh sửa ảnh (Thay thế ảnh cũ) */}
+                      <Upload
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          handleEditPreviewImage(index, file);
+                          return false;
+                        }}
+                      >
+                        <Button
+                          type="link"
+                          icon={<EditOutlined />}
+                          style={{ position: "absolute", bottom: 0, right: 0 }}
+                        />
+                      </Upload>
+                    </div>
+                  ))
+              ) : (
+                <span style={{ color: "#aaa" }}>No preview images</span>
+              )}
+
+              {/* Nút thêm ảnh mới */}
+              {stateDetailsProduct?.imagesPreview?.length < 4 && (
+                <Upload
+                  beforeUpload={(file) => {
+                    handleAddPreviewImage(file);
+                    return false;
+                  }}
+                  showUploadList={false}
+                >
+                  <Button icon={<PlusOutlined />}>Add Image</Button>
+                </Upload>
+              )}
             </div>
           </Form.Item>
 

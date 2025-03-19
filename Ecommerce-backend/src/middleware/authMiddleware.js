@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
 
-// Middleware xác thực token (không bắt buộc phải là admin)
+// Middleware xác thực token (không cần admin)
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || req.headers.token;
@@ -18,6 +18,13 @@ const authMiddleware = (req, res, next) => {
     jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
       if (err) {
         console.log("🔹 JWT Verify Error:", err);
+
+        if (err.name === "TokenExpiredError") {
+          return res
+            .status(401)
+            .json({ message: "Token expired", status: "TOKEN_EXPIRED" });
+        }
+
         return res
           .status(403)
           .json({ message: "Token is not valid", status: "ERROR" });
@@ -47,6 +54,13 @@ const authUserMiddleware = (req, res, next) => {
     jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
       if (err) {
         console.log("🔹 JWT Verify Error:", err);
+
+        if (err.name === "TokenExpiredError") {
+          return res
+            .status(401)
+            .json({ message: "Token expired", status: "TOKEN_EXPIRED" });
+        }
+
         return res
           .status(403)
           .json({ message: "Token is not valid", status: "ERROR" });
