@@ -39,7 +39,7 @@ const createProduct = async (req, res) => {
       .json({ message: "Error creating product", error: e.message });
   }
 };
-
+//________________________________________________________________________________
 const updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -50,7 +50,7 @@ const updateProduct = async (req, res) => {
     }
 
     const response = await ProductService.updateProduct(productId, req.body);
-    console.log("Cập nhật...");
+    // console.log("Cập nhật...");
 
     return res.status(200).json(response);
   } catch (e) {
@@ -59,7 +59,7 @@ const updateProduct = async (req, res) => {
       .json({ message: "Error updating product", error: e.message });
   }
 };
-
+//________________________________________________________________________________
 const deleteProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -77,7 +77,27 @@ const deleteProduct = async (req, res) => {
       .json({ message: "Error deleting product", error: e.message });
   }
 };
+//________________________________________________________________________________
+const deleteManyProduct = async (req, res) => {
+  try {
+    const { ids } = req.body; // Lấy danh sách ID từ body
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Product IDs are required and must be an array",
+      });
+    }
 
+    const response = await ProductService.deleteManyProduct(ids);
+    return res.status(200).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      message: "Error deleting products",
+      error: e.message,
+    });
+  }
+};
+//________________________________________________________________________________
 const getDetailProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -95,7 +115,7 @@ const getDetailProduct = async (req, res) => {
       .json({ message: "Error getting product details", error: e.message });
   }
 };
-
+//________________________________________________________________________________
 const getAllProduct = async (req, res) => {
   try {
     const {
@@ -131,7 +151,7 @@ const getAllProduct = async (req, res) => {
       .json({ message: "Error fetching products", error: e.message });
   }
 };
-
+//________________________________________________________________________________
 const uploadImageProduct = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
@@ -164,7 +184,7 @@ const uploadImagePreviewProduct = async (req, res) => {
     res.status(500).json({ message: "Lỗi tải ảnh lên" });
   }
 };
-
+//________________________________________________________________________________
 module.exports = {
   createProduct,
   updateProduct,
@@ -173,4 +193,5 @@ module.exports = {
   getAllProduct,
   uploadImageProduct,
   uploadImagePreviewProduct,
+  deleteManyProduct,
 };

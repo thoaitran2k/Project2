@@ -33,6 +33,7 @@ import {
   getAllProduct,
   getDetailsProductById,
   updateProduct,
+  deleteManyProduct,
 } from "../../redux/slices/productSlice";
 import Loading from "../LoadingComponent/Loading";
 import { setLoading } from "../../redux/slices/loadingSlice";
@@ -44,6 +45,18 @@ const AdminProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [CopyProductDetails, setCopyProductDetails] = useState(null);
+
+  //TYPE_____________________________________
+  const typeOptions = [
+    { value: "Áo nam", label: "Áo nam" },
+    { value: "Quần nam", label: "Quần nam" },
+    { value: "Áo nữ", label: "Áo nữ" },
+    { value: "Quần nữ", label: "Quần nữ" },
+    { value: "Đồng hồ", label: "Đồng hồ" },
+    { value: "Trang sức", label: "Trang sức" },
+    { value: "Ví", label: "Ví" },
+    { value: "Túi xách", label: "Túi xách" },
+  ];
 
   //Thêm mới
   const [stateProduct, setStateProduct] = useState({
@@ -138,22 +151,61 @@ const AdminProduct = () => {
     }, 0); // Đợi state cập nhật xong
   };
 
+  //______________________________________HANDLE XÓA TẤT CẢ SẢN PHẨM ĐƯỢC CHỌN
+  const handleDeleteManyProducts = (productIds) => {
+    if (!Array.isArray(productIds)) {
+      console.error("Danh sách ID sản phẩm không hợp lệ");
+      return;
+    }
+
+    dispatch(deleteManyProduct(productIds))
+      .unwrap()
+      .then(() => {
+        console.log("Xóa nhiều sản phẩm thành công");
+        message.success("Xóa nhiều sản phẩm thành công");
+        // Gọi lại API lấy tất cả sản phẩm sau khi xóa thành công
+        dispatch(getAllProduct({ page: currentPage }));
+      })
+      .catch((error) => {
+        console.error("Xóa nhiều sản phẩm thất bại:", error);
+      });
+
+    console.log("IDS:", productIds);
+  };
+
   useEffect(() => {
+    //console.log("📌 Variants từ API:", productDetail.data.variants);
     if (productDetail?.data) {
       setCopyProductDetails(productDetail.data);
-      setStateDetailsProduct({
+      const updatedProduct = {
         name: productDetail.data.name,
         price: productDetail.data.price,
         description: productDetail.data.description,
         rating: productDetail.data.rating,
         image: productDetail.data.image,
         type: productDetail.data.type,
-        countInStock: productDetail.data.countInStock,
-      });
+        countInStock: productDetail.data.variants.reduce(
+          (sum, variant) => sum + Number(variant.quantity || 0),
+          0
+        ),
+        variants: productDetail.data.variants || [],
+      };
 
-      form.setFieldsValue(productDetail.data);
+      setStateDetailsProduct(updatedProduct);
+      setStateProduct(updatedProduct); // Cập nhật luôn stateProduct
+
+      form.setFieldsValue({
+        ...productDetail.data,
+        variants: productDetail.data.variants || [], // Đảm bảo Form.List nhận đúng giá trị
+      });
     }
   }, [productDetail]);
+
+  //_____________________ĐẾM SỐ LƯỢNG TỒN KHO
+
+  useEffect(() => {
+    console.log("🔍 State variants cập nhật:", stateProduct.variants);
+  }, [stateProduct.variants]);
 
   const renderAction = () => {
     return (
@@ -577,10 +629,10 @@ const AdminProduct = () => {
   }, [products]);
 
   if (isloading) return <p>Đang tải...</p>;
-  if (!products?.data)
+  if (!products?.data || products.data.length === 0)
     return (
       <p style={{ justifyContent: "center", alignItems: "center" }}>
-        Đang trong quá trình thêm sản phẩm....
+        Không có sản phẩm nào.
       </p>
     );
   //_______________________________________________________Xóa sản phẩm
@@ -594,7 +646,7 @@ const AdminProduct = () => {
     // console.log("Cập nhật sản phẩm");
     // console.log("updatedProduct", updatedProduct);
     // console.log("id", productId);
-
+    console.log("🛠 Dữ liệu gửi lên:", stateDetailsProduct);
     try {
       dispatch(setLoading(true));
 
@@ -603,6 +655,8 @@ const AdminProduct = () => {
       const resultAction = await dispatch(
         updateProduct({ productId, updatedData: stateDetailsProduct })
       );
+
+      console.log("📤 Dữ liệu gửi lên API:", stateDetailsProduct);
 
       if (updateProduct.fulfilled.match(resultAction)) {
         message.success("Cập nhật sản phẩm thành công!");
@@ -704,12 +758,16 @@ const AdminProduct = () => {
       // Cập nhật giá trị cho field cụ thể
       updatedVariants[index] = { ...updatedVariants[index], [field]: value };
 
-      console.log("🛠 Biến thể sau khi cập nhật:", updatedVariants);
+      // Tính tổng quantity của tất cả variants
+      const totalStock = updatedVariants.reduce(
+        (sum, variant) => sum + Number(variant.quantity || 0),
+        0
+      );
 
-      return { ...prev, variants: updatedVariants };
+      // Cập nhật state với variants mới và countInStock
+      return { ...prev, variants: updatedVariants, countInStock: totalStock };
     });
   };
-
   const handleOnchangeDetails = (e) => {
     const { name, value } = e.target;
 
@@ -717,6 +775,31 @@ const AdminProduct = () => {
       ...prevState, // ✅ Giữ lại các trường trước đó
       [name]: value, // ✅ Cập nhật trường thay đổi
     }));
+  };
+
+  const handleOnchangeDetailsVariants = (index, field, value) => {
+    setStateDetailsProduct((prev) => {
+      const updatedVariants = [...prev.variants];
+
+      // Nếu phần tử chưa tồn tại, tạo một object mặc định
+      updatedVariants[index] = updatedVariants[index] || {
+        color: "",
+        size: "",
+        quantity: 0,
+      };
+
+      // Cập nhật giá trị cho field cụ thể
+      updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+
+      // Tính tổng quantity của tất cả variants
+      const totalStock = updatedVariants.reduce(
+        (sum, variant) => sum + Number(variant.quantity || 0),
+        0
+      );
+
+      // Cập nhật state với variants mới và countInStock
+      return { ...prev, variants: updatedVariants, countInStock: totalStock };
+    });
   };
 
   const handleChangePreviewImage = async (info) => {
@@ -905,6 +988,7 @@ const AdminProduct = () => {
           isloading={isloading}
           data={dataTable}
           onChange={handleTableChange}
+          handleDeleteManyProducts={handleDeleteManyProducts}
           pagination={{
             current: currentPage,
             pageSize: 10, // Số lượng sản phẩm mỗi trang
@@ -973,10 +1057,13 @@ const AdminProduct = () => {
               },
             ]}
           >
-            <InputComponent
+            <Select
+              placeholder="Chọn loại sản phẩm"
+              options={typeOptions}
               value={stateProduct.type}
-              onChange={handleOnchange}
-              name="type"
+              onChange={(value) =>
+                setStateProduct((prev) => ({ ...prev, type: value }))
+              }
             />
           </Form.Item>
 
@@ -1071,11 +1158,20 @@ const AdminProduct = () => {
                           setStateProduct((prev) => {
                             const updatedVariants = [...prev.variants];
                             updatedVariants.splice(index, 1);
+                            const totalStock = updatedVariants.reduce(
+                              (sum, variant) =>
+                                sum + Number(variant.quantity || 0),
+                              0
+                            );
                             console.log(
                               "Danh sách biến thể sau khi xóa:",
                               updatedVariants
                             );
-                            return { ...prev, variants: updatedVariants };
+                            return {
+                              ...prev,
+                              variants: updatedVariants,
+                              countInStock: totalStock,
+                            };
                           });
                         }}
                       />
@@ -1093,11 +1189,16 @@ const AdminProduct = () => {
                             ...(prev.variants || []),
                             { color: "", size: "", quantity: 0 },
                           ];
-                          console.log(
-                            "✅ Danh sách biến thể sau khi thêm:",
-                            newVariants
+                          const totalStock = newVariants.reduce(
+                            (sum, variant) =>
+                              sum + Number(variant.quantity || 0),
+                            0
                           );
-                          return { ...prev, variants: newVariants };
+                          return {
+                            ...prev,
+                            variants: newVariants,
+                            countInStock: totalStock,
+                          };
                         });
                       }}
                       block
@@ -1111,22 +1212,24 @@ const AdminProduct = () => {
             </Form.List>
           </Form.Item>
 
-          <Form.Item
+          {/* <Form.Item
             label="Count inStock"
             name="countInStock"
-            rules={[
-              {
-                required: true,
-                message: "Please input your count InStock!",
-              },
-            ]}
+            // rules={[
+            //   {
+            //     required: true,
+            //     message: "Please input your count InStock!",
+            //   },
+            // ]}
           >
-            <InputComponent
-              value={stateProduct.countInStock}
-              onChange={handleOnchange}
-              name="countInStock"
-            />
-          </Form.Item>
+            <Form.Item name="countInStock">
+              <InputComponent
+                value={stateProduct.countInStock}
+                readOnly
+                name="countInStock"
+              />
+            </Form.Item>
+          </Form.Item> */}
 
           <Form.Item
             label="Price"
@@ -1394,21 +1497,170 @@ const AdminProduct = () => {
               name="name"
             />
           </Form.Item>
+
           <Form.Item
             label="Type"
             name="type"
             rules={[
               {
                 required: true,
-                message: "Please input your type!",
+                message: "Vui lòng chọn loại sản phẩm!",
               },
             ]}
           >
-            <InputComponent
+            <Select
+              placeholder="Chọn loại sản phẩm"
+              options={typeOptions}
               value={stateDetailsProduct.type}
-              onChange={handleOnchangeDetails}
-              name="type"
+              onChange={(value) =>
+                setStateDetailsProduct((prev) => ({ ...prev, type: value }))
+              }
             />
+          </Form.Item>
+
+          <Form.Item label="Variants">
+            <Form.List name="variants">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }, index) => (
+                    <Space
+                      key={key}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {/* Select Color */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "color"]}
+                        rules={[
+                          { required: true, message: "Vui lòng chọn màu!" },
+                        ]}
+                      >
+                        <Select
+                          placeholder="Chọn màu"
+                          options={colorOptions}
+                          onChange={(value) =>
+                            handleOnchangeDetailsVariants(index, "color", value)
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Hiển thị màu */}
+                      <div
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            stateProduct.variants[index]?.color ||
+                            "transparent",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+
+                      {/* Select Size */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "size"]}
+                        rules={[
+                          { required: true, message: "Vui lòng chọn size!" },
+                        ]}
+                      >
+                        <Select
+                          placeholder="Chọn size"
+                          options={sizeOptions}
+                          onChange={(value) =>
+                            handleOnchangeDetailsVariants(index, "size", value)
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Input Quantity */}
+                      <Form.Item
+                        {...restField}
+                        name={[name, "quantity"]}
+                        rules={[
+                          {
+                            required: true,
+                            message: "Vui lòng nhập số lượng!",
+                          },
+                        ]}
+                      >
+                        <Input
+                          placeholder="Số lượng"
+                          type="number"
+                          onChange={(e) =>
+                            handleOnchangeDetailsVariants(
+                              index,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </Form.Item>
+
+                      {/* Nút xóa variant */}
+                      <MinusCircleOutlined
+                        onClick={() => {
+                          remove(name);
+                          setStateDetailsProduct((prev) => {
+                            const updatedVariants = [...prev.variants];
+                            updatedVariants.splice(index, 1);
+                            const totalStock = updatedVariants.reduce(
+                              (sum, variant) =>
+                                sum + Number(variant.quantity || 0),
+                              0
+                            );
+                            return {
+                              ...prev,
+                              variants: updatedVariants,
+                              countInStock: totalStock,
+                            };
+                          });
+                        }}
+                      />
+                    </Space>
+                  ))}
+
+                  {/* Nút thêm variant mới */}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => {
+                        add();
+                        setStateDetailsProduct((prev) => {
+                          const newVariants = [
+                            ...(prev.variants || []),
+                            { color: "", size: "", quantity: 0 },
+                          ];
+                          const totalStock = newVariants.reduce(
+                            (sum, variant) =>
+                              sum + Number(variant.quantity || 0),
+                            0
+                          );
+                          console.log(
+                            "✅ Danh sách biến thể sau khi thêm:",
+                            newVariants
+                          );
+                          return {
+                            ...prev,
+                            variants: newVariants,
+                            countInStock: totalStock,
+                          };
+                        });
+                      }}
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Thêm biến thể
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
           </Form.Item>
           <Form.Item
             label="Count inStock"

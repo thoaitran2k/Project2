@@ -281,7 +281,7 @@ const getAllUser = async () => {
   try {
     const users = await User.find().select("-password");
 
-    console.log("Raw Users:", users); // Kiểm tra dữ liệu gốc
+    //console.log("Raw Users:", users); // Kiểm tra dữ liệu gốc
 
     const formattedUsers = users.map((user) => {
       let formattedDob = null;
@@ -305,8 +305,6 @@ const getAllUser = async () => {
         dob: formattedDob,
       };
     });
-
-    console.log("Formatted Users:", formattedUsers); // Kiểm tra dữ liệu sau khi format
 
     return {
       status: "OK",

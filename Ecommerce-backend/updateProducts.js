@@ -32,6 +32,7 @@ const updateProducts = async () => {
             variants: randomVariants,
             colors: [...new Set(randomVariants.map((v) => v.color))], // Lọc ra danh sách màu không trùng
             sizes: [...new Set(randomVariants.map((v) => v.size))], // Lọc ra danh sách size không trùng
+            countInStock: 0,
           },
         }
       );

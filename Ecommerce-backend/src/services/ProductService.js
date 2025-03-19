@@ -77,6 +77,15 @@ const deleteProduct = async (id) => {
   }
 };
 
+const deleteManyProduct = async (ids) => {
+  try {
+    await Product.deleteMany({ _id: { $in: ids } });
+    return { status: "OK", message: "User deleted successfully" };
+  } catch (e) {
+    throw e;
+  }
+};
+
 const getAllProduct = async (limit, page, sortField, sortOrder, filters) => {
   try {
     const totalProduct = await Product.countDocuments();
@@ -168,4 +177,5 @@ module.exports = {
   getDetailProduct,
   deleteProduct,
   getAllProduct,
+  deleteManyProduct,
 };

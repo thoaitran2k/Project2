@@ -107,6 +107,33 @@ export const deleteProduct = createAsyncThunk(
     }
   }
 );
+//______________________________________________Action gọi API xóa nhiều sản phẩm
+export const deleteManyProduct = createAsyncThunk(
+  "product/deleteManyProduct",
+  async (productIds, { rejectWithValue, getState }) => {
+    try {
+      const accessToken = getState().user.accessToken;
+
+      if (!accessToken) {
+        return rejectWithValue("Bạn cần đăng nhập để thực hiện hành động này.");
+      }
+
+      await axios.delete(
+        `${import.meta.env.VITE_URL_BACKEND}/product/delete-many`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          data: { ids: productIds }, // Gửi danh sách ID sản phẩm cần xóa trong body
+        }
+      );
+
+      return productIds; // Trả về danh sách ID sản phẩm đã xóa
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Xóa nhiều sản phẩm thất bại"
+      );
+    }
+  }
+);
 
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
 const productSlice = createSlice({
@@ -121,6 +148,24 @@ const productSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      //✅ Xử lý xóa nhiều sản phẩm cùng lúc
+      .addCase(deleteManyProduct.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteManyProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        if (!Array.isArray(state.products)) {
+          state.products = [];
+        }
+
+        state.products = state.products.filter(
+          (product) => !action.payload.includes(product._id)
+        );
+      })
+      .addCase(deleteManyProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // ✅ Xử lý cập nhật sản phẩm________________________________________________________
       .addCase(updateProduct.pending, (state) => {
         state.loading = true;
