@@ -7,19 +7,18 @@ const productSchema = new mongoose.Schema(
     imagesPreview: [{ type: String, required: true }],
     type: { type: String, required: true },
     price: { type: Number, required: true },
-    countInStock: { type: Number, required: true },
-    rating: { type: Number, required: true },
+    countInStock: { type: Number, default: 0 },
+    rating: { type: Number, default: 0 },
     description: { type: String },
-    discount: { type: Number },
-    selled: { type: Number },
-    // Thêm thuộc tính mới
-    colors: [{ type: String }],
-    sizes: [{ type: String }],
+    discount: { type: Number, default: 0 },
+    selled: { type: Number, default: 0 },
+    colors: [{ type: String }], // Có thể dùng enum nếu cần
+    sizes: [{ type: String }], // Ví dụ: enum: ["S", "M", "L", "XL"]
     variants: [
       {
-        color: { type: String, required: true },
-        size: { type: String, required: true },
-        quantity: { type: Number, required: true },
+        color: { type: String },
+        size: { type: String },
+        quantity: { type: Number, default: 0 },
       },
     ],
   },

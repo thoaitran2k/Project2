@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const ProductController = require("../controllers/ProductController");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
+
 const uploadService = require("../services/uploadService");
 const multer = require("multer");
 
@@ -19,8 +21,6 @@ router.delete(
   ProductController.deleteManyProduct
 );
 
-const upload = multer({ storage: multer.memoryStorage() });
-
 // Route upload ảnh sản phẩm
 router.post(
   "/upload-image",
@@ -28,12 +28,12 @@ router.post(
   ProductController.uploadImageProduct
 );
 
-module.exports = router;
-
 router.post(
   "/upload-images",
   upload.array("images", 4),
   ProductController.uploadImagePreviewProduct
 );
+
+//Import sản phẩm từ file excel
 
 module.exports = router;

@@ -19,6 +19,7 @@ import {
   MinusCircleOutlined,
   PlusOutlined,
   SearchOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
@@ -43,6 +44,8 @@ import DrawerComponent from "../DrawerComponent/DrawerComponent";
 
 const AdminProduct = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const [CopyProductDetails, setCopyProductDetails] = useState(null);
 
@@ -213,48 +216,88 @@ const AdminProduct = () => {
       return { ...prev, imagesPreview: newImages }; // Cập nhật state mới
     });
   };
-  //________________THÊM ẢNH PREVIEW KHI CHỈNH SỬA
-  const handleAddPreviewImage = async (file) => {
-    if (!file) return;
+  //________________THÊM, XÓA, SỬA ẢNH PREVIEW KHI CHỈNH SỬA
+  //*********************************** */
+  const handleUpdateImage = async () => {
+    // Lấy danh sách ảnh hiện tại
+    const currentImages = stateDetailsProduct.imagesPreview || [];
 
-    // Kiểm tra số lượng ảnh tối đa (4 ảnh)
-    if (stateDetailsProduct?.imagesPreview?.length >= 4) {
-      message.warning("Bạn chỉ có thể thêm tối đa 4 ảnh!");
-      return;
-    }
+    // Lọc ra các ảnh mới (file) chưa có URL
+    const newImages = currentImages.filter((img) => img instanceof File);
+
+    // Nếu không có ảnh mới, trả về danh sách cũ luôn
+    if (newImages.length === 0) return currentImages;
 
     const formData = new FormData();
-    formData.append("image", file);
+    newImages.forEach((file) => formData.append("images", file));
 
     try {
-      // Gửi ảnh lên Cloudinary thông qua API backend
       const response = await axios.post(
-        `http://localhost:3002/api/product/upload-image`,
+        `http://localhost:3002/api/product/upload-images`,
         formData,
-        {
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (response.data && response.data.imageUrls) {
+        // Ghép ảnh cũ (URL) với ảnh mới đã upload lên
+        return [
+          ...currentImages.filter((img) => typeof img === "string"), // Giữ lại URL ảnh cũ
+          ...response.data.imageUrls, // Thêm ảnh mới từ server
+        ].slice(0, 4); // Giới hạn tối đa 4 ảnh
+      }
+    } catch (error) {
+      console.error("Lỗi upload ảnh:", error);
+      message.error("Lỗi tải ảnh lên!");
+    }
+
+    return currentImages; // Nếu lỗi, vẫn trả về danh sách ảnh cũ
+  };
+
+  const handleAddPreviewImage = async (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+
+    const existingImages = stateDetailsProduct?.imagesPreview || [];
+    const availableSlots = 4 - existingImages.length;
+
+    if (fileList.length > availableSlots) {
+      message.warning(`Bạn chỉ có thể thêm tối đa ${availableSlots} ảnh nữa!`);
+      fileList = fileList.slice(0, availableSlots); // Chỉ lấy số ảnh đủ chỗ
+    }
+
+    const formDataArray = fileList.map((file) => {
+      const formData = new FormData();
+      formData.append("image", file);
+      return formData;
+    });
+
+    try {
+      const uploadPromises = formDataArray.map((formData) =>
+        axios.post(`http://localhost:3002/api/product/upload-image`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
             Accept: "application/json",
           },
-        }
+        })
       );
 
-      if (response.data && response.data.imageUrl) {
-        setStateDetailsProduct((prev) => ({
-          ...prev,
-          imagesPreview: [
-            ...(prev.imagesPreview || []),
-            response.data.imageUrl,
-          ], // Thêm ảnh mới vào mảng
-        }));
-      } else {
-        throw new Error("Không nhận được URL từ server!");
-      }
+      const responses = await Promise.all(uploadPromises);
+      const newImageUrls = responses.map((res) => res.data.imageUrl);
+
+      setStateDetailsProduct((prev) => ({
+        ...prev,
+        imagesPreview: [
+          ...(Array.isArray(prev.imagesPreview) ? prev.imagesPreview : []),
+          ...newImageUrls,
+        ]
+          .flat() // Loại bỏ mảng lồng nhau
+          .slice(0, 4), // Giới hạn tối đa 4 ảnh
+      }));
     } catch (error) {
       console.error("Lỗi khi tải ảnh lên:", error);
       message.error("Tải ảnh lên thất bại!");
     }
   };
+
   //CHỈNH SỬA ẢNH PREVIEW CHI TIẾT SẢN PHẨM
   const handleEditPreviewImage = async (index, file) => {
     if (!file) return;
@@ -277,8 +320,8 @@ const AdminProduct = () => {
       if (response.data && response.data.imageUrl) {
         setStateDetailsProduct((prev) => {
           const newImages = [...prev.imagesPreview];
-          newImages[index] = response.data.imageUrl; // Cập nhật ảnh mới vào vị trí cũ
-          return { ...prev, imagesPreview: newImages };
+          newImages[index] = response.data.imageUrl;
+          return { ...prev, imagesPreview: newImages.flat() }; // 🛠 Đảm bảo không có mảng lồng nhau
         });
       } else {
         throw new Error("Không nhận được URL từ server!");
@@ -743,8 +786,6 @@ const AdminProduct = () => {
     try {
       dispatch(setLoading(true));
 
-      console.log("Access Token:", user.accessToken);
-
       const resultAction = await dispatch(
         updateProduct({ productId, updatedData: stateDetailsProduct })
       );
@@ -773,10 +814,17 @@ const AdminProduct = () => {
         (v) => v.color && v.size
       );
 
+      // 🖼 Trước khi tạo sản phẩm, cần upload ảnh trước
+      const imageUrls = await handleUpload(); // Gọi hàm upload ảnh
+      if (!imageUrls || imageUrls.length === 0) {
+        message.error("Vui lòng tải lên ít nhất một ảnh!");
+        return;
+      }
+
       const newProduct = {
         name: stateProduct.name,
-        image: stateProduct.image,
-        imagesPreview: stateProduct.imagesPreview,
+        image: imageUrls[0], // Ảnh chính (lấy ảnh đầu tiên)
+        imagesPreview: imageUrls, // Danh sách ảnh preview
         type: stateProduct.type,
         price: Number(stateProduct.price),
         countInStock: Number(stateProduct.countInStock),
@@ -811,7 +859,6 @@ const AdminProduct = () => {
         }));
 
         setIsModalOpen(false);
-
         setFileList([]);
         message.success("Thêm sản phẩm thành công!");
         dispatch(getAllProduct());
@@ -895,34 +942,59 @@ const AdminProduct = () => {
     });
   };
 
-  const handleChangePreviewImage = async (info) => {
+  const handleChangePreviewImage = (info) => {
     const newFiles = info.fileList
       .slice(0, 4)
       .map((file) => file.originFileObj || file);
 
+    // 🖼️ Hiển thị ảnh preview ngay lập tức
+    const previewUrls = newFiles.map((file) => URL.createObjectURL(file));
+
+    setStateProduct((prev) => ({
+      ...prev,
+      imagesPreview: previewUrls, // Cập nhật ảnh trên UI ngay lập tức
+    }));
+
+    // Lưu files vào state để chuẩn bị gửi API
+    setSelectedFiles(newFiles);
+  };
+
+  const handleUpload = async () => {
+    console.log("📤 Bắt đầu upload ảnh...");
+
+    if (!selectedFiles || selectedFiles.length === 0) {
+      message.warning("Vui lòng chọn ảnh trước khi upload!");
+      return [];
+    }
+
     const formData = new FormData();
-    newFiles.forEach((file) => formData.append("images", file));
+    selectedFiles.forEach((file) => {
+      console.log("🖼 Đang thêm file vào FormData:", file);
+      formData.append("images", file);
+    });
 
     try {
       const response = await axios.post(
         `http://localhost:3002/api/product/upload-images`,
         formData,
-        {
-          headers: { Accept: "application/json" },
-        }
+        { headers: { Accept: "application/json" } }
       );
 
-      if (response.data && response.data.imageUrls) {
-        setStateProduct((prev) => ({
-          ...prev,
-          imagesPreview: response.data.imageUrls,
-        }));
+      console.log("📥 Kết quả API upload:", response.data);
+
+      if (
+        response.data &&
+        response.data.imageUrls &&
+        response.data.imageUrls.length > 0
+      ) {
+        return response.data.imageUrls; // ✅ Trả về danh sách URL ảnh
       } else {
         throw new Error("Không tìm thấy danh sách imageUrls trong response!");
       }
     } catch (error) {
-      console.error("Lỗi khi tải ảnh lên:", error);
+      console.error("❌ Lỗi khi tải ảnh lên:", error);
       message.error("Tải ảnh lên thất bại!");
+      return [];
     }
   };
 
@@ -983,31 +1055,27 @@ const AdminProduct = () => {
     setFileList(fileList ? fileList.slice(-1) : []);
 
     const formData = new FormData();
-    formData.append("image", file.originFileObj); // ✅ Đảm bảo key là "image"
-
-    // console.log("File gửi lên backend:", file.originFileObj);
-
-    // Kiểm tra dữ liệu trong FormData
-    for (let [key, value] of formData.entries()) {
-      //   console.log(`Key: ${key}, Value:`, value);
-    }
+    formData.append("image", file.originFileObj);
 
     try {
       const response = await axios.post(
-        `http://localhost:3002/api/product/upload-image`, // ✅ API đúng
+        `http://localhost:3002/api/product/upload-image`,
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            Accept: "application/json", // ✅ Đảm bảo server hiểu request JSON
+            Accept: "application/json",
           },
         }
       );
 
-      //   console.log("Response từ server:", response.data);
       setStateDetailsProduct((prev) => ({
         ...prev,
         image: response.data.imageUrl,
+        imagesPreview: [
+          ...(prev.imagesPreview || []),
+          response.data.imageUrl,
+        ].flat(),
       }));
     } catch (error) {
       console.error("Lỗi khi tải ảnh lên:", error);
@@ -1480,12 +1548,17 @@ const AdminProduct = () => {
               <Upload
                 beforeUpload={() => false}
                 onChange={handleChangePreviewImage}
-                multiple // Cho phép chọn nhiều ảnh
-                maxCount={4} // Giới hạn tối đa 4 ảnh
+                multiple
+                maxCount={4}
                 showUploadList={false}
               >
                 <Button icon={<PlusOutlined />}>Select Preview Images</Button>
               </Upload>
+
+              {/* Nút Upload */}
+              <Button onClick={handleUpload} icon={<UploadOutlined />}>
+                Upload Images
+              </Button>
             </div>
           </Form.Item>
 
@@ -1935,8 +2008,9 @@ const AdminProduct = () => {
               {/* Nút thêm ảnh mới */}
               {stateDetailsProduct?.imagesPreview?.length < 4 && (
                 <Upload
-                  beforeUpload={(file) => {
-                    handleAddPreviewImage(file);
+                  multiple
+                  beforeUpload={(file, fileList) => {
+                    handleAddPreviewImage(fileList);
                     return false;
                   }}
                   showUploadList={false}

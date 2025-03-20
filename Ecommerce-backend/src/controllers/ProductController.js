@@ -172,13 +172,11 @@ const uploadImagePreviewProduct = async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const imageUrls = await Promise.all(
-      req.files.map((file) =>
-        uploadImageProductService.uploadImageToCloudinary(file)
-      )
+    const imageUrls = await uploadImageProductService.uploadImageToCloudinary(
+      req.files
     );
 
-    res.json({ imageUrls }); // ✅ Trả về mảng URLs thay vì chỉ 1 URL
+    res.json({ imageUrls });
   } catch (error) {
     console.error("Lỗi upload ảnh:", error);
     res.status(500).json({ message: "Lỗi tải ảnh lên" });
