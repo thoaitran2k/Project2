@@ -29,10 +29,10 @@ const uploadImageToCloudinary = async (files, folder = "products") => {
     const uploadedImages = {};
 
     for (const { file, hash } of hashes) {
-      console.log(`🔍 Kiểm tra ảnh trùng với hash: ${hash}`);
+      //console.log(`🔍 Kiểm tra ảnh trùng với hash: ${hash}`);
 
       if (uploadedImages[hash]) {
-        console.log("✅ Ảnh đã được xử lý trước đó:", uploadedImages[hash]);
+        //console.log("✅ Ảnh đã được xử lý trước đó:", uploadedImages[hash]);
         continue;
       }
 
@@ -42,10 +42,10 @@ const uploadImageToCloudinary = async (files, folder = "products") => {
         .execute();
 
       if (existingImages.resources.length > 0) {
-        console.log(
-          "✅ Ảnh đã tồn tại:",
-          existingImages.resources[0].secure_url
-        );
+        // //console.log(
+        //   "✅ Ảnh đã tồn tại:",
+        //   existingImages.resources[0].secure_url
+        // );
         uploadedImages[hash] = existingImages.resources[0].secure_url;
         continue;
       }
@@ -61,7 +61,7 @@ const uploadImageToCloudinary = async (files, folder = "products") => {
               console.error("Lỗi Cloudinary:", error);
               return reject(new Error(`Lỗi Cloudinary: ${error.message}`));
             }
-            console.log("✅ Upload thành công:", result.secure_url);
+            //console.log("✅ Upload thành công:", result.secure_url);
             resolve(result.secure_url);
           }
         );

@@ -12,6 +12,7 @@ import {
   Select,
   Rate,
 } from "antd";
+import ImportProductButton from "./ImportProductButton";
 import {
   DeleteOutlined,
   EditOutlined,
@@ -333,15 +334,11 @@ const AdminProduct = () => {
   };
 
   //_________________________________________________________KIỂM TRA STATEDETAILSPRODUCT BIẾN ĐỘNG
-  useEffect(() => {
-    console.log("stateDetailsProduct", stateDetailsProduct);
-  }, [stateDetailsProduct]);
+  useEffect(() => {}, [stateDetailsProduct]);
 
   //_____________________ĐẾM SỐ LƯỢNG TỒN KHO
 
-  useEffect(() => {
-    console.log("🔍 State variants cập nhật:", stateProduct.variants);
-  }, [stateProduct.variants]);
+  useEffect(() => {}, [stateProduct.variants]);
 
   const renderAction = () => {
     return (
@@ -779,18 +776,13 @@ const AdminProduct = () => {
 
   //________________________________________________________________________Update sản phẩm
   const onApply = async (updatedProduct, productId) => {
-    // console.log("Cập nhật sản phẩm");
-    // console.log("updatedProduct", updatedProduct);
-    // console.log("id", productId);
-    console.log("🛠 Dữ liệu gửi lên:", stateDetailsProduct);
+    //console.log("🛠 Dữ liệu gửi lên:", stateDetailsProduct);
     try {
       dispatch(setLoading(true));
 
       const resultAction = await dispatch(
         updateProduct({ productId, updatedData: stateDetailsProduct })
       );
-
-      console.log("📤 Dữ liệu gửi lên API:", stateDetailsProduct);
 
       if (updateProduct.fulfilled.match(resultAction)) {
         message.success("Cập nhật sản phẩm thành công!");
@@ -803,18 +795,21 @@ const AdminProduct = () => {
       console.error("Lỗi khi cập nhật sản phẩm:", error);
       message.error("Cập nhật sản phẩm thất bại!");
     } finally {
-      dispatch(setLoading(false));
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 1500);
     }
   };
 
   const onFinish = async () => {
     console.log("stateProduct", stateProduct);
     try {
+      dispatch(setLoading(true));
       const validVariants = stateProduct.variants.filter(
         (v) => v.color && v.size
       );
 
-      // 🖼 Trước khi tạo sản phẩm, cần upload ảnh trước
+      //Trước khi tạo sản phẩm, cần upload ảnh trước
       const imageUrls = await handleUpload(); // Gọi hàm upload ảnh
       if (!imageUrls || imageUrls.length === 0) {
         message.error("Vui lòng tải lên ít nhất một ảnh!");
@@ -872,6 +867,10 @@ const AdminProduct = () => {
         title: "Lỗi!",
         text: error.message || "Không thể tạo sản phẩm.",
       });
+    } finally {
+      setTimeout(() => {
+        dispatch(setLoading(false));
+      }, 2500);
     }
   };
 
@@ -1109,11 +1108,20 @@ const AdminProduct = () => {
     }
   };
 
+  //_________________________IMPORT SẢN PHẨM BẰNG FILE EXCEL
+
   //_______________________________________________________________________________________________________________
   return (
     <div style={{ width: "100%" }}>
       <WrapperHeader>Quản lý sản phẩm</WrapperHeader>
-      <div style={{ marginTop: "10px" }}>
+      <div
+        style={{
+          marginTop: "10px",
+          display: "flex",
+          flexDirection: "row",
+          gap: 20,
+        }}
+      >
         <Button
           style={{
             height: "100px",
@@ -1141,6 +1149,16 @@ const AdminProduct = () => {
         >
           <PlusOutlined />
         </Button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+          }}
+        >
+          <ImportProductButton />
+        </div>
       </div>
       <div style={{ marginTop: "20px" }}>
         <TableComponent
@@ -1568,8 +1586,8 @@ const AdminProduct = () => {
               span: 16,
             }}
           >
-            <Button type="primary" htmlType="apply">
-              Apply
+            <Button type="primary" htmlType="submit">
+              Thêm sản phẩm
             </Button>
           </Form.Item>
         </Form>

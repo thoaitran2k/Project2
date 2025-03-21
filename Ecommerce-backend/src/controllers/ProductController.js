@@ -18,8 +18,8 @@ const createProduct = async (req, res) => {
 
     if (
       !name ||
-      !image ||
-      !imagesPreview ||
+      // !image ||
+      // !imagesPreview ||
       !type ||
       !price ||
       !countInStock ||

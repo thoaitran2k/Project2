@@ -32,12 +32,40 @@ const items = [
 const AdminPage = () => {
   const user = useSelector((state) => state.user);
   const navigate = useNavigate();
-  const [stateOpenKeys, setStateOpenKeys] = useState(["user"]);
-  const [selectedKey, setSelectedKey] = useState("user_list");
+  const [stateOpenKeys, setStateOpenKeys] = useState([]); // Trạng thái mở submenu
+  const [selectedKey, setSelectedKey] = useState(
+    localStorage.getItem("selectedKey") || "user_list" // Khởi tạo từ localStorage
+  );
+
+  // Tìm submenu cha của selectedKey
+  const findParentKey = (key) => {
+    for (const item of items) {
+      if (item.children) {
+        const found = item.children.find((child) => child.key === key);
+        if (found) return item.key; // Trả về key của submenu cha
+      }
+    }
+    return null;
+  };
+
+  // Tự động mở submenu cha khi selectedKey thay đổi
+  useEffect(() => {
+    const parentKey = findParentKey(selectedKey);
+    if (parentKey) {
+      setStateOpenKeys([parentKey]); // Mở submenu cha
+    }
+  }, [selectedKey]);
 
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate("/home"); // Chuyển hướng nếu không phải admin
+    }
+
+    // Khôi phục `selectedKey` từ localStorage
+    const savedKey = localStorage.getItem("selectedKey");
+
+    if (savedKey) {
+      setSelectedKey(savedKey);
     }
   }, [user, navigate]);
 
@@ -49,6 +77,8 @@ const AdminPage = () => {
   // Xử lý khi click vào menu
   const handleOnClick = ({ key }) => {
     setSelectedKey(key);
+    localStorage.setItem("selectedKey", key); // Lưu key vào localStorage
+    console.log("Saved to localStorage:", key); // Kiểm tra
   };
 
   // Render nội dung theo menu được chọn
@@ -75,8 +105,8 @@ const AdminPage = () => {
         {/* Sidebar Menu */}
         <Menu
           mode="inline"
-          selectedKeys={[selectedKey]}
-          openKeys={stateOpenKeys}
+          selectedKeys={[selectedKey]} // Đảm bảo selectedKey được truyền vào
+          openKeys={stateOpenKeys} // Đảm bảo submenu cha được mở
           onOpenChange={onOpenChange}
           style={styles.menu}
           items={items}
@@ -113,8 +143,6 @@ const styles = {
     backgroundColor: "#f5f5f5", // Giúp tách biệt menu với nội dung
     display: "flex",
     width: "100%",
-    //justifyContent: "center",
-    //alignItems: "center",
   },
 };
 
