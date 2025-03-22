@@ -24,12 +24,15 @@ const ProductDetailsComponent = ({ product }) => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const allSizes = ["S", "M", "L", "XL", "XXL"];
+  const availableSizes = Array.isArray(product?.sizes) ? product.sizes : [];
 
   const address = useSelector((state) => state.user.address);
   const defaultAddress = address?.find((addr) => addr.isDefault) || null;
 
   console.log("ADDRESS", address);
   console.log("ADDRESS DEFAULT", defaultAddress);
+  console.log("Product Sizes:", product.sizes);
+  console.log("Available Sizes:", availableSizes);
 
   const increaseQuantity = () =>
     setQuantityPay((prev) => Math.min(prev + 1, 10));
@@ -286,7 +289,7 @@ const ProductDetailsComponent = ({ product }) => {
             </div>
             <WrapperSizeOptions>
               {allSizes.map((size, index) => {
-                const isAvailable = product?.sizes?.includes(size);
+                const isAvailable = availableSizes.includes(size);
 
                 return (
                   <WrapperSizeButton

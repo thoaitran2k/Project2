@@ -1,4 +1,4 @@
-import { Dropdown, Space, Table } from "antd";
+import { Dropdown, Space, Table, Checkbox } from "antd";
 import React, { useEffect, useState } from "react";
 import PagingLoading from "../LoadingComponent/PagingLoading";
 import { useSelector } from "react-redux";
@@ -11,7 +11,8 @@ const TableComponent = ({
   isloading = false,
   rowClassName = "",
   handleDeleteManyProducts,
-
+  totalProducts,
+  allProductIds, // Danh sách tất cả các ID sản phẩm
   ...props
 }) => {
   const [isPagingLoading, setIsPagingLoading] = useState(true);
@@ -36,25 +37,59 @@ const TableComponent = ({
 
   const [rowSelectedKeys, setRowSelectedKeys] = useState([]);
 
+  // Danh sách các ID sản phẩm đang hiển thị (sau khi lọc)
+  const filteredProductIds = data.map((product) => product._id);
+
+  // Xử lý chọn tất cả các sản phẩm đang hiển thị
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setRowSelectedKeys(filteredProductIds); // Chỉ chọn các sản phẩm đang hiển thị
+    } else {
+      setRowSelectedKeys([]);
+    }
+  };
+
   const rowSelection = {
-    onChange: (selectedRowKeys, selectedRows) => {
-      setRowSelectedKeys(selectedRowKeys);
-      console.log(
-        `selectedRowKeys: ${selectedRowKeys}`
-        // "selectedRows: ",
-        // selectedRows
-      );
+    selectedRowKeys: rowSelectedKeys,
+    onChange: (selectedKeys) => {
+      setRowSelectedKeys(selectedKeys);
     },
-    // getCheckboxProps: (record) => ({
-    //   disabled: record.name === "Disabled User",
-    //   name: record.name,
-    // }),
+    onSelectAll: (selected) => {
+      if (selected) {
+        setRowSelectedKeys(filteredProductIds); // Chỉ chọn các sản phẩm đang hiển thị
+      } else {
+        setRowSelectedKeys([]);
+      }
+    },
+    selections: [
+      {
+        key: "select-all-pages",
+        text: "Chọn tất cả trên mọi trang",
+        onSelect: () => setRowSelectedKeys(allProductIds), // Chọn tất cả trên mọi trang
+      },
+      {
+        key: "deselect-all",
+        text: "Bỏ chọn tất cả",
+        onSelect: () => setRowSelectedKeys([]),
+      },
+    ],
   };
 
   const items = [];
 
   const handleDeleteAll = () => {
-    handleDeleteManyProducts(rowSelectedKeys);
+    const filteredIds = rowSelectedKeys.filter((id) =>
+      filteredProductIds.includes(id)
+    );
+
+    if (filteredIds.length > 0) {
+      handleDeleteManyProducts(filteredIds);
+    }
+
+    // Cập nhật lại danh sách chọn
+    setRowSelectedKeys((prev) =>
+      prev.filter((id) => !filteredIds.includes(id))
+    );
   };
 
   return (
@@ -94,9 +129,40 @@ const TableComponent = ({
         )}
 
         <Table
-          rowSelection={{ type: selectionType, ...rowSelection }}
-          columns={columns}
-          dataSource={data}
+          columns={[
+            {
+              title: (
+                <Checkbox
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  checked={
+                    rowSelectedKeys.length > 0 &&
+                    rowSelectedKeys.length === filteredProductIds.length
+                  }
+                  indeterminate={
+                    rowSelectedKeys.length > 0 &&
+                    rowSelectedKeys.length < filteredProductIds.length
+                  }
+                />
+              ),
+              dataIndex: "select",
+              width: "5%",
+              render: (_, record) => (
+                <Checkbox
+                  checked={rowSelectedKeys.includes(record._id)}
+                  onChange={(e) => {
+                    const selected = e.target.checked;
+                    setRowSelectedKeys((prev) =>
+                      selected
+                        ? [...new Set([...prev, record._id])]
+                        : prev.filter((id) => id !== record._id)
+                    );
+                  }}
+                />
+              ),
+            },
+            ...columns,
+          ]}
+          dataSource={data} // Chỉ hiển thị sản phẩm đã lọc
           pagination={{ pageSize: 10 }}
           scroll={{ x: "max-content" }}
           onChange={handleTableChange}

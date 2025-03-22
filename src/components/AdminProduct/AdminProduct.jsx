@@ -254,15 +254,19 @@ const AdminProduct = () => {
     return currentImages; // Nếu lỗi, vẫn trả về danh sách ảnh cũ
   };
 
+  const isUploading = useRef(false);
+
   const handleAddPreviewImage = async (fileList) => {
-    if (!fileList || fileList.length === 0) return;
+    if (!fileList || fileList.length === 0 || isUploading.current) return;
+
+    isUploading.current = true; // Đánh dấu đang upload
 
     const existingImages = stateDetailsProduct?.imagesPreview || [];
     const availableSlots = 4 - existingImages.length;
 
     if (fileList.length > availableSlots) {
       message.warning(`Bạn chỉ có thể thêm tối đa ${availableSlots} ảnh nữa!`);
-      fileList = fileList.slice(0, availableSlots); // Chỉ lấy số ảnh đủ chỗ
+      fileList = fileList.slice(0, availableSlots);
     }
 
     const formDataArray = fileList.map((file) => {
@@ -289,13 +293,13 @@ const AdminProduct = () => {
         imagesPreview: [
           ...(Array.isArray(prev.imagesPreview) ? prev.imagesPreview : []),
           ...newImageUrls,
-        ]
-          .flat() // Loại bỏ mảng lồng nhau
-          .slice(0, 4), // Giới hạn tối đa 4 ảnh
+        ].slice(0, 4),
       }));
     } catch (error) {
       console.error("Lỗi khi tải ảnh lên:", error);
       message.error("Tải ảnh lên thất bại!");
+    } finally {
+      isUploading.current = false; // Reset trạng thái sau khi hoàn tất
     }
   };
 
@@ -337,6 +341,14 @@ const AdminProduct = () => {
   useEffect(() => {}, [stateDetailsProduct]);
 
   //_____________________ĐẾM SỐ LƯỢNG TỒN KHO
+
+  //ĐẾM SỐ LƯỢNG SẢN PHẨM
+  const totalProducts = products?.total || 0;
+
+  // Lấy tất cả các ID sản phẩm từ tất cả các trang
+  const allProductIds = products?.data?.map((product) => product._id) || [];
+
+  console.log("allProductIds", allProductIds);
 
   useEffect(() => {}, [stateProduct.variants]);
 
@@ -1168,6 +1180,8 @@ const AdminProduct = () => {
           data={dataTable}
           onChange={handleTableChange}
           handleDeleteManyProducts={handleDeleteManyProducts}
+          totalProducts={totalProducts}
+          allProductIds={allProductIds}
           pagination={{
             current: currentPage,
             pageSize: 10, // Số lượng sản phẩm mỗi trang
@@ -1850,17 +1864,18 @@ const AdminProduct = () => {
           <Form.Item
             label="Count inStock"
             name="countInStock"
-            rules={[
-              {
-                required: true,
-                message: "Please input your count InStock!",
-              },
-            ]}
+            // rules={[
+            //   {
+            //     required: true,
+            //     message: "Please input your count InStock!",
+            //   },
+            // ]}
           >
             <InputComponent
               value={stateDetailsProduct.countInStock}
-              onChange={handleOnchangeDetails}
+              //onChange={handleOnchangeDetails}
               name="countInStock"
+              disabled
             />
           </Form.Item>
 

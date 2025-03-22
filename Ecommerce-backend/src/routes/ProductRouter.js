@@ -41,7 +41,6 @@ router.post(
 //Import sản phẩm từ file excel
 router.post(
   "/import-products",
-
   uploadExcel.single("file"),
   async (req, res) => {
     try {
@@ -57,18 +56,28 @@ router.post(
       const sheet = workbook.Sheets[sheetName];
       const data = xlsx.utils.sheet_to_json(sheet);
 
-      const products = data.map((row) => ({
-        name: row.name,
-        image: row.image,
-        imagesPreview: row.imagesPreview ? row.imagesPreview.split(",") : [],
-        type: row.type,
-        price: row.price,
-        countInStock: row.countInStock,
-        rating: row.rating,
-        description: row.description,
-        selled: row.selled || 0,
-        variants: row.variants ? JSON.parse(row.variants) : [],
-      }));
+      const products = data.map((row) => {
+        // Xử lý sizes: Chuyển chuỗi thành mảng
+        const sizes = row.sizes ? row.sizes.split(",") : [];
+
+        // Xử lý colors: Chuyển chuỗi thành mảng
+        const colors = row.colors ? row.colors.split(",") : [];
+
+        return {
+          name: row.name,
+          image: row.image,
+          imagesPreview: row.imagesPreview ? row.imagesPreview.split(",") : [],
+          type: row.type,
+          price: row.price,
+          countInStock: row.countInStock,
+          rating: row.rating,
+          description: row.description,
+          selled: row.selled || 0,
+          colors: colors, // Đã chuyển thành mảng
+          sizes: sizes, // Đã chuyển thành mảng
+          variants: row.variants ? JSON.parse(row.variants) : [],
+        };
+      });
 
       const createdProducts = await Product.insertMany(products);
       return res.status(201).json({
