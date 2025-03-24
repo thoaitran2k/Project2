@@ -14,6 +14,8 @@ const createProduct = async (req, res) => {
       description,
       selled,
       variants,
+      diameter, // Lấy diameter từ body
+      size, // Lấy size từ body
     } = req.body;
 
     if (
@@ -31,6 +33,18 @@ const createProduct = async (req, res) => {
         .json({ status: "ERROR", message: "All fields are required" });
     }
 
+    if (type === "Đồng hồ" && !diameter) {
+      return res
+        .status(400)
+        .json({ status: "ERROR", message: "Diameter is required for watches" });
+    }
+
+    if ((type === "Quần nam" || type === "Quần nữ") && !size) {
+      return res
+        .status(400)
+        .json({ status: "ERROR", message: "Size is required for pants" });
+    }
+
     const response = await ProductService.createProduct(req.body);
     return res.status(201).json(response);
   } catch (e) {
@@ -39,6 +53,23 @@ const createProduct = async (req, res) => {
       .json({ message: "Error creating product", error: e.message });
   }
 };
+//____________________________________________GET ALL TYPE
+const getAllType = async (req, res) => {
+  try {
+    const response = await ProductService.getAllType();
+    return res.status(200).json({
+      status: response.status,
+      message: response.message,
+      data: response.data,
+    });
+  } catch (e) {
+    return res.status(404).json({
+      message: "Có lỗi xảy ra khi lấy loại sản phẩm",
+      error: e.message || e,
+    });
+  }
+};
+
 //________________________________________________________________________________
 const updateProduct = async (req, res) => {
   try {
@@ -192,4 +223,5 @@ module.exports = {
   uploadImageProduct,
   uploadImagePreviewProduct,
   deleteManyProduct,
+  getAllType,
 };

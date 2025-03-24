@@ -1,15 +1,15 @@
 import axios from "axios";
 
-export const getAllProduct = async () => {
+export const getAllProduct = async ({ limit, page }) => {
   try {
     const response = await axios.get(
-      `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-all`,
+      { params: { limit, page } }
     );
-    console.log("✅ API Response:", response.data); // 🔥 In dữ liệu API
     return response.data;
   } catch (error) {
-    console.error("🚨 API lỗi:", error.response?.data || error.message); // Hiển thị lỗi chi tiết
-    throw new Error("Load sản phẩm thất bại!"); // ✅ Thêm thông báo lỗi cụ thể
+    console.error("🚨 API lỗi:", error);
+    return { data: [], total: 0 }; // ✅ Tránh lỗi undefined khi truy cập dữ liệu
   }
 };
 

@@ -14,6 +14,8 @@ const createProduct = async (newProduct) => {
       description,
       selled,
       variants,
+      diameter, // Lấy diameter từ product
+      size, // Lấy size từ product
     } = newProduct;
 
     // const existingProduct = await Product.findOne({ name });
@@ -32,6 +34,8 @@ const createProduct = async (newProduct) => {
       description,
       selled,
       variants,
+      diameter, // Lưu diameter nếu sản phẩm là đồng hồ
+      size, // Lưu size nếu sản phẩm là quần
     });
 
     return {
@@ -121,7 +125,7 @@ const getAllProduct = async (limit, page, sortField, sortOrder, filters) => {
 
     // Nếu có phân trang
     if (limit) {
-      query = query.limit(limit).skip(page * limit);
+      query = query.limit(limit).skip((page - 1) * limit);
     }
 
     // Nếu có yêu cầu sắp xếp theo trường cụ thể
@@ -142,6 +146,19 @@ const getAllProduct = async (limit, page, sortField, sortOrder, filters) => {
     };
   } catch (e) {
     throw new Error("Error fetching product: " + e.message);
+  }
+};
+
+const getAllType = async () => {
+  try {
+    const allType = await Product.find().distinct("type");
+    return {
+      status: "OK",
+      message: "Success",
+      data: allType,
+    };
+  } catch (e) {
+    throw e; // Dẫn đến lỗi để xử lý trong controller nếu cần
   }
 };
 
@@ -178,4 +195,5 @@ module.exports = {
   deleteProduct,
   getAllProduct,
   deleteManyProduct,
+  getAllType,
 };

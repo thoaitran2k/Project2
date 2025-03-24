@@ -155,9 +155,6 @@ const CardComponent = ({ products, totalProducts }) => {
           ))
         )}
       </WrapperCardProduct>
-      <WrapperButtonContainer>
-        <WrapperButtonMore type="default">Xem thêm</WrapperButtonMore>
-      </WrapperButtonContainer>
     </>
   );
 };
@@ -165,7 +162,7 @@ const CardComponent = ({ products, totalProducts }) => {
 const WrapperCardProduct = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  //gap: 20px;
+  //gap: 10px;
   width: 100%;
 `;
 

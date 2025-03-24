@@ -12,6 +12,8 @@ import {
   Select,
   Rate,
 } from "antd";
+
+import ProductVariants from "./ProductVariants";
 import ImportProductButton from "./ImportProductButton";
 import {
   DeleteOutlined,
@@ -50,6 +52,165 @@ const AdminProduct = () => {
 
   const [CopyProductDetails, setCopyProductDetails] = useState(null);
 
+  //________________________________________________________________________________________________________________________________________________PHÂN LOẠI SẢN PHẨM
+  const productTypeConfig = {
+    // Áo
+    "Áo nam": {
+      hasColor: true,
+      hasSize: true,
+      sizeType: "letter",
+      hasDiameter: false,
+    },
+    "Áo nữ": {
+      hasColor: true,
+      hasSize: true,
+      sizeType: "letter",
+      hasDiameter: false,
+    },
+
+    // Quần
+    "Quần nam": {
+      hasColor: true,
+      hasSize: true,
+      sizeType: "number",
+      hasDiameter: false,
+    },
+    "Quần nữ": {
+      hasColor: true,
+      hasSize: true,
+      sizeType: "number",
+      hasDiameter: false,
+    },
+
+    // Đồng hồ
+    "Đồng hồ": { hasColor: true, hasSize: false, hasDiameter: true },
+
+    // Phụ kiện (chỉ có số lượng)
+    "Túi xách": { hasColor: false, hasSize: false, hasDiameter: false },
+    "Trang sức": { hasColor: false, hasSize: false, hasDiameter: false },
+    Ví: { hasColor: false, hasSize: false, hasDiameter: false },
+  };
+
+  const ProductVariants = ({ productType, variants, onChange }) => {
+    const config = productTypeConfig[productType] || {};
+
+    const updateVariant = (index, field, value) => {
+      const newVariants = [...variants];
+      newVariants[index] = { ...newVariants[index], [field]: value };
+      onChange(newVariants);
+    };
+
+    const addVariant = () => {
+      const newVariant = { quantity: 0 };
+      if (config.hasColor) newVariant.color = "";
+      if (config.hasSize) newVariant.size = "";
+      if (config.hasDiameter) newVariant.diameter = "";
+      onChange([...variants, newVariant]);
+    };
+
+    const removeVariant = (index) => {
+      onChange(variants.filter((_, i) => i !== index));
+    };
+
+    return (
+      <>
+        {variants.map((variant, index) => (
+          <Space key={index} style={{ marginBottom: 8 }}>
+            {/* Color Selector */}
+            {config.hasColor && (
+              <Form.Item
+                name={["variants", index, "color"]}
+                rules={[{ required: true, message: "Vui lòng chọn màu!" }]}
+              >
+                <Select
+                  placeholder="Chọn màu"
+                  options={colorOptions}
+                  value={variant.color}
+                  onChange={(value) => updateVariant(index, "color", value)}
+                />
+              </Form.Item>
+            )}
+
+            {/* Size Selector */}
+            {config.hasSize && (
+              <Form.Item
+                name={["variants", index, "size"]}
+                rules={[{ required: true, message: "Vui lòng chọn size!" }]}
+              >
+                <Select
+                  placeholder="Chọn size"
+                  options={
+                    config.sizeType === "letter"
+                      ? sizeOptions
+                      : [
+                          { label: "28", value: 28 },
+                          { label: "29", value: 29 },
+                          { label: "30", value: 30 },
+                          { label: "31", value: 31 },
+                          { label: "32", value: 32 },
+                        ]
+                  }
+                  value={variant.size}
+                  onChange={(value) => updateVariant(index, "size", value)}
+                />
+              </Form.Item>
+            )}
+
+            {/* Diameter Selector */}
+            {config.hasDiameter && (
+              <Form.Item
+                name={["variants", index, "diameter"]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn đường kính!" },
+                ]}
+              >
+                <Select
+                  placeholder="Chọn đường kính"
+                  options={[
+                    { label: "38mm", value: 38 },
+                    { label: "40mm", value: 40 },
+                    { label: "42mm", value: 42 },
+                    { label: "44mm", value: 44 },
+                  ]}
+                  value={variant.diameter}
+                  onChange={(value) => updateVariant(index, "diameter", value)}
+                />
+              </Form.Item>
+            )}
+
+            {/* Quantity Input */}
+            <Form.Item
+              name={["variants", index, "quantity"]}
+              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+            >
+              <Input
+                placeholder="Số lượng"
+                type="number"
+                value={variant.quantity}
+                onChange={(e) =>
+                  updateVariant(index, "quantity", e.target.value)
+                }
+              />
+            </Form.Item>
+
+            <MinusCircleOutlined onClick={() => removeVariant(index)} />
+          </Space>
+        ))}
+
+        <Button
+          type="dashed"
+          onClick={addVariant}
+          block
+          icon={<PlusOutlined />}
+        >
+          Thêm biến thể
+        </Button>
+      </>
+    );
+  };
+
+  //_______________________________________________________________________________________________________________________________________________________
+
   //TYPE_____________________________________
   const typeOptions = [
     { value: "Áo nam", label: "Áo nam" },
@@ -72,20 +233,12 @@ const AdminProduct = () => {
     imagesPreview: [],
     type: "",
     countInStock: "",
-    variants: [], // Thêm trường variants
+    variants: [],
+    diameter: "",
+    size: "", // Thêm trường variants
   });
 
   //Chỉnh sửa
-  const [stateDetailsProduct, setStateDetailsProduct] = useState({
-    name: "",
-    price: "",
-    description: "",
-    rating: "",
-    image: "",
-    type: "",
-    countInStock: "",
-    variants: [], // Thêm trường variants
-  });
 
   //__________________________________MÀU VÀ SIZE
   const colorOptions = [
@@ -102,6 +255,20 @@ const AdminProduct = () => {
     { value: "XL", label: "XL" },
     { value: "XXL", label: "XXL" },
   ];
+
+  const [stateDetailsProduct, setStateDetailsProduct] = useState({
+    name: "",
+    price: "",
+    description: "",
+    rating: "",
+    image: "",
+    type: "",
+    countInStock: "",
+    variants: [],
+    diameter: "",
+    sizeOptions: [],
+    colorOptions: [],
+  });
 
   const [fileList, setFileList] = useState([]);
   const dispatch = useDispatch();
@@ -148,11 +315,11 @@ const AdminProduct = () => {
 
   //______________________________________________Set ID cho hàng sản phẩm cần lấy thông tin
   const handleDetailsPorduct = (id) => {
-    setRowSelected(id); // Cập nhật ngay lập tức
+    setRowSelected(id);
     setTimeout(() => {
       dispatch(getDetailsProductById(id));
       setIsOpenDrawer(true);
-    }, 0); // Đợi state cập nhật xong
+    }, 0);
   };
 
   //______________________________________HANDLE XÓA TẤT CẢ SẢN PHẨM ĐƯỢC CHỌN
@@ -178,31 +345,71 @@ const AdminProduct = () => {
   };
 
   useEffect(() => {
-    //console.log("📌 Variants từ API:", productDetail.data.variants);
+    console.log("📌 Variants từ API:", productDetail.data);
     if (productDetail?.data) {
       setCopyProductDetails(productDetail.data);
+
+      const productData = productDetail.data;
+      let variants = productData.variants || [];
+
+      // Chuẩn hóa variants theo loại sản phẩm
+      if (productData.type === "Đồng hồ") {
+        // Đưa diameter vào từng variant
+        variants = variants.map((v) => ({
+          ...v, // Giữ nguyên các trường khác
+          diameter: productData.diameter, // Thêm diameter vào mỗi variant
+        }));
+      } else if (["Túi xách", "Ví", "Trang sức"].includes(productData.type)) {
+        variants = variants.map((v) => ({
+          quantity: v.quantity, // Chỉ giữ lại quantity
+        }));
+      } else if (["Quần nam", "Quần nữ"].includes(productData.type)) {
+        variants = variants.map((v) => ({
+          color: v.color,
+          size: v.size, // Size số (28-32)
+          quantity: v.quantity,
+        }));
+      } else {
+        // Áo nam/nữ hoặc loại khác
+        variants = variants.map((v) => ({
+          color: v.color,
+          size: v.size, // Size chữ (S, M, L...)
+          quantity: v.quantity,
+        }));
+      }
+
       const updatedProduct = {
-        name: productDetail.data.name,
-        price: productDetail.data.price,
-        description: productDetail.data.description,
-        rating: productDetail.data.rating,
-        image: productDetail.data.image,
-        imagesPreview: productDetail.data.imagesPreview,
-        type: productDetail.data.type,
-        countInStock: productDetail.data.variants.reduce(
-          (sum, variant) => sum + Number(variant.quantity || 0),
+        name: productData.name,
+        price: productData.price,
+        description: productData.description,
+        rating: productData.rating,
+        image: productData.image,
+        imagesPreview: productData.imagesPreview,
+        type: productData.type,
+        countInStock: variants.reduce(
+          (sum, v) => sum + Number(v.quantity || 0),
           0
         ),
-        variants: productDetail.data.variants || [],
+        variants: variants,
+
+        diameter:
+          productData.type === "Đồng hồ" ? variants[0]?.diameter : undefined,
+        size: ["Quần nam", "Quần nữ", "Áo nam", "Áo nữ"].includes(
+          productData.type
+        )
+          ? variants[0]?.size
+          : undefined,
       };
 
       setStateDetailsProduct(updatedProduct);
-      setStateProduct(updatedProduct); // Cập nhật luôn stateProduct
+      setStateProduct(updatedProduct);
 
-      form.setFieldsValue({
-        ...productDetail.data,
-        variants: productDetail.data.variants || [], // Đảm bảo Form.List nhận đúng giá trị
-      });
+      // Thiết lập giá trị form
+      const formValues = {
+        ...productData,
+        variants: variants,
+      };
+      form.setFieldsValue(formValues);
     }
   }, [productDetail]);
   //________________XÓA ẢNH PREVIEW KHI CHỈNH SỬA
@@ -264,6 +471,7 @@ const AdminProduct = () => {
     const existingImages = stateDetailsProduct?.imagesPreview || [];
     const availableSlots = 4 - existingImages.length;
 
+    // Giới hạn số lượng ảnh tối đa là 4
     if (fileList.length > availableSlots) {
       message.warning(`Bạn chỉ có thể thêm tối đa ${availableSlots} ảnh nữa!`);
       fileList = fileList.slice(0, availableSlots);
@@ -276,6 +484,7 @@ const AdminProduct = () => {
     });
 
     try {
+      // Upload tất cả các ảnh lên server
       const uploadPromises = formDataArray.map((formData) =>
         axios.post(`http://localhost:3002/api/product/upload-image`, formData, {
           headers: {
@@ -285,16 +494,25 @@ const AdminProduct = () => {
         })
       );
 
+      // Đợi tất cả các ảnh được upload
       const responses = await Promise.all(uploadPromises);
-      const newImageUrls = responses.map((res) => res.data.imageUrl);
+      const newImageUrls = responses.map((res) => res.data.imageUrl).flat(); // Làm phẳng mảng nếu cần
 
-      setStateDetailsProduct((prev) => ({
-        ...prev,
-        imagesPreview: [
+      // Kiểm tra lại để chắc chắn newImageUrls là một mảng chuỗi
+      console.log(newImageUrls); // Đảm bảo rằng newImageUrls là mảng chuỗi
+
+      // Cập nhật state với các ảnh mới và các ảnh đã có
+      setStateDetailsProduct((prev) => {
+        const updatedImagesPreview = [
           ...(Array.isArray(prev.imagesPreview) ? prev.imagesPreview : []),
-          ...newImageUrls,
-        ].slice(0, 4),
-      }));
+          ...newImageUrls, // Đây phải là mảng chuỗi
+        ].slice(0, 4);
+
+        return {
+          ...prev,
+          imagesPreview: updatedImagesPreview, // Cập nhật imagesPreview là mảng chuỗi
+        };
+      });
     } catch (error) {
       console.error("Lỗi khi tải ảnh lên:", error);
       message.error("Tải ảnh lên thất bại!");
@@ -304,38 +522,8 @@ const AdminProduct = () => {
   };
 
   //CHỈNH SỬA ẢNH PREVIEW CHI TIẾT SẢN PHẨM
-  const handleEditPreviewImage = async (index, file) => {
-    if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      const response = await axios.post(
-        `http://localhost:3002/api/product/upload-image`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (response.data && response.data.imageUrl) {
-        setStateDetailsProduct((prev) => {
-          const newImages = [...prev.imagesPreview];
-          newImages[index] = response.data.imageUrl;
-          return { ...prev, imagesPreview: newImages.flat() }; // 🛠 Đảm bảo không có mảng lồng nhau
-        });
-      } else {
-        throw new Error("Không nhận được URL từ server!");
-      }
-    } catch (error) {
-      console.error("Lỗi khi thay đổi ảnh:", error);
-      message.error("Thay đổi ảnh thất bại!");
-    }
-  };
+  // Gọi hàm với fileList[0]
 
   //_________________________________________________________KIỂM TRA STATEDETAILSPRODUCT BIẾN ĐỘNG
   useEffect(() => {}, [stateDetailsProduct]);
@@ -687,7 +875,9 @@ const AdminProduct = () => {
       render: (_, record) => {
         const colorOrder = ["white", "black", "blue", "red"]; // Ưu tiên màu
         const uniqueColors = [
-          ...new Set(record.variants.map((v) => v.color.toLowerCase())),
+          ...new Set(
+            record.variants.map((v) => (v.color ? v.color.toLowerCase() : ""))
+          ), // Kiểm tra giá trị v.color trước khi gọi toLowerCase
         ].sort((a, b) => colorOrder.indexOf(a) - colorOrder.indexOf(b)); // Sắp xếp theo thứ tự
 
         return (
@@ -721,7 +911,40 @@ const AdminProduct = () => {
         const sizeOrder = ["S", "M", "L", "XL", "XXL"]; // Thứ tự sắp xếp
         const sizeMap = {};
 
-        // Gộp số lượng theo size
+        // Nếu sản phẩm là Trang sức, Ví, Túi xách, không cần size
+        if (["Trang sức", "Ví", "Túi xách"].includes(record.type)) {
+          return "no size"; // Hoặc có thể để trống hoặc thông báo khác
+        }
+
+        // Nếu sản phẩm là Quần nam hoặc Quần nữ, hiển thị size từ 28 đến 32
+        if (["Quần nam", "Quần nữ"].includes(record.type)) {
+          const allowedSizes = ["28", "29", "30", "31", "32"];
+          record.variants.forEach(({ size, quantity }) => {
+            if (allowedSizes.includes(size)) {
+              sizeMap[size] = (sizeMap[size] || 0) + Number(quantity);
+            }
+          });
+
+          return Object.entries(sizeMap)
+            .map(([size, quantity]) => `${size} (${quantity})`)
+            .join(", ");
+        }
+
+        // Nếu sản phẩm là Đồng hồ, hiển thị size từ 38 đến 44
+        if (record.type === "Đồng hồ") {
+          const allowedSizes = ["38", "39", "40", "41", "42", "43", "44"];
+          record.variants.forEach(({ size, quantity }) => {
+            if (allowedSizes.includes(size)) {
+              sizeMap[size] = (sizeMap[size] || 0) + Number(quantity);
+            }
+          });
+
+          return Object.entries(sizeMap)
+            .map(([size, quantity]) => `${size} (${quantity})`)
+            .join(", ");
+        }
+
+        // Gộp số lượng theo size cho các sản phẩm khác
         record.variants.forEach(({ size, quantity }) => {
           sizeMap[size] = (sizeMap[size] || 0) + Number(quantity);
         });
@@ -784,43 +1007,101 @@ const AdminProduct = () => {
     setIsModalOpenDeleteProduct(true);
   };
 
+  //_____________________________________________________________________________
+  const processVariantsBeforeSubmit = ({ variants = [], productType }) => {
+    const config = productTypeConfig[productType];
+
+    return variants.map((variant) => {
+      const processed = { quantity: Number(variant.quantity) || 0 };
+
+      if (config.hasColor) processed.color = variant.color;
+      if (config.hasSize) processed.size = variant.size;
+      if (config.hasDiameter) processed.diameter = variant.diameter;
+
+      return processed;
+    });
+  };
+
   //________________________________________________________________________Update sản phẩm
-  const onApply = async (updatedProduct, productId) => {
-    //console.log("🛠 Dữ liệu gửi lên:", stateDetailsProduct);
+  const onApply = async () => {
+    if (
+      !stateDetailsProduct.variants ||
+      stateDetailsProduct.variants.length === 0
+    ) {
+      message.error("Vui lòng thêm ít nhất một biến thể sản phẩm!");
+      return;
+    }
+
+    const processedVariants = processVariantsBeforeSubmit({
+      variants: stateDetailsProduct.variants,
+      productType: stateDetailsProduct.type,
+    });
+
+    const config = productTypeConfig[stateDetailsProduct.type];
+    const invalidVariants = stateDetailsProduct.variants.some((variant) => {
+      if (config.hasColor && !variant.color) return true;
+      if (config.hasSize && !variant.size) return true;
+      if (config.hasDiameter && !variant.diameter) return true;
+      return !variant.quantity || Number(variant.quantity) <= 0;
+    });
+
+    if (invalidVariants) {
+      message.error("Vui lòng điền đầy đủ thông tin cho tất cả biến thể!");
+      return;
+    }
+
+    const updatedProduct = {
+      ...stateDetailsProduct,
+      variants: processedVariants,
+      countInStock: processedVariants.reduce((sum, v) => sum + v.quantity, 0),
+      // Làm sạch mảng imagesPreview để chỉ chứa các chuỗi URL hợp lệ
+      imagesPreview: Array.isArray(stateDetailsProduct.imagesPreview)
+        ? stateDetailsProduct.imagesPreview.filter(
+            (url) => typeof url === "string" && url.trim() !== ""
+          )
+        : [],
+      image: stateDetailsProduct.image || "", // Nếu có ảnh chính, có thể thêm vào đây
+    };
+
     try {
-      dispatch(setLoading(true));
+      await dispatch(
+        updateProduct({
+          productId: rowSelected,
+          updatedData: updatedProduct,
+        })
+      ).unwrap();
 
-      const resultAction = await dispatch(
-        updateProduct({ productId, updatedData: stateDetailsProduct })
-      );
-
-      if (updateProduct.fulfilled.match(resultAction)) {
-        message.success("Cập nhật sản phẩm thành công!");
-        dispatch(getAllProduct({ page: currentPage })); // Cập nhật lại danh sách sản phẩm
-        setIsOpenDrawer(false); // Đóng Drawer sau khi cập nhật thành công
-      } else {
-        throw new Error(resultAction.payload);
-      }
+      message.success("Cập nhật sản phẩm thành công!");
+      setIsOpenDrawer(false);
+      dispatch(getAllProduct({ page: currentPage }));
     } catch (error) {
-      console.error("Lỗi khi cập nhật sản phẩm:", error);
       message.error("Cập nhật sản phẩm thất bại!");
-    } finally {
-      setTimeout(() => {
-        dispatch(setLoading(false));
-      }, 1500);
+      console.error("Lỗi khi cập nhật sản phẩm:", error);
     }
   };
 
-  const onFinish = async () => {
-    console.log("stateProduct", stateProduct);
+  //Thêm sản phẩm
+  const Submit = async () => {
+    console.log("CLick đây");
     try {
       dispatch(setLoading(true));
+
+      // Lọc các variants hợp lệ
       const validVariants = stateProduct.variants.filter(
-        (v) => v.color && v.size
+        (v) => v.color || v.size || v.diameter || v.quantity
       );
 
-      //Trước khi tạo sản phẩm, cần upload ảnh trước
-      const imageUrls = await handleUpload(); // Gọi hàm upload ảnh
+      // Kiểm tra nếu là đồng hồ và không có diameter
+      if (
+        stateProduct.type === "Đồng hồ" &&
+        !validVariants.some((v) => v.diameter)
+      ) {
+        message.error("Vui lòng nhập đường kính cho đồng hồ!");
+        return;
+      }
+
+      // Upload ảnh
+      const imageUrls = await handleUpload();
       if (!imageUrls || imageUrls.length === 0) {
         message.error("Vui lòng tải lên ít nhất một ảnh!");
         return;
@@ -828,27 +1109,32 @@ const AdminProduct = () => {
 
       const newProduct = {
         name: stateProduct.name,
-        image: imageUrls[0], // Ảnh chính (lấy ảnh đầu tiên)
-        imagesPreview: imageUrls, // Danh sách ảnh preview
+        image: imageUrls[0],
+        imagesPreview: imageUrls,
         type: stateProduct.type,
         price: Number(stateProduct.price),
         countInStock: Number(stateProduct.countInStock),
         rating: Number(stateProduct.rating),
         description: stateProduct.description,
         variants: validVariants,
+        diameter:
+          stateProduct.type === "Đồng hồ"
+            ? validVariants[0]?.diameter
+            : undefined, // Lấy diameter từ biến thể đầu tiên nếu là đồng hồ
+        size:
+          stateProduct.type === "Quần nam" || stateProduct.type === "Quần nữ"
+            ? validVariants[0]?.size
+            : undefined, // Tương tự với size
       };
-
       console.log("Dữ liệu sản phẩm trước khi gửi:", newProduct);
-
-      // Kiểm tra dữ liệu trước khi gửi
       if (Object.entries(newProduct).some(([key, value]) => value === "")) {
         console.error("🚨 Lỗi: Thiếu trường dữ liệu");
         message.error("Vui lòng điền đầy đủ thông tin!");
         return;
       }
-
+      // Gọi API tạo sản phẩm
       const resultAction = await dispatch(createProduct(newProduct));
-
+      await dispatch(getAllProduct({ page: currentPage }));
       if (createProduct.fulfilled.match(resultAction)) {
         setStateProduct((prev) => ({
           ...prev,
@@ -861,26 +1147,21 @@ const AdminProduct = () => {
           type: "",
           countInStock: "",
           variants: [],
+          diameter: "", // Reset lại diameter sau khi thêm sản phẩm
+          size: "", // Reset lại size sau khi thêm sản phẩm
         }));
 
         setIsModalOpen(false);
         setFileList([]);
         message.success("Thêm sản phẩm thành công!");
-        dispatch(getAllProduct());
       } else {
         throw new Error(resultAction.payload);
       }
     } catch (error) {
-      console.error("⚠️ Lỗi khi gọi API:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Lỗi!",
-        text: error.message || "Không thể tạo sản phẩm.",
-      });
+      console.error("Lỗi khi thêm sản phẩm:", error);
+      message.error("Thêm sản phẩm thất bại!");
     } finally {
-      setTimeout(() => {
-        dispatch(setLoading(false));
-      }, 2500);
+      dispatch(setLoading(false));
     }
   };
 
@@ -930,24 +1211,30 @@ const AdminProduct = () => {
     setStateDetailsProduct((prev) => {
       const updatedVariants = [...prev.variants];
 
-      // Nếu phần tử chưa tồn tại, tạo một object mặc định
-      updatedVariants[index] = updatedVariants[index] || {
-        color: "",
-        size: "",
-        quantity: 0,
-      };
+      // Nếu là sản phẩm Đồng hồ, thêm hoặc cập nhật trường diameter
+      if (prev.type === "Đồng hồ" && field === "diameter") {
+        updatedVariants[index] = {
+          ...updatedVariants[index],
+          diameter: value, // Cập nhật trường diameter
+        };
+      } else {
+        updatedVariants[index] = {
+          ...updatedVariants[index],
+          [field]: value, // Cập nhật trường tương ứng (color, size, quantity, ...)
+        };
+      }
 
-      // Cập nhật giá trị cho field cụ thể
-      updatedVariants[index] = { ...updatedVariants[index], [field]: value };
-
-      // Tính tổng quantity của tất cả variants
+      // Tính lại tổng số lượng sản phẩm
       const totalStock = updatedVariants.reduce(
         (sum, variant) => sum + Number(variant.quantity || 0),
         0
       );
 
-      // Cập nhật state với variants mới và countInStock
-      return { ...prev, variants: updatedVariants, countInStock: totalStock };
+      return {
+        ...prev,
+        variants: updatedVariants,
+        countInStock: totalStock,
+      };
     });
   };
 
@@ -1055,40 +1342,53 @@ const AdminProduct = () => {
   };
 
   const handleChangeDetailsImage = async ({ fileList }) => {
-    const file = fileList[0];
+    if (!fileList || fileList.length === 0 || isUploading.current) return;
 
-    if (!file.url && !file.preview) {
-      file.preview = await getBase64(file.originFileObj);
-    }
+    isUploading.current = true; // Đánh dấu đang upload
 
-    setFileList(fileList ? fileList.slice(-1) : []);
+    const file = fileList[0]; // Giới hạn chỉ 1 file, ảnh chính chỉ có thể là một ảnh duy nhất
 
-    const formData = new FormData();
-    formData.append("image", file.originFileObj);
+    // Kiểm tra xem file.originFileObj có phải là một đối tượng Blob hay không
+    if (file.originFileObj instanceof Blob) {
+      if (!file.url && !file.preview) {
+        file.preview = await getBase64(file.originFileObj);
+      }
 
-    try {
-      const response = await axios.post(
-        `http://localhost:3002/api/product/upload-image`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Accept: "application/json",
-          },
-        }
-      );
+      setFileList(fileList ? fileList.slice(-1) : []); // Giới hạn chỉ 1 file
 
-      setStateDetailsProduct((prev) => ({
-        ...prev,
-        image: response.data.imageUrl,
-        imagesPreview: [
-          ...(prev.imagesPreview || []),
-          response.data.imageUrl,
-        ].flat(),
-      }));
-    } catch (error) {
-      console.error("Lỗi khi tải ảnh lên:", error);
-      message.error("Tải ảnh lên thất bại!");
+      const formData = new FormData();
+      formData.append("image", file.originFileObj);
+
+      try {
+        // Upload ảnh chính lên server
+        const response = await axios.post(
+          `http://localhost:3002/api/product/upload-image`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Accept: "application/json",
+            },
+          }
+        );
+
+        // Đảm bảo image là một chuỗi, không phải mảng
+        const imageUrl = response.data.imageUrl && response.data.imageUrl[0]; // Lấy URL đầu tiên trong mảng nếu nó là mảng
+
+        // Cập nhật ảnh chính vào state (image là chuỗi, không phải mảng)
+        setStateDetailsProduct((prev) => ({
+          ...prev,
+          image: imageUrl || "", // Lưu URL ảnh chính vào image
+          // Không cần phải cập nhật imagesPreview trong hàm này, chỉ cần ảnh chính
+        }));
+      } catch (error) {
+        console.error("Lỗi khi tải ảnh lên:", error);
+        message.error("Tải ảnh lên thất bại!");
+      } finally {
+        isUploading.current = false; // Reset trạng thái sau khi hoàn tất
+      }
+    } else {
+      message.error("Đây không phải là một tệp hợp lệ.");
     }
   };
 
@@ -1220,7 +1520,7 @@ const AdminProduct = () => {
           //     remember: true,
           form={form}
           //   }}
-          onFinish={onFinish}
+          onFinish={Submit}
           autoComplete="off"
         >
           <Form.Item
@@ -1272,76 +1572,244 @@ const AdminProduct = () => {
                         marginBottom: 8,
                       }}
                     >
-                      {/* Select Color */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "color"]}
-                        rules={[
-                          { required: true, message: "Vui lòng chọn màu!" },
-                        ]}
-                      >
-                        <Select
-                          placeholder="Chọn màu"
-                          options={colorOptions}
-                          onChange={(value) =>
-                            handleOnchangeVariants(index, "color", value)
-                          }
-                        />
-                      </Form.Item>
+                      {/* Điều chỉnh theo loại sản phẩm */}
+                      {stateProduct.type === "Áo nam" ||
+                      stateProduct.type === "Áo nữ" ? (
+                        <>
+                          {/* Màu sắc */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "color"]}
+                            rules={[
+                              { required: true, message: "Vui lòng chọn màu!" },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn màu"
+                              options={colorOptions}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "color", value)
+                              }
+                            />
+                          </Form.Item>
 
-                      {/* Hiển thị màu */}
-                      <div
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: "50%",
-                          backgroundColor:
-                            stateProduct.variants[index]?.color ||
-                            "transparent",
-                          border: "1px solid #ccc",
-                        }}
-                      />
+                          {/* Size: S, M, L, XL, XXL */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "size"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn size!",
+                              },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn size"
+                              options={[
+                                { label: "S", value: "S" },
+                                { label: "M", value: "M" },
+                                { label: "L", value: "L" },
+                                { label: "XL", value: "XL" },
+                                { label: "XXL", value: "XXL" },
+                              ]}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "size", value)
+                              }
+                            />
+                          </Form.Item>
 
-                      {/* Select Size */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "size"]}
-                        rules={[
-                          { required: true, message: "Vui lòng chọn size!" },
-                        ]}
-                      >
-                        <Select
-                          placeholder="Chọn size"
-                          options={sizeOptions}
-                          onChange={(value) =>
-                            handleOnchangeVariants(index, "size", value)
-                          }
-                        />
-                      </Form.Item>
+                          {/* Số lượng */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "quantity"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng nhập số lượng!",
+                              },
+                            ]}
+                          >
+                            <Input
+                              placeholder="Số lượng"
+                              type="number"
+                              onChange={(e) =>
+                                handleOnchangeVariants(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </Form.Item>
+                        </>
+                      ) : stateProduct.type === "Quần nam" ||
+                        stateProduct.type === "Quần nữ" ? (
+                        <>
+                          {/* Màu sắc */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "color"]}
+                            rules={[
+                              { required: true, message: "Vui lòng chọn màu!" },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn màu"
+                              options={colorOptions}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "color", value)
+                              }
+                            />
+                          </Form.Item>
 
-                      {/* Input Quantity */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "quantity"]}
-                        rules={[
-                          {
-                            required: true,
-                            message: "Vui lòng nhập số lượng!",
-                          },
-                        ]}
-                      >
-                        <Input
-                          placeholder="Số lượng"
-                          type="number"
-                          onChange={(e) =>
-                            handleOnchangeVariants(
-                              index,
-                              "quantity",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </Form.Item>
+                          {/* Size: 28 đến 32 */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "size"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn size!",
+                              },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn size"
+                              options={[
+                                { label: "28", value: 28 },
+                                { label: "29", value: 29 },
+                                { label: "30", value: 30 },
+                                { label: "31", value: 31 },
+                                { label: "32", value: 32 },
+                              ]}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "size", value)
+                              }
+                            />
+                          </Form.Item>
+
+                          {/* Số lượng */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "quantity"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng nhập số lượng!",
+                              },
+                            ]}
+                          >
+                            <Input
+                              placeholder="Số lượng"
+                              type="number"
+                              onChange={(e) =>
+                                handleOnchangeVariants(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </Form.Item>
+                        </>
+                      ) : stateProduct.type === "Đồng hồ" ? (
+                        <>
+                          {/* Màu sắc */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "color"]}
+                            rules={[
+                              { required: true, message: "Vui lòng chọn màu!" },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn màu"
+                              options={colorOptions}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "color", value)
+                              }
+                            />
+                          </Form.Item>
+
+                          {/* Đường kính đồng hồ từ 38 đến 44 */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "diameter"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng chọn đường kính!",
+                              },
+                            ]}
+                          >
+                            <Select
+                              placeholder="Chọn đường kính"
+                              options={[
+                                { label: "38mm", value: 38 },
+                                { label: "40mm", value: 40 },
+                                { label: "42mm", value: 42 },
+                                { label: "44mm", value: 44 },
+                              ]}
+                              onChange={(value) =>
+                                handleOnchangeVariants(index, "diameter", value)
+                              }
+                            />
+                          </Form.Item>
+
+                          {/* Số lượng */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "quantity"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng nhập số lượng!",
+                              },
+                            ]}
+                          >
+                            <Input
+                              placeholder="Số lượng"
+                              type="number"
+                              onChange={(e) =>
+                                handleOnchangeVariants(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </Form.Item>
+                        </>
+                      ) : stateProduct.type === "Túi xách" ||
+                        stateProduct.type === "Trang sức" ||
+                        stateProduct.type === "Ví" ? (
+                        <>
+                          {/* Số lượng */}
+                          <Form.Item
+                            {...restField}
+                            name={[name, "quantity"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Vui lòng nhập số lượng!",
+                              },
+                            ]}
+                          >
+                            <Input
+                              placeholder="Số lượng"
+                              type="number"
+                              onChange={(e) =>
+                                handleOnchangeVariants(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </Form.Item>
+                        </>
+                      ) : null}
 
                       {/* Nút xóa variant */}
                       <MinusCircleOutlined
@@ -1354,10 +1822,6 @@ const AdminProduct = () => {
                               (sum, variant) =>
                                 sum + Number(variant.quantity || 0),
                               0
-                            );
-                            console.log(
-                              "Danh sách biến thể sau khi xóa:",
-                              updatedVariants
                             );
                             return {
                               ...prev,
@@ -1673,9 +2137,7 @@ const AdminProduct = () => {
           //     remember: true,
           form={form}
           //   }}
-          onFinish={() => {
-            onApply(stateDetailsProduct, rowSelected);
-          }}
+          onFinish={onApply}
           autoComplete="off"
         >
           <Form.Item
@@ -1716,149 +2178,23 @@ const AdminProduct = () => {
           </Form.Item>
 
           <Form.Item label="Variants">
-            <Form.List name="variants">
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }, index) => (
-                    <Space
-                      key={key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: 8,
-                      }}
-                    >
-                      {/* Select Color */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "color"]}
-                        rules={[
-                          { required: true, message: "Vui lòng chọn màu!" },
-                        ]}
-                      >
-                        <Select
-                          placeholder="Chọn màu"
-                          options={colorOptions}
-                          onChange={(value) =>
-                            handleOnchangeDetailsVariants(index, "color", value)
-                          }
-                        />
-                      </Form.Item>
-
-                      {/* Hiển thị màu */}
-                      <div
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: "50%",
-                          backgroundColor:
-                            stateProduct.variants[index]?.color ||
-                            "transparent",
-                          border: "1px solid #ccc",
-                        }}
-                      />
-
-                      {/* Select Size */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "size"]}
-                        rules={[
-                          { required: true, message: "Vui lòng chọn size!" },
-                        ]}
-                      >
-                        <Select
-                          placeholder="Chọn size"
-                          options={sizeOptions}
-                          onChange={(value) =>
-                            handleOnchangeDetailsVariants(index, "size", value)
-                          }
-                        />
-                      </Form.Item>
-
-                      {/* Input Quantity */}
-                      <Form.Item
-                        {...restField}
-                        name={[name, "quantity"]}
-                        rules={[
-                          {
-                            required: true,
-                            message: "Vui lòng nhập số lượng!",
-                          },
-                        ]}
-                      >
-                        <Input
-                          placeholder="Số lượng"
-                          type="number"
-                          onChange={(e) =>
-                            handleOnchangeDetailsVariants(
-                              index,
-                              "quantity",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </Form.Item>
-
-                      {/* Nút xóa variant */}
-                      <MinusCircleOutlined
-                        onClick={() => {
-                          remove(name);
-                          setStateDetailsProduct((prev) => {
-                            const updatedVariants = [...prev.variants];
-                            updatedVariants.splice(index, 1);
-                            const totalStock = updatedVariants.reduce(
-                              (sum, variant) =>
-                                sum + Number(variant.quantity || 0),
-                              0
-                            );
-                            return {
-                              ...prev,
-                              variants: updatedVariants,
-                              countInStock: totalStock,
-                            };
-                          });
-                        }}
-                      />
-                    </Space>
-                  ))}
-
-                  {/* Nút thêm variant mới */}
-                  <Form.Item>
-                    <Button
-                      type="dashed"
-                      onClick={() => {
-                        add();
-                        setStateDetailsProduct((prev) => {
-                          const newVariants = [
-                            ...(prev.variants || []),
-                            { color: "", size: "", quantity: 0 },
-                          ];
-                          const totalStock = newVariants.reduce(
-                            (sum, variant) =>
-                              sum + Number(variant.quantity || 0),
-                            0
-                          );
-                          console.log(
-                            "✅ Danh sách biến thể sau khi thêm:",
-                            newVariants
-                          );
-                          return {
-                            ...prev,
-                            variants: newVariants,
-                            countInStock: totalStock,
-                          };
-                        });
-                      }}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Thêm biến thể
-                    </Button>
-                  </Form.Item>
-                </>
-              )}
-            </Form.List>
+            <ProductVariants
+              productType={stateDetailsProduct.type}
+              variants={stateDetailsProduct.variants}
+              onChange={(newVariants) => {
+                const totalStock = newVariants.reduce(
+                  (sum, v) => sum + (Number(v.quantity) || 0),
+                  0
+                ); // Sửa lại dòng này
+                setStateDetailsProduct((prev) => ({
+                  ...prev,
+                  variants: newVariants,
+                  countInStock: totalStock,
+                }));
+              }}
+            />
           </Form.Item>
+
           <Form.Item
             label="Count inStock"
             name="countInStock"
@@ -2017,19 +2353,6 @@ const AdminProduct = () => {
                         }}
                       />
                       {/* Chỉnh sửa ảnh (Thay thế ảnh cũ) */}
-                      <Upload
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                          handleEditPreviewImage(index, file);
-                          return false;
-                        }}
-                      >
-                        <Button
-                          type="link"
-                          icon={<EditOutlined />}
-                          style={{ position: "absolute", bottom: 0, right: 0 }}
-                        />
-                      </Upload>
                     </div>
                   ))
               ) : (
@@ -2058,7 +2381,7 @@ const AdminProduct = () => {
               span: 16,
             }}
           >
-            <Button type="primary" htmlType="apply">
+            <Button type="primary" htmlType="submit">
               Apply
             </Button>
           </Form.Item>

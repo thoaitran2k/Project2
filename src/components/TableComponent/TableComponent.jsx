@@ -26,7 +26,6 @@ const TableComponent = ({
     return filter;
   }, [columns]);
 
-  console.log("newColumn", newColumnExport);
   // Ẩn hiệu ứng loading khi dữ liệu đã tải xong
   useEffect(() => {
     if (!isloading) {

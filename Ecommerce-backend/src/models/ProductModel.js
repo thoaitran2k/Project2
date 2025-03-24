@@ -5,15 +5,15 @@ const productSchema = new mongoose.Schema(
     name: { type: String, required: true },
     image: { type: String, required: true },
     imagesPreview: [{ type: String, required: true }],
-    type: { type: String, required: true },
+    type: { type: String, required: true }, // Ví dụ: "shirt", "watch", "bag"
     price: { type: Number, required: true },
     countInStock: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
     description: { type: String },
     discount: { type: Number, default: 0 },
     selled: { type: Number, default: 0 },
-    colors: [{ type: String }], // Có thể dùng enum nếu cần
-    sizes: [{ type: String }], // Ví dụ: enum: ["S", "M", "L", "XL"]
+    colors: [{ type: String }],
+    sizes: [{ type: String }],
     variants: [
       {
         color: { type: String },
@@ -21,6 +21,18 @@ const productSchema = new mongoose.Schema(
         quantity: { type: Number, default: 0 },
       },
     ],
+    size: {
+      type: String,
+      required: function () {
+        return this.type === "Quần nam" || this.type === "Quần nữ";
+      },
+    }, // Chỉ yêu cầu nếu là áo quần
+    diameter: {
+      type: Number,
+      required: function () {
+        return this.type === "Đồng hồ";
+      },
+    }, // Chỉ yêu cầu nếu là đồng hồ
   },
   { timestamps: true }
 );

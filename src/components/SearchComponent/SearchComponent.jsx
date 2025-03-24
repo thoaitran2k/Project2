@@ -7,7 +7,7 @@ import axios from "axios";
 
 const { Search } = Input;
 
-const SearchComponent = () => {
+const SearchComponent = ({ setLimit }) => {
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -82,15 +82,16 @@ const SearchComponent = () => {
   };
 
   const handleSelectSuggestion = (value) => {
-    setSearchValue(value); // Cập nhật giá trị trong ô tìm kiếm
-    handleSearch(value); // Thực hiện tìm kiếm với giá trị đã chọn
+    setSearchValue(value);
+    handleSearch(value);
   };
 
   const handleClearSearch = () => {
-    setSearchValue(""); // ✅ Xóa chữ trong ô tìm kiếm
-    setSuggestions([]); // Ẩn danh sách gợi ý
-    dispatch(setSearchTerm("")); // Reset Redux state
-    fetchAllProducts(); // 🚀 Reset lại danh sách sản phẩm
+    setSearchValue("");
+    setSuggestions([]);
+    dispatch(setSearchTerm(""));
+    setLimit(8);
+    fetchAllProducts();
   };
 
   // Xử lý khi nhập
@@ -102,7 +103,7 @@ const SearchComponent = () => {
     if (value.trim()) {
       setTimeout(() => fetchSuggestions(value.trim()), 300);
     } else {
-      setSuggestions(recentSearches); // ✅ Hiển thị lịch sử tìm kiếm khi ô trống
+      setSuggestions(recentSearches);
     }
   };
 
@@ -117,15 +118,15 @@ const SearchComponent = () => {
   // Thực hiện tìm kiếm
   const handleSearch = (value) => {
     if (!value.trim()) {
-      dispatch(setSearchTerm("")); // Xóa từ khóa tìm kiếm
-      setResetProducts(true); // 🚀 Đánh dấu cần reset danh sách
-      setShowSuggestions(false);
+      dispatch(setSearchTerm(""));
+      setResetProducts(true);
       return;
     }
 
     dispatch(setSearchTerm(value));
-    setShowSuggestions(false);
-    refetch(); // 🚀 Gọi lại API khi tìm kiếm
+    setResetProducts(true);
+
+    setLimit(8);
 
     // Lưu lịch sử tìm kiếm
     const updatedSearches = [
@@ -190,6 +191,14 @@ const SearchComponent = () => {
                   padding: "10px",
                   cursor: item.disabled ? "default" : "pointer",
                   color: item.disabled ? "gray" : "black",
+                  transition: "background 0.2s ease-in-out", // Hiệu ứng chuyển đổi mượt
+                }}
+                onMouseEnter={(e) => {
+                  if (!item.disabled)
+                    e.currentTarget.style.background = "#f0f0f0";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "white";
                 }}
                 onClick={() =>
                   !item.disabled && handleSelectSuggestion(item.name)

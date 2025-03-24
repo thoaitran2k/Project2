@@ -4,10 +4,13 @@ import axios from "axios";
 // 🔥 Action gọi API lấy tất cả sản phẩm_____________________________________
 export const getAllProduct = createAsyncThunk(
   "product/getAllProduct",
-  async (_, { rejectWithValue }) => {
+  async ({ limit, page }, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
+        `${import.meta.env.VITE_URL_BACKEND}/product/get-all`,
+        {
+          params: { limit, page }, // ✅ Truyền limit và page vào API
+        }
       );
       return response.data;
     } catch (error) {
