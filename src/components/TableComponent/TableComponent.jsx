@@ -1,12 +1,13 @@
-import { Dropdown, Space, Table, Checkbox } from "antd";
-import React, { useEffect, useState } from "react";
+import { Dropdown, Space, Table, Checkbox, Button } from "antd";
+import React, { useEffect, useMemo, useState } from "react";
 import PagingLoading from "../LoadingComponent/PagingLoading";
 import { useSelector } from "react-redux";
 import { DownOutlined } from "@ant-design/icons";
+import { Excel } from "antd-table-saveas-excel";
 
 const TableComponent = ({
   selectionType = "checkbox",
-  data = [],
+  data: dataSource = [],
   columns = [],
   isloading = false,
   rowClassName = "",
@@ -18,6 +19,14 @@ const TableComponent = ({
   const [isPagingLoading, setIsPagingLoading] = useState(true);
   const isLoading = useSelector((state) => state.loading.isLoading);
 
+  const newColumnExport = useMemo(() => {
+    const filter = columns?.filter(
+      (col) => col.dataIndex !== "_id" && col.dataIndex !== "isBlocked"
+    );
+    return filter;
+  }, [columns]);
+
+  console.log("newColumn", newColumnExport);
   // Ẩn hiệu ứng loading khi dữ liệu đã tải xong
   useEffect(() => {
     if (!isloading) {
@@ -38,7 +47,7 @@ const TableComponent = ({
   const [rowSelectedKeys, setRowSelectedKeys] = useState([]);
 
   // Danh sách các ID sản phẩm đang hiển thị (sau khi lọc)
-  const filteredProductIds = data.map((product) => product._id);
+  const filteredProductIds = dataSource.map((product) => product._id);
 
   // Xử lý chọn tất cả các sản phẩm đang hiển thị
   const handleSelectAll = (checked) => {
@@ -92,6 +101,17 @@ const TableComponent = ({
     );
   };
 
+  const exportExcel = () => {
+    const excel = new Excel();
+    excel
+      .addSheet("test")
+      .addColumns(newColumnExport)
+      .addDataSource(dataSource, {
+        str2Percent: true,
+      })
+      .saveAs("Excel.xlsx");
+  };
+
   return (
     <div style={{ width: "100%", position: "relative" }}>
       {/* Bảng dữ liệu */}
@@ -128,7 +148,10 @@ const TableComponent = ({
           </div>
         )}
 
+        <button onClick={exportExcel}>Export Excel</button>
+
         <Table
+          id="table-xls"
           columns={[
             {
               title: (
@@ -162,7 +185,7 @@ const TableComponent = ({
             },
             ...columns,
           ]}
-          dataSource={data} // Chỉ hiển thị sản phẩm đã lọc
+          dataSource={dataSource} // Chỉ hiển thị sản phẩm đã lọc
           pagination={{ pageSize: 10 }}
           scroll={{ x: "max-content" }}
           onChange={handleTableChange}

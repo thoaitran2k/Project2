@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Pagination } from "antd";
 import CardComponent from "../../components/CardComponent/CardComponent";
@@ -7,9 +7,13 @@ import { ProductsContainer } from "./style";
 import SideBar from "../../components/SideBar/SideBar";
 import styled from "styled-components";
 import { Breadcrumb } from "antd";
+import SearchComponent from "../../components/SearchComponent/SearchComponent";
+import { useSelector } from "react-redux";
 
 const ProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [resetProducts, setResetProducts] = useState(false);
+  const searchTerm = useSelector((state) => state.product.searchTerm);
 
   const onChange = (page) => {
     setCurrentPage(page);
@@ -27,12 +31,30 @@ const ProductsPage = () => {
     }
   };
 
-  const { isLoading, data: products = [] } = useQuery({
-    queryKey: ["products"],
+  const {
+    isLoading,
+    data: products = [],
+    refetch,
+  } = useQuery({
+    queryKey: ["products", resetProducts], // 🚀 Thay đổi khi reset
     queryFn: fetchProductAll,
     retry: 3,
     retryDelay: 1000,
   });
+
+  useEffect(() => {
+    if (resetProducts) {
+      refetch(); // 🚀 Gọi lại API khi reset
+      setResetProducts(false);
+    }
+  }, [resetProducts]);
+
+  const filteredProducts =
+    searchTerm.trim() === ""
+      ? products?.data || [] // ✅ Nếu không tìm kiếm, hiển thị toàn bộ sản phẩm
+      : products?.data?.filter((product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ) || [];
 
   const totalProducts = products?.data?.length || 0; // Lấy tổng số sản phẩm
   console.log("Tổng số sản phẩm:", totalProducts);
@@ -52,7 +74,7 @@ const ProductsPage = () => {
           </Breadcrumb.Item>
         </Breadcrumb>
       </BreadcrumbWrapper>
-
+      <SearchComponent />
       <ProductsContainer>
         <SideBar />
         <MainContent>
@@ -62,8 +84,8 @@ const ProductsPage = () => {
             <p>Loading...</p>
           ) : (
             <CardComponent
-              products={products?.data || []}
-              totalProducts={totalProducts}
+              products={filteredProducts} // ✅ Truyền danh sách đã lọc
+              totalProducts={filteredProducts.length}
             />
           )}
         </MainContent>

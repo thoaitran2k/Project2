@@ -95,4 +95,20 @@ router.post(
   }
 );
 
+//SEARCH
+router.get("/search", async (req, res) => {
+  try {
+    const query = req.query.query?.trim() || "";
+    if (!query) return res.json([]);
+
+    const products = await Product.find({
+      name: { $regex: query, $options: "i" },
+    }).limit(20); // Lấy 20 kết quả để lọc tốt hơn ở frontend
+
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi lấy sản phẩm" });
+  }
+});
+
 module.exports = router;

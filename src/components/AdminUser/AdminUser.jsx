@@ -11,6 +11,7 @@ import {
   DatePicker,
   Select,
   Tooltip,
+  AutoComplete,
 } from "antd";
 import {
   DeleteOutlined,
@@ -83,6 +84,8 @@ const AdminUser = () => {
     dob: "",
     avatar: "",
     gender: "",
+    address: [], // Danh sách địa chỉ
+    defaultAddress: null,
     isAdmin: false,
   });
 
@@ -99,6 +102,17 @@ const AdminUser = () => {
 
   //_______________________________________________________XÁC ĐỊNH TRANG SẢN PHẨM BỊ UPDATE
   const [currentPage, setCurrentPage] = useState(1);
+  const startIndex = (currentPage - 1) * 10;
+  const endIndex = startIndex + 10;
+  const currentUsers = users.slice(startIndex, endIndex); // Lấy dữ liệu cho trang hiện tại
+  const emptyRowsCount = 10 - currentUsers.length; // Số hàng trống cần thêm
+  // Tạo một bản sao của mảng users trước khi sắp xếp
+  const sortedUsers = Array.isArray(users)
+    ? [...users].sort((a, b) => (b.isAdmin ? 1 : -1)) // Sử dụng spread để tạo bản sao
+    : [];
+
+  // Tạo mảng hàng trống
+  const emptyRows = Array.from({ length: emptyRowsCount }, () => ({}));
 
   //______________________SEARCH AND FILTER
   const [searchText, setSearchText] = useState("");
@@ -160,15 +174,22 @@ const AdminUser = () => {
             ? dayjs(userDetails.dob).format("DD-MM-YYYY")
             : null;
 
+          const defaultAddress =
+            userDetails.address?.find((addr) => addr.isDefault) || null;
+          console.log("Default Address:", defaultAddress);
+          console.log("Address:", userDetails.address);
+
           // Cập nhật state và form
           setStateDetailsUser({
             ...userDetails,
             dob: formattedDob,
+            defaultAddress,
           });
 
           form.setFieldsValue({
             ...userDetails,
             dob: formattedDob ? dayjs(formattedDob, "DD-MM-YYYY") : null,
+            defaultAddress: defaultAddress?._id || null,
           });
         }
       });
@@ -308,27 +329,65 @@ const AdminUser = () => {
     {
       title: "Username",
       dataIndex: "username",
+      align: "center",
       ...getColumnSearchProps("username"),
+      render: (text, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return <div style={{ textAlign: "left" }}>{text}</div>;
+      },
     },
     {
       title: "Email",
       dataIndex: "email",
+      align: "center",
       ...getColumnSearchProps("email"),
+      render: (text, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return <div style={{ textAlign: "left" }}>{text}</div>;
+      },
+    },
+    {
+      title: "Default Address",
+      dataIndex: "address",
+      align: "center",
+      width: "10vw",
+      render: (address, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+
+        // Kiểm tra xem address có tồn tại và là một mảng
+        if (Array.isArray(address)) {
+          const defaultAddress = address.find((addr) => addr.isDefault);
+          return (
+            <div style={{ textAlign: "left" }}>
+              {defaultAddress ? defaultAddress.address : "No default address"}
+            </div>
+          );
+        }
+
+        // Nếu address không tồn tại hoặc không phải là mảng, trả về "No default address"
+        return <div style={{ textAlign: "left" }}>No default address</div>;
+      },
     },
     {
       title: "Phone",
       dataIndex: "phone",
       align: "center",
       ...getColumnSearchProps("phone"),
+      render: (text, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return text;
+      },
     },
     {
       title: "Date of Birth",
       dataIndex: "dob",
       align: "center",
-      render: (dob) =>
-        dob && dayjs(dob, "DD-MM-YYYY").isValid()
+      render: (dob, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return dob && dayjs(dob, "DD-MM-YYYY").isValid()
           ? dayjs(dob, "DD-MM-YYYY").format("DD-MM-YYYY")
-          : "",
+          : "";
+      },
       ...getColumnSearchProps("dob"),
     },
     {
@@ -336,70 +395,83 @@ const AdminUser = () => {
       dataIndex: "gender",
       align: "center",
       ...getColumnSearchProps("gender"),
+      render: (text, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return text;
+      },
     },
     {
       title: "Admin",
       dataIndex: "isAdmin",
       align: "center",
-      render: (isAdmin) => (isAdmin ? "Yes" : "No"),
+      render: (isAdmin, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return isAdmin ? "Yes" : "No";
+      },
     },
     {
       title: "Action",
       dataIndex: "_id",
       align: "center",
-      render: (id, record) => (
-        <div>
-          <EditOutlined
-            style={{
-              color: "rgb(47, 85, 155)",
-              fontSize: "20px",
-              cursor: "pointer",
-            }}
-            onClick={() => handleDetailsUser(id)}
-          />{" "}
-          <DeleteOutlined
-            style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
-            onClick={() => handleDeleteUser(id)}
-          />
-          {!record.isAdmin && (
-            <LockOutlined
+      render: (id, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return (
+          <div>
+            <EditOutlined
               style={{
-                color: record.isBlocked ? "red" : "green",
+                color: "rgb(47, 85, 155)",
                 fontSize: "20px",
                 cursor: "pointer",
               }}
-              onClick={() => handleBlockUser(id, record.isBlocked)}
+              onClick={() => handleDetailsUser(id)}
+            />{" "}
+            <DeleteOutlined
+              style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
+              onClick={() => handleDeleteUser(id)}
             />
-          )}
-        </div>
-      ),
+            {!record.isAdmin && (
+              <LockOutlined
+                style={{
+                  color: record.isBlocked ? "red" : "green",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                }}
+                onClick={() => handleBlockUser(id, record.isBlocked)}
+              />
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "Status",
       dataIndex: "isBlocked",
       align: "center",
-      render: (isBlocked) => (
-        <Tooltip
-          title={isBlocked ? "Tài khoản bị khóa" : "Tài khoản hoạt động"}
-        >
-          {isBlocked ? "🔒" : "✅"}
-        </Tooltip>
-      ),
+      render: (isBlocked, record) => {
+        if (!record._id) return null; // Hàng trống, trả về null
+        return (
+          <Tooltip
+            title={isBlocked ? "Tài khoản bị khóa" : "Tài khoản hoạt động"}
+          >
+            {isBlocked ? "🔒" : "✅"}
+          </Tooltip>
+        );
+      },
     },
   ];
 
   //____________________________________________Dữ liệu bảng
-  const dataTable =
-    Array.isArray(users) && users.length > 0
-      ? users
-          .map((user) => ({
-            ...user,
-            key: user._id,
-            isBlocked: user.isBlocked || false,
-          }))
-          .sort((a, b) => (b.isAdmin ? 1 : -1)) // Đưa admin lên đầu
-      : [];
-
+  const dataTable = [
+    // Sắp xếp currentUsers để admin lên đầu
+    ...currentUsers
+      .map((user) => ({
+        ...user,
+        key: user._id,
+        isBlocked: user.isBlocked || false,
+      }))
+      .sort((a, b) => (b.isAdmin ? 1 : -1)), // Admin lên đầu
+    ...emptyRows, // Thêm hàng trống vào cuối
+  ];
   // console.log("USERS", users);
   //console.log("Product data being passed to TableComponent:", products?.data);
 
@@ -623,16 +695,17 @@ const AdminUser = () => {
       <div style={{ marginTop: "20px" }}>
         <TableProduct
           columns={columns}
-          products={products?.data}
-          isloading={isloading}
           data={dataTable}
+          pagination={{
+            current: currentPage, // Trang hiện tại
+            pageSize: 10, // Số lượng hàng mỗi trang
+            total: sortedUsers.length, // Tổng số lượng người dùng
+            showSizeChanger: false, // Ẩn tùy chọn thay đổi số lượng hàng mỗi trang
+            position: ["bottomRight"], // Đặt phân trang ở góc dưới bên phải
+            onChange: (page) => setCurrentPage(page), // Xử lý khi chuyển trang
+          }}
           onChange={handleTableChange}
           rowClassName={(record) => (record.isBlocked ? "row-blocked" : "")}
-          pagination={{
-            current: currentPage,
-            pageSize: 10, // Số lượng sản phẩm mỗi trang
-            total: products?.total || 0, // Tổng số sản phẩm
-          }}
           onRow={(record, rowIndex) => {
             return {
               onClick: (event) => {
@@ -793,6 +866,26 @@ const AdminUser = () => {
                 }))
               }
             />
+          </Form.Item>
+          <Form.Item label="Default Address" name="defaultAddress">
+            {stateDetailsUser.address.length > 0 ? (
+              <Select
+                value={stateDetailsUser.defaultAddress?._id || ""}
+                disabled // Chỉ đọc, không cho thay đổi
+              >
+                {stateDetailsUser.address.map((addr) => (
+                  <Select.Option key={addr._id} value={addr._id}>
+                    {addr.address}
+                  </Select.Option>
+                ))}
+              </Select>
+            ) : (
+              <Input
+                placeholder="Người dùng chưa nhập địa chỉ"
+                value={stateDetailsUser.defaultAddress?.address || ""}
+                disabled // Chỉ đọc, không cho thay đổi
+              />
+            )}
           </Form.Item>
           <Form.Item label="Phone" name="phone">
             <InputComponent

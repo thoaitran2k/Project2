@@ -460,7 +460,7 @@ const HeaderComponent = ({
                       span={screens.xs ? 0 : 2}
                     >
                       <div className="Search">
-                        <StyledLink to="/search">
+                        <StyledLink to="/products">
                           <div
                             style={{
                               display: "flex",

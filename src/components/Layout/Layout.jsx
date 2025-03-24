@@ -3,9 +3,14 @@ import { routes } from "../../routes/index";
 import HeaderComponent from "../../components/HeaderComponent/HeaderComponent";
 import FooterComponent from "../../components/FooterComponent/FooterComponent";
 import styled from "styled-components";
+import { useEffect } from "react";
 
 const Layout = ({ children }) => {
   const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   // Kiểm tra route hiện tại có isShowHeader và isShowFooter không
   const currentRoute = routes.find((route) =>

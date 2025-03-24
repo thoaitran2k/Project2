@@ -110,8 +110,6 @@ const ProductList = () => {
     dispatch(getAllProduct());
   }, [dispatch]);
 
-  console.log("SIMILAR PRODUCT", products);
-
   const handlePrev = () => {
     carouselRef.current.prev();
   };

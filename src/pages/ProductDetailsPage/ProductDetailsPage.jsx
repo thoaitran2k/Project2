@@ -19,8 +19,6 @@ const ProductDetailsPage = () => {
 
   const productId = id.split("-").pop();
 
-  console.log("ID từ URL:", productId);
-
   //____________________________________LẤY DỮ LIỆU CHI TIẾT SẢN PHẨM
 
   useEffect(() => {
@@ -35,8 +33,6 @@ const ProductDetailsPage = () => {
   //   retry: 3,
   //   retryDelay: 1000,
   // });
-
-  console.log("Dữ liệu sản phẩm:", productDetail.data);
 
   return (
     <div style={{ margin: "20px 0" }}>

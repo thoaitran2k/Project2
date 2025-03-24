@@ -143,8 +143,13 @@ const productSlice = createSlice({
     productDetail: null,
     loading: false,
     error: null,
+    searchTerm: "",
   },
-  reducers: {},
+  reducers: {
+    setSearchTerm: (state, action) => {
+      state.searchTerm = action.payload;
+    },
+  },
 
   extraReducers: (builder) => {
     builder
@@ -213,9 +218,8 @@ const productSlice = createSlice({
         //state.loading = true;
       })
       .addCase(getAllProduct.fulfilled, (state, action) => {
-        //console.log("Dữ liệu từ API getAllProduct:", action.payload);
         state.loading = false;
-        state.products = action.payload;
+        state.products = action.payload; // Giữ nguyên danh sách sản phẩm
       })
       .addCase(getAllProduct.rejected, (state, action) => {
         state.loading = false;
@@ -249,4 +253,6 @@ const productSlice = createSlice({
       });
   },
 });
+
+export const { setSearchTerm } = productSlice.actions;
 export default productSlice.reducer;

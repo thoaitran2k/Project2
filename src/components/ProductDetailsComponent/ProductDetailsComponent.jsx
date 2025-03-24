@@ -29,11 +29,6 @@ const ProductDetailsComponent = ({ product }) => {
   const address = useSelector((state) => state.user.address);
   const defaultAddress = address?.find((addr) => addr.isDefault) || null;
 
-  console.log("ADDRESS", address);
-  console.log("ADDRESS DEFAULT", defaultAddress);
-  console.log("Product Sizes:", product.sizes);
-  console.log("Available Sizes:", availableSizes);
-
   const increaseQuantity = () =>
     setQuantityPay((prev) => Math.min(prev + 1, 10));
   const decreaseQuantity = () =>
@@ -68,7 +63,6 @@ const ProductDetailsComponent = ({ product }) => {
     ...imagesPreview, // Các ảnh còn lại
   ];
 
-  console.log("CHECK", product.imagesPreview);
   const partialStarWidth = getPartialStarWidth(partialStar);
 
   return (

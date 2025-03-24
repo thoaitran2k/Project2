@@ -394,7 +394,7 @@ const updateUser = async (req, res) => {
       });
     }
 
-    let { phone, dob } = req.body;
+    let { phone, dob, defaultAddress } = req.body;
 
     // Kiểm tra số điện thoại
     if (phone && !phoneRegex.test(phone)) {
@@ -418,7 +418,7 @@ const updateUser = async (req, res) => {
 
     if (phone) req.body.phone = String(phone);
 
-    // Gọi service để cập nhật user (ĐÃ SỬA LỖI)
+    // Gọi service để cập nhật user
     const result = await updateUserService(userId, req.body);
 
     // Kiểm tra service trả về lỗi hay không

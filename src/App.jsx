@@ -4,7 +4,9 @@ import {
   Routes,
   Route,
   useLocation,
+  ScrollRestoration,
 } from "react-router-dom";
+
 import { useDispatch, useSelector } from "react-redux";
 import { routes } from "./routes";
 import HeaderComponent from "./components/HeaderComponent/HeaderComponent";
@@ -43,6 +45,7 @@ function App() {
   return (
     <AppContainer>
       <Router>
+        {/* <ScrollRestoration /> */}
         <ScrollToTop />
         <MainContent>
           <Routes>

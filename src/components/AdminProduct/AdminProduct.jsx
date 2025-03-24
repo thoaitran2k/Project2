@@ -348,8 +348,6 @@ const AdminProduct = () => {
   // Lấy tất cả các ID sản phẩm từ tất cả các trang
   const allProductIds = products?.data?.map((product) => product._id) || [];
 
-  console.log("allProductIds", allProductIds);
-
   useEffect(() => {}, [stateProduct.variants]);
 
   const renderAction = () => {

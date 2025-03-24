@@ -6,6 +6,7 @@ const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 const { message } = require("antd");
 const MailService = require("../services/MailService");
+const mongoose = require("mongoose");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
@@ -225,26 +226,35 @@ const loginUser = async ({ email, password, captcha }) => {
 
 const updateUserService = async (id, data) => {
   try {
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
-    } else {
-      delete data.password;
-    }
-
-    // Lấy user hiện tại để giữ lại address nếu không có trong data
     const existingUser = await User.findById(id);
     if (!existingUser) {
       return { status: "ERROR", message: "User không tồn tại" };
     }
 
-    // Giữ lại address nếu nó không có trong data
-    if (!data.address) {
-      data.address = existingUser.address;
+    // Đảm bảo danh sách địa chỉ tồn tại
+    if (!existingUser.addresses) {
+      existingUser.addresses = [];
     }
 
+    // Nếu có địa chỉ mới được thêm
+    if (data.defaultAddress && typeof data.defaultAddress === "object") {
+      const newAddress = {
+        ...data.defaultAddress,
+        isDefault: true, // Đánh dấu địa chỉ mới là mặc định
+        _id: new mongoose.Types.ObjectId(), // Tạo ID mới cho địa chỉ
+      };
+
+      // Thêm địa chỉ mới vào mảng addresses
+      existingUser.addresses.push(newAddress);
+
+      // Cập nhật defaultAddress thành ID của địa chỉ mới
+      data.defaultAddress = newAddress._id;
+    }
+
+    // Cập nhật thông tin user
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      { $set: data },
+      { $set: data, addresses: existingUser.addresses }, // Cập nhật cả addresses
       { new: true }
     );
 
