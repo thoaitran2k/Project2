@@ -7,7 +7,6 @@ import { StarFilled } from "@ant-design/icons";
 
 import { Link } from "react-router-dom";
 import SideBar from "../SideBar/SideBar";
-import { WrapperButtonContainer, WrapperButtonMore } from "./style";
 
 // import { WrapperButtonMore, WrapperButtonContainer } from "./style";
 

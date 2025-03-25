@@ -51,3 +51,16 @@ export const getDetailProduct = async (productId) => {
     throw new Error("Load sản phẩm thất bại!"); // ✅ Thêm thông báo lỗi cụ thể
   }
 };
+
+export const getAllTypeProduct = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-all-type/`
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("🚨 API lỗi:", error.response?.data || error.message); // Hiển thị lỗi chi tiết
+    throw new Error("Lấy loại sản phẩm thất bại!"); // ✅ Thêm thông báo lỗi cụ thể
+  }
+};

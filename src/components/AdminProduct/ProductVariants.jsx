@@ -1,5 +1,9 @@
+import { productTypeConfig, defaultConfig } from "./configs/productConfig";
+import { Button, Form, Input, Space, Select } from "antd";
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+
 const ProductVariants = ({ productType, variants, onChange }) => {
-  const config = productTypeConfig[productType] || {};
+  const config = productTypeConfig[productType] || defaultConfig;
 
   const updateVariant = (index, field, value) => {
     const newVariants = [...variants];
@@ -12,50 +16,16 @@ const ProductVariants = ({ productType, variants, onChange }) => {
     if (config.hasColor) newVariant.color = "";
     if (config.hasSize) newVariant.size = "";
     if (config.hasDiameter) newVariant.diameter = "";
+
     onChange([...variants, newVariant]);
   };
-
-  const removeVariant = (index) => {
-    onChange(variants.filter((_, i) => i !== index));
-  };
-
-  const productTypeConfig = {
-    // Áo
-    "Áo nam": {
-      hasColor: true,
-      hasSize: true,
-      sizeType: "letter",
-      hasDiameter: false,
-    },
-    "Áo nữ": {
-      hasColor: true,
-      hasSize: true,
-      sizeType: "letter",
-      hasDiameter: false,
-    },
-
-    // Quần
-    "Quần nam": {
-      hasColor: true,
-      hasSize: true,
-      sizeType: "number",
-      hasDiameter: false,
-    },
-    "Quần nữ": {
-      hasColor: true,
-      hasSize: true,
-      sizeType: "number",
-      hasDiameter: false,
-    },
-
-    // Đồng hồ
-    "Đồng hồ": { hasColor: true, hasSize: false, hasDiameter: true },
-
-    // Phụ kiện (chỉ có số lượng)
-    "Túi xách": { hasColor: false, hasSize: false, hasDiameter: false },
-    "Trang sức": { hasColor: false, hasSize: false, hasDiameter: false },
-    Ví: { hasColor: false, hasSize: false, hasDiameter: false },
-  };
+  const sizeOptions = [
+    { value: "S", label: "S" },
+    { value: "M", label: "M" },
+    { value: "L", label: "L" },
+    { value: "XL", label: "XL" },
+    { value: "XXL", label: "XXL" },
+  ];
 
   return (
     <>
@@ -69,7 +39,10 @@ const ProductVariants = ({ productType, variants, onChange }) => {
             >
               <Select
                 placeholder="Chọn màu"
-                options={colorOptions}
+                options={config.colorOptions.map((color) => ({
+                  label: color,
+                  value: color,
+                }))}
                 value={variant.color}
                 onChange={(value) => updateVariant(index, "color", value)}
               />
@@ -129,12 +102,17 @@ const ProductVariants = ({ productType, variants, onChange }) => {
             <Input
               placeholder="Số lượng"
               type="number"
+              min={1}
               value={variant.quantity}
-              onChange={(e) => updateVariant(index, "quantity", e.target.value)}
+              onChange={(e) =>
+                updateVariant(index, "quantity", Number(e.target.value))
+              }
             />
           </Form.Item>
 
-          <MinusCircleOutlined onClick={() => removeVariant(index)} />
+          <MinusCircleOutlined
+            onClick={() => onChange(variants.filter((_, i) => i !== index))}
+          />
         </Space>
       ))}
 

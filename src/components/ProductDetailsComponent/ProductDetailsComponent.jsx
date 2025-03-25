@@ -20,6 +20,17 @@ import {
 import { useSelector } from "react-redux";
 
 const ProductDetailsComponent = ({ product }) => {
+  const colorMap = {
+    Hồng: "#FF69B4",
+    Nâu: "#8B4513",
+    Đen: "#000000",
+    Trắng: "#FFFFFF",
+    "Xanh dương": "#D9E0E9",
+    "Xanh lá": "#008000",
+    Vàng: "#FFD700",
+    Đồng: "#B87333",
+  };
+
   const [quantityPay, setQuantityPay] = useState(1);
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -28,6 +39,13 @@ const ProductDetailsComponent = ({ product }) => {
 
   const address = useSelector((state) => state.user.address);
   const defaultAddress = address?.find((addr) => addr.isDefault) || null;
+
+  // console.log("product", product);
+  const uniqueColors = [
+    ...new Set(product.variants?.map((variant) => variant.color)),
+  ];
+
+  console.log("uniqueColors", uniqueColors);
 
   const increaseQuantity = () =>
     setQuantityPay((prev) => Math.min(prev + 1, 10));
@@ -74,12 +92,12 @@ const ProductDetailsComponent = ({ product }) => {
           style={{
             width: "100%",
             maxWidth: "400px",
-            height: "400px", // Đảm bảo khung ảnh lớn có kích thước cố định
-            display: "flex", // Dùng flexbox để căn giữa ảnh bên trong
+            height: "400px",
+            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            objectFit: "contain", // Đảm bảo ảnh giữ nguyên tỷ lệ mà không bị méo
-            backgroundColor: "#f5f5f5", // Tạo nền để nhìn rõ ảnh hơn nếu ảnh nhỏ
+            objectFit: "contain",
+            backgroundColor: "#f5f5f5",
           }}
           src={imageList[selectedImageIndex]}
           alt="image product"
@@ -92,40 +110,40 @@ const ProductDetailsComponent = ({ product }) => {
             maxWidth: "400px",
             display: "flex",
             flexDirection: "row",
-            justifyContent: "center",
+            justifyContent: imageList.length < 5 ? "flex-start" : "center", // Thay đổi căn chỉnh tùy số lượng ảnh
             background: "#fff",
             marginTop: "16px",
-            gap: "18px",
+            gap: imageList.length < 5 ? "0px" : "18px", // Loại bỏ gap nếu có ít hơn 5 ảnh
             padding: "8px",
+            overflow: "hidden", // Đảm bảo không có tràn khi không có gap
           }}
         >
-          {imageList.slice(0, 5).map(
-            (
-              image,
-              index // Đảm bảo chỉ hiển thị 5 ảnh
-            ) => (
-              <WrapperStyleImage
-                key={index}
-                style={{ flex: "1", textAlign: "center" }}
-              >
-                <WrapperStyleImageSmall
-                  src={image}
-                  alt="image small product"
-                  preview={{ mask: false }}
-                  onMouseEnter={() => setSelectedImageIndex(index)}
-                  onClick={() => setSelectedImageIndex(index)}
-                  style={{
-                    width: "60px", // Đặt kích thước ảnh nhỏ
-                    height: "60px",
-                    borderRadius: "8px",
-                    border:
-                      selectedImageIndex === index ? "2px solid red" : "none",
-                    cursor: "pointer",
-                  }}
-                />
-              </WrapperStyleImage>
-            )
-          )}
+          {imageList.slice(0, 5).map((image, index) => (
+            <WrapperStyleImage
+              key={index}
+              style={{
+                flex: imageList.length < 5 ? "none" : "1", // Không flex nếu ít hơn 5 ảnh
+                textAlign: "center",
+                marginRight: imageList.length < 5 ? "0px" : "0", // Loại bỏ margin nếu ít hơn 5 ảnh
+              }}
+            >
+              <WrapperStyleImageSmall
+                src={image}
+                alt="image small product"
+                preview={{ mask: false }}
+                onMouseEnter={() => setSelectedImageIndex(index)}
+                onClick={() => setSelectedImageIndex(index)}
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "8px",
+                  border:
+                    selectedImageIndex === index ? "2px solid red" : "none",
+                  cursor: "pointer",
+                }}
+              />
+            </WrapperStyleImage>
+          ))}
         </Row>
       </Col>
 
@@ -251,13 +269,13 @@ const ProductDetailsComponent = ({ product }) => {
               Chọn màu sắc:
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
-              {product?.colors?.map((color, index) => (
+              {uniqueColors.map((color, index) => (
                 <div
                   key={index}
                   style={{
                     width: "30px",
                     height: "30px",
-                    backgroundColor: color,
+                    backgroundColor: colorMap[color],
                     borderRadius: "50%",
                     cursor: "pointer",
                     border:
