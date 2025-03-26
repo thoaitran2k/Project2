@@ -28,6 +28,7 @@ const { useBreakpoint } = Grid;
 const Sidebar = () => {
   const [open, setOpen] = useState(false);
   const screens = useBreakpoint();
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   return (
     <div>
@@ -44,13 +45,7 @@ const Sidebar = () => {
 
       <Drawer
         title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <CloseOutlined
               onClick={() => setOpen(false)}
               style={{
@@ -75,27 +70,13 @@ const Sidebar = () => {
         onClose={() => setOpen(false)}
         open={open}
         closeIcon={null}
-        width={screens.xs ? "90%" : "400px"}
+        width={screens.xs ? "90%" : selectedCategory ? "800px" : "400px"}
       >
-        <ul
-          style={{
-            listStyle: "none",
-            padding: screens.xs ? "10px" : "20px",
-            fontSize: screens.xs ? "16px" : "18px",
-          }}
-        >
-          {[<NavbarComponent />].map((item, index) => (
-            <li
-              key={index}
-              style={{
-                marginBottom: "10px",
-                marginLeft: screens.xs ? "10px" : "30px",
-              }}
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
+        <NavbarComponent
+          onClose={() => setOpen(false)}
+          setSelectedCategory={setSelectedCategory}
+          selectedCategory={selectedCategory}
+        />
       </Drawer>
     </div>
   );

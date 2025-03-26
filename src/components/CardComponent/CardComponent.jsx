@@ -1,72 +1,16 @@
 import React, { useState, useEffect } from "react";
 
-import { Card } from "antd";
+import { Card, Spin } from "antd";
 import styled from "styled-components";
 // import { CardNameProduct } from "./style";
 import { StarFilled } from "@ant-design/icons";
 
 import { Link } from "react-router-dom";
-import SideBar from "../SideBar/SideBar";
 
-// import { WrapperButtonMore, WrapperButtonContainer } from "./style";
+import Loading from "../LoadingComponent/Loading";
+import { useDispatch, useSelector } from "react-redux";
+import { setLoading } from "../../redux/slices/loadingSlice";
 
-// import {
-//   WrapperReportText,
-//   WrapperPriceText,
-//   WrapperDiscountText,
-//   WrapperCardStyle,
-// } from "./style";
-
-// const mockProducts = [
-//   {
-//     id: 1,
-//     name: "Túi Nano LV Biker",
-//     price: "90.500.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 5,
-//     category: "Túi xách",
-//   },
-//   {
-//     id: 2,
-//     name: "Túi Keepit",
-//     price: "52.000.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 4,
-//     category: "Túi xách",
-//   },
-//   {
-//     id: 3,
-//     name: "Túi Pochette Camille",
-//     price: "40.500.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 4,
-//     category: "Túi xách",
-//   },
-//   {
-//     id: 4,
-//     name: "Túi Low Key",
-//     price: "68.500.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 5,
-//     category: "Túi xách",
-//   },
-//   {
-//     id: 4,
-//     name: "Túi Low Key",
-//     price: "68.500.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 5,
-//     category: "Túi xách",
-//   },
-//   {
-//     id: 4,
-//     name: "Túi Low Key",
-//     price: "68.500.000₫",
-//     image: "https://via.placeholder.com/450",
-//     rating: 5,
-//     category: "Túi xách",
-//   },
-// ];
 const columns = 4;
 
 const StarRating = ({ rating }) => {
@@ -106,6 +50,9 @@ const StarRating = ({ rating }) => {
 
 const { Meta } = Card;
 const CardComponent = ({ products, totalProducts }) => {
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.loading.isLoading);
+
   console.log("Tổng số sản phẩm:", totalProducts);
 
   const createSlug = (name, id) => {
@@ -120,9 +67,16 @@ const CardComponent = ({ products, totalProducts }) => {
   };
   const columns = 4;
 
+  const handleClick = () => {
+    dispatch(setLoading(true));
+    setTimeout(() => {
+      dispatch(setLoading(false));
+    }, 1000);
+  };
+
   return (
     <>
-      <WrapperCardProduct>
+      <WrapperCardProduct onClick={handleClick}>
         {products.length === 0 ? (
           <p>Không có sản phẩm nào!</p>
         ) : (
@@ -171,18 +125,22 @@ const StyledLink = styled(Link)`
 `;
 
 const ProductCard = styled.div`
-  background: ${({ index, columns }) =>
-    (Math.floor(index / columns) + index) % 2 === 0
+  background: ${({ index, columns, $loading }) =>
+    $loading
+      ? "rgba(0,0,0,0.05)"
+      : (Math.floor(index / columns) + index) % 2 === 0
       ? "linear-gradient(to bottom, #D0CECE, #EAE9E9)"
       : "linear-gradient(to bottom, #EAE9E9, #D0CECE)"};
+  opacity: ${({ $loading }) => ($loading ? 0.5 : 1)};
+  transition: opacity 0.3s ease;
 
+  // Các style khác giữ nguyên
   padding: 15px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 450px; /* Điều chỉnh chiều cao */
+  height: 450px;
   justify-content: space-between;
 
   img {

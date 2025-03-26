@@ -12,20 +12,23 @@ const Layout = ({ children }) => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Kiểm tra route hiện tại có isShowHeader và isShowFooter không
+  // Kiểm tra route hiện tại
   const currentRoute = routes.find((route) =>
     location.pathname.startsWith(route.path)
   );
   const shouldShowHeader = currentRoute ? currentRoute.isShowHeader : true;
   const shouldShowFooter = currentRoute ? currentRoute.isShowFooter : true;
 
-  // Kiểm tra nếu là trang Products
-  const isProductsPage = location.pathname.startsWith("/products");
+  // Xác định loại trang
+  const isWidePage =
+    location.pathname.startsWith("/products") ||
+    location.pathname.startsWith("/product-type");
+  const isHomePage = location.pathname === "/home";
 
   return (
     <>
       {shouldShowHeader && <HeaderComponent />}
-      <LayoutContainer isProductsPage={isProductsPage}>
+      <LayoutContainer $isWidePage={isWidePage} $isHomePage={isHomePage}>
         {children}
       </LayoutContainer>
       {shouldShowFooter && <FooterComponent />}
@@ -37,10 +40,14 @@ export default Layout;
 
 // Styled Components
 const LayoutContainer = styled.div`
-  max-width: ${({ isProductsPage }) => (isProductsPage ? "1900px" : "1400px")};
-  margin: 0 ${({ isProductsPage }) => (isProductsPage ? "100px" : "auto")};
-  padding: 0px;
+  max-width: ${({ $isWidePage, $isHomePage }) =>
+    $isHomePage ? "100%" : $isWidePage ? "1900px" : "1400px"};
+  margin: ${({ $isHomePage }) => ($isHomePage ? "0" : "0 auto")};
+  padding: ${({ $isHomePage }) => ($isHomePage ? "0" : "0px")};
+  width: ${({ $isHomePage }) => ($isHomePage ? "100%" : "auto")};
   min-height: 100vh;
-  // border: solid 2px red;
   padding-top: 4vh;
+
+  ${({ $isWidePage, $isHomePage }) =>
+    $isWidePage && !$isHomePage && "margin: 0 100px;"}
 `;

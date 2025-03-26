@@ -13,6 +13,19 @@ export const getAllProduct = async ({ limit, page }) => {
   }
 };
 
+export const getProductType = async ({ type }) => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-all`,
+      { params: { type } } // Gửi type lên API
+    );
+    return response.data;
+  } catch (error) {
+    console.error("🚨 API lỗi:", error);
+    return { data: [], total: 0 };
+  }
+};
+
 export const createProduct = async (data) => {
   try {
     const formattedData = {

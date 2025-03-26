@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Checkbox, Slider } from "antd";
 import styled from "styled-components";
 import { getAllTypeProduct } from "../../Services/ProductService"; // Đường dẫn tuỳ chỉnh theo dự án của bạn
+import { useLocation } from "react-router";
 
 const SideBar = () => {
   const [categories, setCategories] = useState([]);
+  const location = useLocation();
+  const isProductPage = location.pathname.startsWith("/product-type/");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -34,11 +37,15 @@ const SideBar = () => {
 
   return (
     <SidebarContainer>
-      <h3>Danh mục</h3>
-      <StyledCheckboxGroup
-        options={categories}
-        onChange={(values) => console.log("Danh mục đã chọn:", values)}
-      />
+      {!isProductPage && (
+        <>
+          <h3>Danh mục</h3>
+          <StyledCheckboxGroup
+            options={categories}
+            onChange={(values) => console.log("Danh mục đã chọn:", values)}
+          />
+        </>
+      )}
       <h3>Khoảng giá</h3>
       <Slider
         range
@@ -56,7 +63,7 @@ export default SideBar;
 // 🎨 Style tối ưu hóa
 const SidebarContainer = styled.div`
   width: 300px;
-  height: 100vh;
+  height: 75vh;
   background: #f8f9fa;
   padding: 20px;
   border-radius: 8px;

@@ -7,6 +7,7 @@ import SignInPage from "../pages/SignInPage/SignInPage";
 import SearchPage from "../pages/SearchPage/SearchPage";
 import ProfilePage from "../pages/ProfilePage/ProfilePage";
 import AdminPage from "../pages/AdminPage/AdminPage";
+import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
 
 export const routes = [
   //PAGE
@@ -25,6 +26,12 @@ export const routes = [
   {
     path: "/products",
     page: ProductsPage,
+    isShowHeader: true,
+    isShowFooter: true,
+  },
+  {
+    path: "/product-type/:type",
+    page: TypeProductPage,
     isShowHeader: true,
     isShowFooter: true,
   },

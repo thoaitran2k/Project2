@@ -52,9 +52,9 @@ const ProductDetailsComponent = ({ product }) => {
   const decreaseQuantity = () =>
     setQuantityPay((prev) => Math.max(prev - 1, 1));
 
-  const rating = product.rating; // Giả sử rating là một số từ 0 đến 5
-  const fullStars = Math.floor(rating); // Số sao đầy
-  const partialStar = rating - fullStars; // Phần sao chưa đầy
+  const rating = Math.min(product.rating, 5);
+  const fullStars = Math.floor(rating);
+  const partialStar = rating - fullStars;
 
   const getPartialStarWidth = (partialStar) => {
     if (partialStar >= 0.75) return 100; // >= 75% -> 100%
