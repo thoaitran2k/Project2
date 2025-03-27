@@ -74,6 +74,7 @@ const Sidebar = () => {
       >
         <NavbarComponent
           onClose={() => setOpen(false)}
+          isOpen={open}
           setSelectedCategory={setSelectedCategory}
           selectedCategory={selectedCategory}
         />

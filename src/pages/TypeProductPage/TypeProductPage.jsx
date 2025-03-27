@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import SideBar from "../../components/SideBar/SideBar";
@@ -6,6 +6,9 @@ import { Breadcrumb, Button } from "antd";
 import styled from "styled-components";
 import CardComponent from "../../components/CardComponent/CardComponent";
 import { getProductType } from "../../Services/ProductService";
+import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
+import { useLocation, useNavigate } from "react-router";
+import { Link } from "react-router-dom";
 
 // Mapping danh mục không dấu sang có dấu
 const categoryMapping = {
@@ -19,9 +22,21 @@ const categoryMapping = {
   vi: "Ví",
 };
 
+const slugify = (str) =>
+  str
+    .normalize("NFD") // Chuyển thành dạng Unicode chuẩn
+    .replace(/[\u0300-\u036f]/g, "") // Loại bỏ dấu
+    .toLowerCase()
+    .replace(/\s+/g, "-"); // Thay dấu cách bằng dấu `-`
+
 const TypeProductPage = () => {
   const { type } = useParams();
-  const formattedType = categoryMapping[type] || type.replace(/-/g, " ");
+  const decodedType = decodeURIComponent(type);
+
+  const formattedType =
+    Object.entries(categoryMapping).find(([slug]) => slug === type)?.[1] ||
+    type.replace(/-/g, " "); // Nếu không có trong mapping thì giữ nguyên
+
   const [limit, setLimit] = useState(8);
 
   // Dùng useQuery để lấy tất cả sản phẩm
@@ -35,26 +50,23 @@ const TypeProductPage = () => {
     ? data.data.filter((product) => product.type === formattedType)
     : [];
 
-  console.log("filteredProducts", filteredProducts);
   // Lấy danh sách sản phẩm theo limit
   const displayedProducts = data?.data ? data.data.slice(0, limit) : [];
 
   const totalProducts = data?.data?.length || 0;
-  console.log("totalProducts", totalProducts);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const breadcrumbItems = [
+    { path: "/home", name: "Trang chủ" },
+    { path: `/product-type/${type}`, name: formattedType },
+  ];
 
   return (
     <>
       <br />
-      <BreadcrumbWrapper>
-        <Breadcrumb separator=">">
-          <Breadcrumb.Item href="/home">Trang chủ</Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <u>
-              <i>{formattedType}</i>
-            </u>
-          </Breadcrumb.Item>
-        </Breadcrumb>
-      </BreadcrumbWrapper>
+      <BreadcrumbWrapper breadcrumb={breadcrumbItems} />
       <div style={{ minHeight: "100vh" }}>
         <PageLayout>
           <SideBarContainer>
@@ -65,7 +77,32 @@ const TypeProductPage = () => {
             {isLoading ? (
               <p>Đang tải...</p>
             ) : (
-              <CardComponent products={displayedProducts} />
+              <CardComponent
+                products={displayedProducts.map((product) => ({
+                  ...product,
+                  link: (
+                    <Link
+                      to={`/product-details/${product.id}`}
+                      state={{
+                        breadcrumb: [
+                          { path: "/home", name: "Trang chủ" },
+                          {
+                            path: `/product-type/${type}`,
+                            name: formattedType,
+                          },
+                          {
+                            path: `/product-details/${product.id}`,
+                            name: product.name,
+                          },
+                        ],
+                        fromTypePage: true, // 🛠️ Đánh dấu là vào từ trang loại sản phẩm
+                      }}
+                    >
+                      <h3>{product.name}</h3>
+                    </Link>
+                  ),
+                }))}
+              />
             )}
 
             {/* Chỉ hiện nút Xem thêm nếu có nhiều hơn `limit` sản phẩm */}
@@ -92,11 +129,6 @@ const TypeProductPage = () => {
 export default TypeProductPage;
 
 // Styled Components
-const BreadcrumbWrapper = styled.div`
-  width: 100%;
-  padding: 12px 24px;
-  max-width: 80vw;
-`;
 
 const PageLayout = styled.div`
   display: flex;

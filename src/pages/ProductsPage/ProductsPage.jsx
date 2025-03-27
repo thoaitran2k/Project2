@@ -13,12 +13,30 @@ import styled from "styled-components";
 import { Breadcrumb } from "antd";
 import SearchComponent from "../../components/SearchComponent/SearchComponent";
 import { useSelector } from "react-redux";
+import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
+import { useLocation, useNavigate } from "react-router";
 
 const ProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [resetProducts, setResetProducts] = useState(false);
   const searchTerm = useSelector((state) => state.product.searchTerm);
   const [limit, setLimit] = useState(8);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!location.state?.breadcrumb) {
+      navigate(location.pathname, {
+        replace: true,
+        state: {
+          breadcrumb: [
+            { path: "/home", name: "Trang chủ" },
+            { path: "/products", name: "Tìm kiếm sản phẩm" },
+          ],
+        },
+      });
+    }
+  }, [location, navigate]);
 
   const fetchProductAll = async ({ queryKey }) => {
     const [, limit, page] = queryKey;
@@ -66,29 +84,17 @@ const ProductsPage = () => {
 
   return (
     <>
-      <BreadcrumbWrapper>
-        <Breadcrumb separator=">">
-          <Breadcrumb.Item href="/home">
-            <i style={{ fontWeight: "400" }}>Trang chủ</i>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <i>
-              <u>Sản phẩm</u>
-            </i>
-          </Breadcrumb.Item>
-        </Breadcrumb>
-      </BreadcrumbWrapper>
+      <br />
+      <BreadcrumbWrapper />
       <SearchComponent setLimit={setLimit} />
       <ProductsContainer>
         <SideBar />
         <MainContent>
-          {/* <ProductListWrapper> */}
           {isLoading ? (
             <p>Loading...</p>
           ) : (
             <CardComponent products={displayedProducts} />
           )}
-          {/* </ProductListWrapper> */}
 
           {totalFilteredProducts > limit ? (
             <WrapperButtonContainer>
@@ -114,19 +120,4 @@ const MainContent = styled.div`
   flex-direction: column;
   min-height: 90vh;
   width: 100%;
-`;
-
-// const ProductListWrapper = styled.div`
-//   flex-grow: 1;
-//   display: flex;
-//   flex-wrap: wrap;
-//   gap: 15px;
-//   justify-content: center; /* Căn giữa các sản phẩm */
-// `;
-
-const BreadcrumbWrapper = styled.div`
-  width: 100%;
-  padding: 12px 24px;
-  // background: #f5f5f5;
-  max-width: 80vw;
 `;

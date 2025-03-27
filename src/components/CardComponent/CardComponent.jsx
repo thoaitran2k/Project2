@@ -58,9 +58,11 @@ const CardComponent = ({ products, totalProducts }) => {
   const createSlug = (name, id) => {
     return (
       name
-        .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "") // Loại bỏ dấu
+        .replace(/Đ/g, "D") // Chuyển Đ → D
+        .replace(/đ/g, "d") // Chuyển đ → d
+        .toLowerCase()
         .replace(/[^a-z0-9 ]/g, "")
         .replace(/\s+/g, "-") + `-${id}`
     );

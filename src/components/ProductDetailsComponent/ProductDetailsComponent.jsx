@@ -45,8 +45,6 @@ const ProductDetailsComponent = ({ product }) => {
     ...new Set(product.variants?.map((variant) => variant.color)),
   ];
 
-  console.log("uniqueColors", uniqueColors);
-
   const increaseQuantity = () =>
     setQuantityPay((prev) => Math.min(prev + 1, 10));
   const decreaseQuantity = () =>
