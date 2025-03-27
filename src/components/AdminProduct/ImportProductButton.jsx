@@ -4,10 +4,10 @@ import { UploadOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { getAllProduct } from "../../redux/slices/productSlice"; // Import action getAllProduct
 
-const ImportProductButton = () => {
+const ImportProductButton = ({ currentPage }) => {
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const dispatch = useDispatch(); // Sử dụng useDispatch
+  const dispatch = useDispatch();
 
   const handleUpload = () => {
     const formData = new FormData();
@@ -28,9 +28,7 @@ const ImportProductButton = () => {
         setUploading(false);
         if (data.status === "OK") {
           message.success("Import sản phẩm thành công");
-
-          // Gọi lại API lấy danh sách sản phẩm sau khi import thành công
-          dispatch(getAllProduct()); // Dispatch action getAllProduct
+          dispatch(getAllProduct({ page: currentPage }));
         } else {
           message.error("Import sản phẩm thất bại: " + data.message);
         }

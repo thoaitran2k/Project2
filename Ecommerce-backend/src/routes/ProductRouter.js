@@ -39,6 +39,15 @@ router.post(
 );
 
 //Import sản phẩm từ file excel
+const removeDiacritics = (str) =>
+  str
+    .replace(/Đ/g, "D")
+    .replace(/đ/g, "d")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+
 router.post(
   "/import-products",
   uploadExcel.single("file"),
@@ -57,27 +66,46 @@ router.post(
       const data = xlsx.utils.sheet_to_json(sheet);
 
       const products = data.map((row) => {
-        // Xử lý sizes: Chuyển chuỗi thành mảng
-        const sizes = row.sizes ? row.sizes.split(",") : [];
+        const normalizedType = removeDiacritics(row.type);
 
-        // Xử lý colors: Chuyển chuỗi thành mảng
-        const colors = row.colors ? row.colors.split(",") : [];
-
+        let sizes = row.sizes ? row.sizes.split(",") : [];
+        let additionalFields = {};
+        console.log(
+          `Normalized Type: ${normalizedType}, Original Type: ${row.type}`
+        );
+        if (normalizedType === "dong-ho") {
+          if (!row.diameter) {
+            throw new Error(
+              `Sản phẩm "${row.name}" thiếu thông tin đường kính (diameter).`
+            );
+          }
+          additionalFields.diameter = parseFloat(row.diameter);
+        } else if (
+          normalizedType === "quan-nam" ||
+          normalizedType === "quan-nu"
+        ) {
+          sizes = ["28", "29", "30", "31", "32"];
+        } else if (["trang-suc", "vi", "tui-xach"].includes(normalizedType)) {
+          sizes = [];
+        }
+        console.log(`Tên: ${row.name}, diameter: ${row.diameter}`);
         return {
           name: row.name,
           image: row.image,
           imagesPreview: row.imagesPreview ? row.imagesPreview.split(",") : [],
-          type: row.type,
+          type: row.type, // Giữ nguyên type có dấu
           price: row.price,
           countInStock: row.countInStock,
           rating: row.rating,
           description: row.description,
           selled: row.selled || 0,
-          colors: colors, // Đã chuyển thành mảng
-          sizes: sizes, // Đã chuyển thành mảng
+          colors: row.colors ? row.colors.split(",") : [],
+          sizes: sizes,
           variants: row.variants ? JSON.parse(row.variants) : [],
+          ...additionalFields,
         };
       });
+      console.log("Products chuẩn bị import:", products);
 
       const createdProducts = await Product.insertMany(products);
       return res.status(201).json({
