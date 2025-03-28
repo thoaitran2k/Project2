@@ -126,6 +126,8 @@ router.post(
 //GET ALL TYPE
 router.get("/get-all-type", ProductController.getAllType);
 
+router.get("/get-all", ProductController.getProductsByType);
+
 //SEARCH
 router.get("/search", async (req, res) => {
   try {

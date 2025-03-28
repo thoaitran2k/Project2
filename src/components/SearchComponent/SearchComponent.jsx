@@ -7,7 +7,7 @@ import axios from "axios";
 
 const { Search } = Input;
 
-const SearchComponent = ({ setLimit }) => {
+const SearchComponent = ({ setLimit = () => {} }) => {
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -15,7 +15,7 @@ const SearchComponent = ({ setLimit }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [resetProducts, setResetProducts] = useState(false);
-  const [allProducts, setAllProducts] = useState([]); // Lưu toàn bộ sản phẩm
+  const [allProducts, setAllProducts] = useState([]);
 
   useEffect(() => {
     // Lấy lịch sử tìm kiếm từ localStorage
@@ -82,8 +82,8 @@ const SearchComponent = ({ setLimit }) => {
   };
 
   const handleSelectSuggestion = (value) => {
-    setSearchValue(value);
     handleSearch(value);
+    setSearchValue(value);
   };
 
   const handleClearSearch = () => {
@@ -126,6 +126,8 @@ const SearchComponent = ({ setLimit }) => {
     dispatch(setSearchTerm(value));
     setResetProducts(true);
 
+    console.log("📌 searchTerm mới sau khi dispatch:", value);
+
     setLimit(8);
 
     // Lưu lịch sử tìm kiếm
@@ -155,7 +157,7 @@ const SearchComponent = ({ setLimit }) => {
             setShowSuggestions(true);
 
             if (!value.trim()) {
-              handleClearSearch(); // Khi ô trống, gọi hàm xóa
+              handleClearSearch();
             } else {
               setTimeout(() => fetchSuggestions(value.trim()), 300);
             }

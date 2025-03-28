@@ -1,5 +1,6 @@
 const ProductService = require("../services/ProductService");
 const uploadImageProductService = require("../services/uploadImageProductService");
+const Product = require("../models/ProductModel");
 
 const createProduct = async (req, res) => {
   try {
@@ -213,6 +214,26 @@ const uploadImagePreviewProduct = async (req, res) => {
     res.status(500).json({ message: "Lỗi tải ảnh lên" });
   }
 };
+
+const getProductsByType = async (req, res) => {
+  try {
+    const { type, limit, page } = req.query;
+    const skip = (page - 1) * limit;
+
+    const query = type ? { type: { $in: type.split(",") } } : {}; // Hỗ trợ nhiều loại
+
+    const products = await Product.find(query)
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Product.countDocuments(query);
+
+    res.status(200).json({ data: products, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //________________________________________________________________________________
 module.exports = {
   createProduct,
@@ -224,4 +245,5 @@ module.exports = {
   uploadImagePreviewProduct,
   deleteManyProduct,
   getAllType,
+  getProductsByType,
 };

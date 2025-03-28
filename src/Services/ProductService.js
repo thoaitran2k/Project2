@@ -13,18 +13,46 @@ export const getAllProduct = async ({ limit, page }) => {
   }
 };
 
+const getProductsByType = async (req, res) => {
+  try {
+    const { type, limit, page } = req.query;
+    const skip = (page - 1) * limit;
+
+    // ✅ Chuyển type thành mảng nếu có nhiều giá trị
+    const typeArray = type ? type.split(",") : [];
+
+    const filter = typeArray.length ? { type: { $in: typeArray } } : {};
+
+    const products = await Product.find(filter)
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Product.countDocuments(filter);
+
+    res.status(200).json({ data: products, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getProductType = async ({ type }) => {
   try {
     const response = await axios.get(
-      `${import.meta.env.VITE_URL_BACKEND}/product/get-all`,
-      { params: { type } } // Gửi type lên API
+      `${import.meta.env.VITE_URL_BACKEND}/product/get-by-type`,
+      {
+        params: { type },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
     return response.data;
   } catch (error) {
     console.error("🚨 API lỗi:", error);
-    return { data: [], total: 0 };
+    throw error;
   }
 };
+// Trong ProductService.js
 
 export const createProduct = async (data) => {
   try {

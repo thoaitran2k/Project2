@@ -53,8 +53,6 @@ const CardComponent = ({ products, totalProducts }) => {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
 
-  console.log("Tổng số sản phẩm:", totalProducts);
-
   const createSlug = (name, id) => {
     return (
       name
