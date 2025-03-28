@@ -234,6 +234,27 @@ const getProductsByType = async (req, res) => {
   }
 };
 
+const getProductType = async (req, res) => {
+  try {
+    const { type } = req.query;
+    if (!type) {
+      return res.status(400).json({ message: "Thiếu type sản phẩm" });
+    }
+
+    // Tìm sản phẩm theo type
+    const products = await Product.find({ type });
+
+    if (!products.length) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    }
+
+    res.json(products);
+  } catch (error) {
+    console.error("Lỗi lấy sản phẩm theo type:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 //________________________________________________________________________________
 module.exports = {
   createProduct,
@@ -246,4 +267,5 @@ module.exports = {
   deleteManyProduct,
   getAllType,
   getProductsByType,
+  getProductType,
 };

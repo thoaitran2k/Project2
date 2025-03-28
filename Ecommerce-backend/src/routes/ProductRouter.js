@@ -128,6 +128,8 @@ router.get("/get-all-type", ProductController.getAllType);
 
 router.get("/get-all", ProductController.getProductsByType);
 
+router.get("/get-by-type", ProductController.getProductType);
+
 //SEARCH
 router.get("/search", async (req, res) => {
   try {

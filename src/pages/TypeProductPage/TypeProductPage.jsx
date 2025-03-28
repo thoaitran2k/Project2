@@ -45,15 +45,16 @@ const TypeProductPage = () => {
     queryFn: () => getProductType({ type: formattedType }),
   });
 
+  console.log("data", data);
   // Lọc sản phẩm theo `type`
-  const filteredProducts = data?.data
-    ? data.data.filter((product) => product.type === formattedType)
+  const filteredProducts = data
+    ? data.filter((product) => product.type === formattedType)
     : [];
 
   // Lấy danh sách sản phẩm theo limit
-  const displayedProducts = data?.data ? data.data.slice(0, limit) : [];
+  const displayedProducts = data ? data.slice(0, limit) : [];
 
-  const totalProducts = data?.data?.length || 0;
+  const totalProducts = data?.length || 0;
 
   const location = useLocation();
   const navigate = useNavigate();

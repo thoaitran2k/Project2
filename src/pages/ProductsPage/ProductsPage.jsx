@@ -1,119 +1,135 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Checkbox, Slider } from "antd";
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Pagination } from "antd";
+import CardComponent from "../../components/CardComponent/CardComponent";
+import * as ProductService from "../../Services/ProductService";
+import {
+  ProductsContainer,
+  WrapperButtonMore,
+  WrapperButtonContainer,
+} from "./style";
+import SideBar from "../../components/SideBar/SideBar";
 import styled from "styled-components";
-import { getAllTypeProduct } from "../../Services/ProductService";
-import { useLocation } from "react-router";
-import { useSearchParams } from "react-router-dom";
+import { Breadcrumb } from "antd";
+import SearchComponent from "../../components/SearchComponent/SearchComponent";
 import { useSelector } from "react-redux";
+import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
+import { useLocation, useNavigate } from "react-router";
 
-const SideBar = () => {
-  const [type, setType] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const location = useLocation();
-  const isProductPage = location.pathname.startsWith("/product-type/");
-  const [searchParams, setSearchParams] = useSearchParams();
+const ProductsPage = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [resetProducts, setResetProducts] = useState(false);
   const searchTerm = useSelector((state) => state.product.searchTerm);
-  const products = useSelector((state) => state.product.products?.data || []);
-
-  // Khởi tạo selectedTypes từ URL params khi component mount
-  useEffect(() => {
-    const typesFromUrl = searchParams.get("type");
-    if (typesFromUrl) {
-      setSelectedTypes(typesFromUrl.split(","));
-    }
-  }, [searchParams]);
+  const [limit, setLimit] = useState(8);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [selectedTypes, setSelectedTypes] = useState([]);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getAllTypeProduct();
-        const data = response.data;
-
-        if (Array.isArray(data)) {
-          const formattedCategories = data.map((item) => ({
-            label: item,
-            value: item,
-          }));
-          setType(formattedCategories);
-        }
-      } catch (error) {
-        console.error("🚨 Lỗi lấy danh mục:", error.message);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  const filteredType = useMemo(() => {
-    if (!searchTerm.trim()) return type;
-
-    const filteredProducts = products.filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const matchedTypes = [...new Set(filteredProducts.map((p) => p.type))];
-
-    return type.filter((item) => matchedTypes.includes(item.value));
-  }, [searchTerm, type, products]);
-
-  const handleCategoryChange = (checkedValues) => {
-    setSelectedTypes(checkedValues);
-
-    // Cập nhật URL params
-    const newSearchParams = new URLSearchParams(searchParams);
-    if (checkedValues.length === 0) {
-      newSearchParams.delete("type");
-    } else {
-      newSearchParams.set("type", checkedValues.join(","));
+    if (!location.state?.breadcrumb) {
+      navigate(location.pathname + location.search, {
+        replace: true,
+        state: {
+          breadcrumb: [
+            { path: "/home", name: "Trang chủ" },
+            { path: "/products", name: "Tìm kiếm sản phẩm" },
+          ],
+        },
+      });
     }
+  }, [location.pathname, location.state]);
 
-    // Reset page về 1 khi thay đổi filter
-    newSearchParams.delete("page");
-    setSearchParams(newSearchParams);
+  const fetchProductAll = async ({ queryKey }) => {
+    const [, limit, page, selectedTypes] = queryKey; // Nhận selectedTypes từ queryKey
+
+    try {
+      const res = await ProductService.getAllProduct({
+        limit: 1000, // 🚀 Lấy toàn bộ sản phẩm để filter cục bộ
+        page: 1, // 🚀 Đảm bảo lấy tất cả sản phẩm
+        type: selectedTypes.length > 0 ? selectedTypes : undefined, // 🏷 Truyền danh mục nếu có
+      });
+      return res;
+    } catch (error) {
+      console.error("🚨 Lỗi API:", error);
+      return { data: [], total: 0 };
+    }
   };
 
+  const {
+    isLoading,
+    data: products = { data: [], total: 0 },
+    refetch,
+  } = useQuery({
+    queryKey: ["products", limit, currentPage, selectedTypes], // 🆕 Theo dõi selectedTypes
+    queryFn: fetchProductAll,
+    retry: 3,
+    retryDelay: 1000,
+  });
+
+  useEffect(() => {
+    if (resetProducts) {
+      refetch();
+      setResetProducts(false);
+    }
+  }, [resetProducts]);
+
+  const filteredProducts =
+    products?.data?.filter((product) => {
+      const matchesSearch = searchTerm
+        ? product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        : true;
+
+      const matchesType =
+        selectedTypes.length === 0 || selectedTypes.includes(product.type);
+
+      return matchesSearch && matchesType;
+    }) || [];
+
+  const totalFilteredProducts = filteredProducts.length;
+
+  const displayedProducts = filteredProducts.slice(0, limit);
+
+  console.log("selectedTypes", selectedTypes);
+
   return (
-    <SidebarContainer>
-      {!isProductPage && (
-        <>
-          <h3>Danh mục</h3>
-          {filteredType.length > 0 ? (
-            <StyledCheckboxGroup
-              options={filteredType}
-              value={selectedTypes}
-              onChange={handleCategoryChange}
-            />
+    <>
+      <br />
+      <BreadcrumbWrapper />
+      <SearchComponent setLimit={setLimit} />
+      <ProductsContainer>
+        <SideBar
+          selectedTypes={selectedTypes}
+          setSelectedTypes={setSelectedTypes}
+        />
+        <MainContent>
+          {isLoading ? (
+            <p>Loading...</p>
           ) : (
-            <p>🔍 Không tìm thấy danh mục phù hợp</p>
+            <CardComponent products={displayedProducts} />
           )}
-        </>
-      )}
-      <h3>Khoảng giá</h3>
-      <Slider
-        range
-        min={0}
-        max={100}
-        defaultValue={[0, 100]}
-        onChange={(value) => console.log("Khoảng giá đã chọn:", value)}
-      />
-    </SidebarContainer>
+
+          {totalFilteredProducts > limit ? (
+            <WrapperButtonContainer>
+              <WrapperButtonMore
+                style={{ marginTop: 50 }}
+                type="default"
+                onClick={() => setLimit((prev) => prev + 8)}
+              >
+                Xem thêm
+              </WrapperButtonMore>
+            </WrapperButtonContainer>
+          ) : null}
+        </MainContent>
+      </ProductsContainer>
+    </>
   );
 };
 
-export default SideBar;
+export default ProductsPage;
 
-const SidebarContainer = styled.div`
-  width: 300px;
-  height: 75vh;
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-`;
-
-const StyledCheckboxGroup = styled(Checkbox.Group)`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+const MainContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 90vh;
+  width: 100%;
 `;

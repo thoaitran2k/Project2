@@ -1,33 +1,37 @@
 import axios from "axios";
 
-export const getAllProduct = async ({ limit, page }) => {
+export const getAllProduct = async ({ limit, page, type }) => {
   try {
+    const params = { limit, page };
+
+    if (Array.isArray(type) && type.length > 0) {
+      params.type = type;
+    }
+
     const response = await axios.get(
       `${import.meta.env.VITE_URL_BACKEND}/product/get-all`,
-      { params: { limit, page } }
+      { params }
     );
     return response.data;
   } catch (error) {
     console.error("🚨 API lỗi:", error);
-    return { data: [], total: 0 }; // ✅ Tránh lỗi undefined khi truy cập dữ liệu
+    return { data: [], total: 0 };
   }
 };
 
 const getProductsByType = async (req, res) => {
   try {
-    const { type, limit, page } = req.query;
+    const { type, limit = 8, page = 1 } = req.query;
     const skip = (page - 1) * limit;
 
-    // ✅ Chuyển type thành mảng nếu có nhiều giá trị
+    // Xử lý khi có nhiều type
     const typeArray = type ? type.split(",") : [];
-
     const filter = typeArray.length ? { type: { $in: typeArray } } : {};
 
-    const products = await Product.find(filter)
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    const total = await Product.countDocuments(filter);
+    const [products, total] = await Promise.all([
+      Product.find(filter).limit(parseInt(limit)).skip(skip),
+      Product.countDocuments(filter),
+    ]);
 
     res.status(200).json({ data: products, total });
   } catch (error) {

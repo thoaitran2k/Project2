@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Checkbox, Slider } from "antd";
 import styled from "styled-components";
 import { getAllTypeProduct } from "../../Services/ProductService";
@@ -6,11 +6,11 @@ import { useLocation } from "react-router";
 import { useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const SideBar = () => {
+const SideBar = ({ selectedTypes, setSelectedTypes }) => {
   const [type, setType] = useState([]);
   //const [filteredType, setFilteredType] = useState([]); // Danh mục được lọc khi search
 
-  const [selectedTypes, setSelectedTypes] = useState([]);
+  // const [selectedTypes, setSelectedTypes] = useState([]);
   const location = useLocation();
   const isProductPage = location.pathname.startsWith("/product-type/");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,10 +30,10 @@ const SideBar = () => {
           }));
 
           setType(formattedCategories);
-          setFilteredType(formattedCategories); // Ban đầu hiển thị tất cả danh mục
+          // setFilteredType(formattedCategories); // Ban đầu hiển thị tất cả danh mục
         } else {
           setType([]);
-          setFilteredType([]);
+          //setFilteredType([]);
         }
       } catch (error) {
         console.error("🚨 Lỗi lấy danh mục:", error.message);
@@ -45,8 +45,13 @@ const SideBar = () => {
 
   useEffect(() => {
     const typesFromUrl = searchParams.get("type");
-    if (typesFromUrl) {
-      setSelectedTypes(typesFromUrl.split(","));
+
+    if (
+      typesFromUrl !== null &&
+      JSON.stringify(selectedTypes) !==
+        JSON.stringify(typesFromUrl ? typesFromUrl.split(",") : [])
+    ) {
+      setSelectedTypes(typesFromUrl ? typesFromUrl.split(",") : []);
     }
   }, [searchParams]);
 
@@ -58,33 +63,32 @@ const SideBar = () => {
     }
   }, [searchTerm, searchParams, setSearchParams]);
 
-  console.log("products", products.data);
-
   const filteredType = useMemo(() => {
-    // Nếu không có search term, trả về tất cả danh mục
     if (!searchTerm.trim()) return type;
-
-    // Lọc sản phẩm phù hợp với search term
     const filteredProducts = products.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    // Lấy danh sách các type từ sản phẩm đã lọc
     const matchedTypes = new Set(filteredProducts.map((p) => p.type));
-
-    // Trả về các danh mục có trong matchedTypes, giữ nguyên cấu trúc label-value
     return type.filter((item) => matchedTypes.has(item.value));
   }, [searchTerm, type, products]);
 
-  const handleCategoryChange = (values) => {
-    setSelectedTypes(values);
-    if (values.length === 0) {
-      searchParams.delete("type");
-    } else {
-      searchParams.set("type", values.join(","));
-    }
-    setSearchParams(searchParams);
-  };
+  const handleCategoryChange = useCallback(
+    (values) => {
+      // Chỉ cập nhật nếu giá trị mới khác giá trị cũ
+      if (JSON.stringify(selectedTypes) !== JSON.stringify(values)) {
+        setSelectedTypes(values);
+
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (values.length === 0) {
+          newSearchParams.delete("type");
+        } else {
+          newSearchParams.set("type", values.join(","));
+        }
+        setSearchParams(newSearchParams);
+      }
+    },
+    [selectedTypes, searchParams, setSearchParams]
+  );
 
   return (
     <SidebarContainer>
@@ -98,13 +102,16 @@ const SideBar = () => {
                 {filteredType.map((item) => (
                   <CategoryItem
                     key={item.value}
-                    onClick={() =>
-                      handleCategoryChange(
-                        selectedTypes.includes(item.value)
-                          ? selectedTypes.filter((type) => type !== item.value)
-                          : [...selectedTypes, item.value]
+                    onClick={() => {
+                      const newSelectedTypes = selectedTypes.includes(
+                        item.value
                       )
-                    }
+                        ? selectedTypes.filter((type) => type !== item.value)
+                        : [...selectedTypes, item.value];
+
+                      setSelectedTypes(newSelectedTypes);
+                      //handleCategoryChange(newSelectedTypes);
+                    }}
                     isSelected={selectedTypes.includes(item.value)}
                   >
                     {item.label}
