@@ -22,6 +22,7 @@ import swal from "sweetalert";
 import refreshTokenApi from "../../utils/jwtService";
 import axios from "axios";
 import Loading from "../LoadingComponent/Loading";
+import { setLoading } from "../../redux/slices/loadingSlice";
 
 const { useBreakpoint } = Grid;
 
@@ -93,6 +94,7 @@ const HeaderComponent = ({
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isUserDetailsFetched, setIsUserDetailsFetched] = useState(false);
+  const isLoading = useSelector((state) => state.loading.isLoading);
 
   const {
     _id,
@@ -129,6 +131,17 @@ const HeaderComponent = ({
 
         await fetchUserDetails();
       }
+    }
+  };
+
+  const handleToOder = () => {
+    try {
+      dispatch(setLoading(true));
+    } finally {
+      setTimeout(() => {
+        dispatch(setLoading(false));
+        navigate("/order", { replace: true });
+      }, 1000);
     }
   };
 
@@ -580,7 +593,21 @@ const HeaderComponent = ({
                   {!isHiddenShoppingCard && (
                     <Col>
                       <ShoppingCartOutlined
-                        style={{ fontSize: "45px", color: "rgb(36, 31, 31)" }}
+                        style={{
+                          fontSize: "30px",
+                          color: "rgb(65, 44, 189)",
+                          transition: "transform 0.2s ease, color 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                        onClick={handleToOder}
+                        onMouseEnter={(e) => {
+                          e.target.style.color = "red"; // Đổi màu khi hover
+                          e.target.style.transform = "scale(1.2)"; // Phóng to nhẹ
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.color = "rgb(65, 44, 189)"; // Trả về màu gốc
+                          e.target.style.transform = "scale(1)"; // Trả về kích thước ban đầu
+                        }}
                       />
                     </Col>
                   )}

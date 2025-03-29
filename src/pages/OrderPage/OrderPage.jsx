@@ -1,12 +1,11 @@
 import React from "react";
 import CardComponent from "../../components/CardComponent/CardComponent";
+import OrderComponent from "../../components/Order/OrderComponent";
 
 const OrderPage = () => {
   return (
-    <div style={{ display: "flex", flexDirection: "row", gap: "16px" }}>
-      <CardComponent />
-      <CardComponent />
-      <CardComponent />
+    <div>
+      <OrderComponent />
     </div>
   );
 };
