@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Pagination } from "antd";
 import CardComponent from "../../components/CardComponent/CardComponent";
@@ -25,6 +25,23 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const [selectedTypes, setSelectedTypes] = useState([]);
 
+  const prevPage = useRef(document.referrer);
+
+  useEffect(() => {
+    window.history.replaceState(null, "", location.pathname + location.search); // 🚀 Ghi đè lịch sử trang lọc
+  }, []);
+
+  const handleBack = () => {
+    if (
+      prevPage.current &&
+      !prevPage.current.includes(window.location.origin)
+    ) {
+      window.location.href = prevPage.current; // 🔙 Quay về trang trước (nếu khác domain)
+    } else {
+      navigate(-1); // 🔙 Nếu không có trang trước, quay lại như bình thường
+    }
+  };
+
   useEffect(() => {
     if (!location.state?.breadcrumb) {
       navigate(location.pathname + location.search, {
@@ -38,6 +55,21 @@ const ProductsPage = () => {
       });
     }
   }, [location.pathname, location.state]);
+
+  useEffect(() => {
+    // Xử lý search params từ URL khi component mount
+    const searchParams = new URLSearchParams(location.search);
+    const searchTermFromUrl = searchParams.get("search");
+    const typesFromUrl = searchParams.get("type");
+
+    if (searchTermFromUrl) {
+      dispatch(setSearchTerm(searchTermFromUrl));
+    }
+
+    if (typesFromUrl) {
+      setSelectedTypes(typesFromUrl.split(","));
+    }
+  }, [location.search]);
 
   const fetchProductAll = async ({ queryKey }) => {
     const [, limit, page, selectedTypes] = queryKey; // Nhận selectedTypes từ queryKey
@@ -93,6 +125,7 @@ const ProductsPage = () => {
 
   return (
     <>
+      {/* <button onClick={handleBack}>Quay lại</button> */}
       <br />
       <BreadcrumbWrapper />
       <SearchComponent setLimit={setLimit} />

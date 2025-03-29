@@ -130,6 +130,12 @@ const SearchComponent = ({ setLimit = () => {} }) => {
 
     setLimit(8);
 
+    const newSearchParams = new URLSearchParams(location.search);
+    newSearchParams.set("search", value);
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true, // Quan trọng: thay thế entry hiện tại
+    });
+
     // Lưu lịch sử tìm kiếm
     const updatedSearches = [
       value,

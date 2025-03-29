@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Checkbox, Slider } from "antd";
 import styled from "styled-components";
 import { getAllTypeProduct } from "../../Services/ProductService";
-import { useLocation } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const SideBar = ({ selectedTypes, setSelectedTypes }) => {
+const SideBar = ({ selectedTypes = [], setSelectedTypes }) => {
   const [type, setType] = useState([]);
+
+  const { type: selectedTypeFromUrl } = useParams();
   //const [filteredType, setFilteredType] = useState([]); // Danh mục được lọc khi search
 
   // const [selectedTypes, setSelectedTypes] = useState([]);
@@ -17,6 +19,24 @@ const SideBar = ({ selectedTypes, setSelectedTypes }) => {
   const searchTerm = useSelector((state) => state.product.searchTerm);
   const products = useSelector((state) => state.product.products?.data || []);
 
+  const isTypeProductPage = location.pathname.startsWith("/product-type/");
+
+  const isCategoryVisible =
+    location.pathname.includes("/product-type") ||
+    location.pathname.includes("/products");
+
+  const normalizeText = (text) => {
+    return text
+      .normalize("NFD") // Chuẩn hóa Unicode
+      .replace(/[\u0300-\u036f]/g, "") // Loại bỏ dấu tiếng Việt
+      .replace(/đ/g, "d") // Chuyển "đ" thành "d"
+      .replace(/Đ/g, "D") // Chuyển "Đ" thành "D"
+      .toLowerCase() // Chuyển thành chữ thường
+      .replace(/\s+/g, "-"); // Thay khoảng trắng bằng "-"
+  };
+
+  console.log(normalizeText("Đồng hồ")); // Xem kết quả sau khi chuẩn hóa
+  console.log(normalizeText("dong-ho"));
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -64,13 +84,26 @@ const SideBar = ({ selectedTypes, setSelectedTypes }) => {
   }, [searchTerm, searchParams, setSearchParams]);
 
   const filteredType = useMemo(() => {
+    if (isTypeProductPage) {
+      return type.filter(
+        (item) => normalizeText(item.value) === selectedTypeFromUrl
+      ); // Chỉ hiển thị danh mục khớp với URL
+    }
+
+    // Nếu không có tìm kiếm, trả về toàn bộ danh mục
     if (!searchTerm.trim()) return type;
+
+    // Lọc danh mục dựa trên sản phẩm có liên quan đến từ khóa tìm kiếm
     const filteredProducts = products.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     const matchedTypes = new Set(filteredProducts.map((p) => p.type));
     return type.filter((item) => matchedTypes.has(item.value));
-  }, [searchTerm, type, products]);
+  }, [searchTerm, type, products, isTypeProductPage, selectedTypeFromUrl]);
+
+  console.log("Danh sách type:", type);
+  console.log("selectedTypeFromUrl:", selectedTypeFromUrl);
+  console.log("filteredType:", filteredType);
 
   const handleCategoryChange = useCallback(
     (values) => {
@@ -84,7 +117,7 @@ const SideBar = ({ selectedTypes, setSelectedTypes }) => {
         } else {
           newSearchParams.set("type", values.join(","));
         }
-        setSearchParams(newSearchParams);
+        setSearchParams(newSearchParams, { replace: true });
       }
     },
     [selectedTypes, searchParams, setSearchParams]
@@ -92,45 +125,45 @@ const SideBar = ({ selectedTypes, setSelectedTypes }) => {
 
   return (
     <SidebarContainer>
-      {!isProductPage && (
-        <>
-          <h3>Danh mục</h3>
-          {filteredType.length > 0 ? (
-            searchTerm.trim() ? (
-              // Nếu có tìm kiếm, hiển thị danh sách có thể click
-              <CategoryList>
-                {filteredType.map((item) => (
-                  <CategoryItem
-                    key={item.value}
-                    onClick={() => {
-                      const newSelectedTypes = selectedTypes.includes(
-                        item.value
-                      )
-                        ? selectedTypes.filter((type) => type !== item.value)
-                        : [...selectedTypes, item.value];
+      {/* {!isProductPage && ( */}
+      <>
+        <h3>Danh mục</h3>
+        {filteredType.length > 0 ? (
+          isTypeProductPage || searchTerm.trim() ? (
+            // Nếu có tìm kiếm, hiển thị danh sách có thể click
+            <CategoryList>
+              {filteredType.map((item) => (
+                <CategoryItem
+                  key={item.value}
+                  onClick={() => {
+                    const newSelectedTypes = selectedTypes.includes(item.value)
+                      ? selectedTypes.filter((type) => type !== item.value)
+                      : [...selectedTypes, item.value];
 
+                    if (!isTypeProductPage) {
                       setSelectedTypes(newSelectedTypes);
-                      //handleCategoryChange(newSelectedTypes);
-                    }}
-                    isSelected={selectedTypes.includes(item.value)}
-                  >
-                    {item.label}
-                  </CategoryItem>
-                ))}
-              </CategoryList>
-            ) : (
-              // Nếu không có tìm kiếm, hiển thị checkbox
-              <StyledCheckboxGroup
-                options={filteredType}
-                value={selectedTypes}
-                onChange={handleCategoryChange}
-              />
-            )
+                    }
+                    // handleCategoryChange(newSelectedTypes);
+                  }}
+                  isSelected={selectedTypes.includes(item.value)}
+                >
+                  {item.label}
+                </CategoryItem>
+              ))}
+            </CategoryList>
           ) : (
-            <p>🔍 Không tìm thấy danh mục phù hợp</p>
-          )}
-        </>
-      )}
+            // Nếu không có tìm kiếm, hiển thị checkbox
+            <StyledCheckboxGroup
+              options={filteredType}
+              value={selectedTypes}
+              onChange={handleCategoryChange}
+            />
+          )
+        ) : (
+          <p>🔍 Không tìm thấy danh mục phù hợp</p>
+        )}
+      </>
+      {/* )} */}
       <h3>Khoảng giá</h3>
       <Slider
         range

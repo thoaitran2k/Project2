@@ -32,6 +32,7 @@ const slugify = (str) =>
 const TypeProductPage = () => {
   const { type } = useParams();
   const decodedType = decodeURIComponent(type);
+  const [selectedTypes, setSelectedTypes] = useState([]);
 
   const formattedType =
     Object.entries(categoryMapping).find(([slug]) => slug === type)?.[1] ||
@@ -71,7 +72,10 @@ const TypeProductPage = () => {
       <div style={{ minHeight: "100vh" }}>
         <PageLayout>
           <SideBarContainer>
-            <SideBar hideCategories={true} />
+            <SideBar
+              selectedTypes={selectedTypes}
+              setSelectedTypes={setSelectedTypes}
+            />
           </SideBarContainer>
 
           <ProductContainer>
