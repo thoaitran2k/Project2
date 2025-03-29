@@ -78,7 +78,7 @@ const CardComponent = ({ products, totalProducts }) => {
     <>
       <WrapperCardProduct onClick={handleClick}>
         {products.length === 0 ? (
-          <p>Đang tải...</p>
+          <p>Không tìm thấy sản phẩm phù hợp</p>
         ) : (
           products.map((product, index) => (
             <StyledLink

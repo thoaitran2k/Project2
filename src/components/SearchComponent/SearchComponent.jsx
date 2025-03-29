@@ -154,7 +154,14 @@ const SearchComponent = ({ setLimit = () => {} }) => {
         <Search
           placeholder="Tìm kiếm sản phẩm..."
           allowClear
-          enterButton={<Button icon={<SearchOutlined />}>Tìm kiếm</Button>}
+          enterButton={
+            <Button
+              style={{ backgroundColor: "rgb(60, 201, 211)" }}
+              icon={<SearchOutlined />}
+            >
+              Tìm kiếm
+            </Button>
+          }
           size="large"
           value={searchValue}
           onChange={(e) => {

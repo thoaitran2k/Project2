@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import SideBar from "../../components/SideBar/SideBar";
@@ -31,56 +31,158 @@ const slugify = (str) =>
 
 const TypeProductPage = () => {
   const { type } = useParams();
-  const decodedType = decodeURIComponent(type);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedTypes, setSelectedTypes] = useState([]);
+
+  // Lấy giá trị lọc từ URL
+  const searchParams = new URLSearchParams(location.search);
+  const minPriceFromUrl = parseInt(searchParams.get("minPrice")) || 0;
+  const maxPriceFromUrl = parseInt(searchParams.get("maxPrice")) || Infinity;
+
+  const ratingsFromUrl = searchParams.get("ratings");
+  const [selectedRatings, setSelectedRatings] = useState(
+    ratingsFromUrl ? ratingsFromUrl.split(",").map(Number) : []
+  );
+
+  const handleRatingFilter = (ratings) => {
+    setSelectedRatings(ratings);
+    setLimit(8); // Reset limit khi thay đổi bộ lọc
+
+    // Cập nhật URL
+    const newSearchParams = new URLSearchParams(location.search);
+    if (ratings.length === 0) {
+      newSearchParams.delete("ratings");
+    } else {
+      newSearchParams.set("ratings", ratings.join(","));
+    }
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true,
+    });
+  };
+
+  // State quản lý khoảng giá
+  const [priceRange, setPriceRange] = useState({
+    min: minPriceFromUrl,
+    max: maxPriceFromUrl,
+  });
 
   const formattedType =
     Object.entries(categoryMapping).find(([slug]) => slug === type)?.[1] ||
-    type.replace(/-/g, " "); // Nếu không có trong mapping thì giữ nguyên
+    type.replace(/-/g, " ");
 
   const [limit, setLimit] = useState(8);
 
-  // Dùng useQuery để lấy tất cả sản phẩm
-  const { data, isLoading } = useQuery({
-    queryKey: ["products", formattedType],
+  // Fetch sản phẩm theo type
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["products", formattedType, priceRange],
     queryFn: () => getProductType({ type: formattedType }),
   });
 
-  console.log("data", data);
-  // Lọc sản phẩm theo `type`
-  const filteredProducts = data
-    ? data.filter((product) => product.type === formattedType)
-    : [];
+  // Xử lý khi thay đổi giá từ SideBar
+  const handlePriceFilter = ({ min, max }) => {
+    setPriceRange({ min, max });
+    setLimit(8); // Reset limit khi thay đổi bộ lọc
 
-  // Lấy danh sách sản phẩm theo limit
-  const displayedProducts = data ? data.slice(0, limit) : [];
+    // Cập nhật URL
+    const newSearchParams = new URLSearchParams(location.search);
+    newSearchParams.set("minPrice", min);
+    newSearchParams.set("maxPrice", max === Infinity ? "" : max);
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true,
+    });
+  };
 
-  const totalProducts = data?.length || 0;
+  // Lọc sản phẩm theo type và khoảng giá
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
 
-  const location = useLocation();
-  const navigate = useNavigate();
+    return products.filter((product) => {
+      const matchesType = product.type === formattedType;
+      const matchesPrice =
+        product.price >= priceRange.min && product.price <= priceRange.max;
+      const matchesRating =
+        selectedRatings.length === 0 ||
+        (product.rating && Math.floor(product.rating) >= selectedRatings[0]);
 
-  const breadcrumbItems = [
-    { path: "/home", name: "Trang chủ" },
-    { path: `/product-type/${type}`, name: formattedType },
-  ];
+      return matchesType && matchesPrice && matchesRating;
+    });
+  }, [products, formattedType, priceRange, selectedRatings]);
+
+  // Hiển thị sản phẩm theo limit
+  const displayedProducts = filteredProducts.slice(0, limit);
+  const totalProducts = filteredProducts.length;
+
+  // Xử lý khi load trang với params từ URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const min = searchParams.get("minPrice");
+    const max = searchParams.get("maxPrice");
+
+    if (min || max) {
+      setPriceRange({
+        min: min ? parseInt(min) : 0,
+        max: max ? parseInt(max) : Infinity,
+      });
+    }
+  }, [location.search]);
+
+  // Reset bộ lọc
+  const resetFilters = () => {
+    setPriceRange({ min: 0, max: Infinity }); // Reset input giá về 0
+    setSelectedTypes([]);
+    setSelectedRatings([]);
+
+    // Cập nhật bộ lọc trong Sidebar
+    if (typeof onPriceFilter === "function") {
+      onPriceFilter({ min: 0, max: Infinity });
+    }
+    if (typeof onRatingFilter === "function") {
+      onRatingFilter([]);
+    }
+
+    // Xóa params trên URL
+    const newSearchParams = new URLSearchParams(location.search);
+    newSearchParams.delete("minPrice");
+    newSearchParams.delete("maxPrice");
+    newSearchParams.delete("ratings");
+
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true,
+    });
+  };
 
   return (
     <>
       <br />
-      <BreadcrumbWrapper breadcrumb={breadcrumbItems} />
+      <BreadcrumbWrapper
+        breadcrumb={[
+          { path: "/home", name: "Trang chủ" },
+          { path: `/product-type/${type}`, name: formattedType },
+        ]}
+      />
+
       <div style={{ minHeight: "100vh" }}>
         <PageLayout>
           <SideBarContainer>
             <SideBar
               selectedTypes={selectedTypes}
               setSelectedTypes={setSelectedTypes}
+              onPriceFilter={handlePriceFilter}
+              onRatingFilter={handleRatingFilter}
             />
           </SideBarContainer>
 
           <ProductContainer>
             {isLoading ? (
               <p>Đang tải...</p>
+            ) : filteredProducts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px" }}>
+                <p>Không tìm thấy sản phẩm phù hợp</p>
+                <Button type="primary" onClick={resetFilters}>
+                  Xoá bộ lọc
+                </Button>
+              </div>
             ) : (
               <CardComponent
                 products={displayedProducts.map((product) => ({
@@ -100,7 +202,7 @@ const TypeProductPage = () => {
                             name: product.name,
                           },
                         ],
-                        fromTypePage: true, // 🛠️ Đánh dấu là vào từ trang loại sản phẩm
+                        fromTypePage: true,
                       }}
                     >
                       <h3>{product.name}</h3>
@@ -110,8 +212,7 @@ const TypeProductPage = () => {
               />
             )}
 
-            {/* Chỉ hiện nút Xem thêm nếu có nhiều hơn `limit` sản phẩm */}
-            {totalProducts > limit ? (
+            {totalProducts > limit && (
               <WrapperButtonContainer>
                 <WrapperButtonMore
                   style={{ marginTop: 50 }}
@@ -121,8 +222,6 @@ const TypeProductPage = () => {
                   Xem thêm
                 </WrapperButtonMore>
               </WrapperButtonContainer>
-            ) : (
-              <div style={{ height: "5vh" }}></div>
             )}
           </ProductContainer>
         </PageLayout>

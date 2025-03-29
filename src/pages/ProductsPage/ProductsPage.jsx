@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pagination } from "antd";
+import { Button, Pagination } from "antd";
 import CardComponent from "../../components/CardComponent/CardComponent";
 import * as ProductService from "../../Services/ProductService";
 import {
@@ -25,10 +25,48 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const [selectedTypes, setSelectedTypes] = useState([]);
 
+  const searchParams = new URLSearchParams(location.search);
+  const minPriceFromUrl = parseInt(searchParams.get("minPrice")) || 0;
+  const maxPriceFromUrl = parseInt(searchParams.get("maxPrice")) || Infinity;
+  const ratingsFromUrl = searchParams.get("ratings");
+  const [selectedRating, setSelectedRating] = useState(
+    ratingsFromUrl ? parseInt(ratingsFromUrl) : 0
+  );
+
+  const handleRatingFilter = (rating) => {
+    const newRating = rating.length > 0 ? rating[0] : 0;
+    setSelectedRating(newRating);
+
+    // Cập nhật URL
+    const newSearchParams = new URLSearchParams(location.search);
+    if (newRating === 0) {
+      newSearchParams.delete("ratings");
+    } else {
+      newSearchParams.set("ratings", newRating);
+    }
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true,
+    });
+  };
+
+  const resetFilters = () => {
+    //setPriceRange({ min: 0, max: Infinity });
+    setSelectedTypes([]);
+    setSelectedRating(0);
+    const newSearchParams = new URLSearchParams(location.search);
+    newSearchParams.delete("minPrice");
+    newSearchParams.delete("maxPrice");
+    newSearchParams.delete("ratings");
+    newSearchParams.delete("type");
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+      replace: true,
+    });
+  };
+
   const prevPage = useRef(document.referrer);
 
   useEffect(() => {
-    window.history.replaceState(null, "", location.pathname + location.search); // 🚀 Ghi đè lịch sử trang lọc
+    window.history.replaceState(null, "", location.pathname + location.search);
   }, []);
 
   const handleBack = () => {
@@ -36,9 +74,9 @@ const ProductsPage = () => {
       prevPage.current &&
       !prevPage.current.includes(window.location.origin)
     ) {
-      window.location.href = prevPage.current; // 🔙 Quay về trang trước (nếu khác domain)
+      window.location.href = prevPage.current;
     } else {
-      navigate(-1); // 🔙 Nếu không có trang trước, quay lại như bình thường
+      navigate(-1);
     }
   };
 
@@ -57,7 +95,6 @@ const ProductsPage = () => {
   }, [location.pathname, location.state]);
 
   useEffect(() => {
-    // Xử lý search params từ URL khi component mount
     const searchParams = new URLSearchParams(location.search);
     const searchTermFromUrl = searchParams.get("search");
     const typesFromUrl = searchParams.get("type");
@@ -99,14 +136,23 @@ const ProductsPage = () => {
   });
 
   useEffect(() => {
+    const ratingFromUrl = searchParams.get("ratings");
+    if (ratingFromUrl) {
+      setSelectedRating(parseInt(ratingFromUrl));
+    }
+  }, [location.search]);
+
+  useEffect(() => {
     if (resetProducts) {
       refetch();
       setResetProducts(false);
     }
   }, [resetProducts]);
 
-  const filteredProducts =
-    products?.data?.filter((product) => {
+  const filteredProducts = useMemo(() => {
+    if (!products?.data) return [];
+
+    return products.data.filter((product) => {
       const matchesSearch = searchTerm
         ? product.name.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
@@ -114,14 +160,28 @@ const ProductsPage = () => {
       const matchesType =
         selectedTypes.length === 0 || selectedTypes.includes(product.type);
 
-      return matchesSearch && matchesType;
-    }) || [];
+      const productPrice = product.price || 0;
+      const matchesPrice =
+        productPrice >= minPriceFromUrl && productPrice <= maxPriceFromUrl;
+
+      const productRating = Math.floor(product.rating || 0);
+      const matchesRating =
+        selectedRating === 0 || productRating >= selectedRating;
+
+      return matchesSearch && matchesType && matchesPrice && matchesRating;
+    });
+  }, [
+    products,
+    searchTerm,
+    selectedTypes,
+    minPriceFromUrl,
+    maxPriceFromUrl,
+    selectedRating,
+  ]);
 
   const totalFilteredProducts = filteredProducts.length;
 
   const displayedProducts = filteredProducts.slice(0, limit);
-
-  console.log("selectedTypes", selectedTypes);
 
   return (
     <>
@@ -133,25 +193,36 @@ const ProductsPage = () => {
         <SideBar
           selectedTypes={selectedTypes}
           setSelectedTypes={setSelectedTypes}
+          onRatingFilter={handleRatingFilter}
+          selectedRatings={selectedRating > 0 ? [selectedRating] : []}
         />
         <MainContent>
-          {isLoading ? (
-            <p>Loading...</p>
-          ) : (
-            <CardComponent products={displayedProducts} />
-          )}
+          <MainContent>
+            {isLoading ? (
+              <p>Loading...</p>
+            ) : filteredProducts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px" }}>
+                <p>Không tìm thấy sản phẩm phù hợp</p>
+                <Button type="primary" onClick={resetFilters}>
+                  Xoá bộ lọc
+                </Button>
+              </div>
+            ) : (
+              <CardComponent products={displayedProducts} />
+            )}
 
-          {totalFilteredProducts > limit ? (
-            <WrapperButtonContainer>
-              <WrapperButtonMore
-                style={{ marginTop: 50 }}
-                type="default"
-                onClick={() => setLimit((prev) => prev + 8)}
-              >
-                Xem thêm
-              </WrapperButtonMore>
-            </WrapperButtonContainer>
-          ) : null}
+            {totalFilteredProducts > limit && (
+              <WrapperButtonContainer>
+                <WrapperButtonMore
+                  style={{ marginTop: 50 }}
+                  type="default"
+                  onClick={() => setLimit((prev) => prev + 8)}
+                >
+                  Xem thêm
+                </WrapperButtonMore>
+              </WrapperButtonContainer>
+            )}
+          </MainContent>
         </MainContent>
       </ProductsContainer>
     </>
