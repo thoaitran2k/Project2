@@ -3,6 +3,11 @@ import styled from "styled-components";
 import { Card, Divider, Button, Tag, Checkbox } from "antd";
 import AddressModal from "./AddressModal";
 import {
+  clearCart,
+  removeFromCart,
+  updateCartItemAmount,
+} from "../../redux/slices/cartSlice";
+import {
   ShoppingCartOutlined,
   EnvironmentOutlined,
   TagOutlined,
@@ -13,6 +18,7 @@ import {
 } from "@ant-design/icons";
 import { hover } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 
 const OrderComponent = () => {
   const [quantities, setQuantities] = useState({});
@@ -25,59 +31,54 @@ const OrderComponent = () => {
     user.address.find((addr) => addr.isDefault) || user.address[0] || null
   );
 
+  const { isAuthenticated } = useSelector((state) => state.user);
+  const { cartItems, cartCount } = useSelector((state) => state.cart);
+
+  const cart = useSelector((state) => state.cart);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   console.log("defaultAddress", defaultAddress);
   console.log("address", user.address);
   console.log("user", user);
 
-  const products = [
-    {
-      image:
-        "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742565539/products/q1zxlailzgz7kpor1bdi.png",
-      id: "1",
-      name: "Áo sơ mi HugoBros",
-      color: "Titan Sa Mạc, 256GB",
-      delivery: "Giao sáng thứ 2, 31/03",
-      price: 30990000,
-    },
-    {
-      image:
-        "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742565539/products/q1zxlailzgz7kpor1bdi.png",
-      id: "2",
-      name: "Áo Thun Nam",
-      color: "Titan Sa Mạc, 256GB",
-      delivery: "Giao sáng thứ 2, 31/03",
-      price: 30990000,
-    },
-    {
-      image:
-        "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742565539/products/q1zxlailzgz7kpor1bdi.png",
-      id: "3",
-      name: "Áo sơ mi Vinstar",
-      color: "Titan Sa Mạc, 256GB",
-      delivery: "Giao sáng thứ 2, 31/03",
-      price: 30990000,
-    },
-    {
-      image:
-        "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742565539/products/q1zxlailzgz7kpor1bdi.png",
-      id: "4",
-      name: "Vòng tay Heris",
-      color: "Titan Sa Mạc, 256GB",
-      delivery: "Giao sáng thứ 2, 31/03",
-      price: 30990000,
-    },
-    {
-      image:
-        "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742565539/products/q1zxlailzgz7kpor1bdi.png",
-      id: "5",
-      name: "Vòng tay Heris",
-      color: "Titan Sa Mạc, 256GB",
-      delivery: "Giao sáng thứ 2, 31/03",
-      price: 30990000,
-    },
-  ];
+  const isAllChecked = selectedProducts.length === cartItems.length;
 
-  const isAllChecked = selectedProducts.length === products.length;
+  const handleIncreaseQuantity = (itemId) => {
+    const item = cartItems.find((item) => item.id === itemId);
+    if (item) {
+      dispatch(
+        updateCartItemAmount({
+          itemId,
+          newAmount: item.quantity + 1,
+        })
+      );
+    }
+  };
+
+  const handleDecreaseQuantity = (itemId) => {
+    const item = cartItems.find((item) => item.id === itemId);
+    if (item && item.quantity > 1) {
+      dispatch(
+        updateCartItemAmount({
+          itemId,
+          newAmount: item.quantity - 1,
+        })
+      );
+    }
+  };
+
+  const hanleRemoveAllCartItems = () => {
+    if (selectedProducts.length > 0) {
+      dispatch(clearCart());
+      setSelectedProducts([]);
+    } else {
+      message.warning("Bạn chưa chọn sản phẩm nào!");
+    }
+  };
+
+  hanleRemoveAllCartItems;
 
   const handleChangeAddress = () => {
     console.log("Thay đổi địa chỉ");
@@ -89,7 +90,9 @@ const OrderComponent = () => {
   };
 
   const handleCheckAll = (e) => {
-    setSelectedProducts(e.target.checked ? products.map((p) => p.id) : []);
+    setSelectedProducts(
+      e.target.checked ? cartItems.map((item) => item.id) : []
+    );
   };
 
   const handleProductCheck = (checkedValues) => {
@@ -103,6 +106,17 @@ const OrderComponent = () => {
 
   const getQuantity = (id) => quantities[id] || 1;
 
+  if (!isAuthenticated) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px" }}>
+        <ShoppingCartOutlined style={{ fontSize: "48px", color: "#ccc" }} />
+        <p>Vui lòng đăng nhập để xem giỏ hàng</p>
+        <Button type="primary" onClick={() => navigate("/sign-in")}>
+          Đăng nhập
+        </Button>
+      </div>
+    );
+  }
   return (
     <OrderContainer>
       <LeftColumn>
@@ -115,58 +129,68 @@ const OrderComponent = () => {
           {/* Header row - Fixed column widths */}
           <GridHeader>
             <Checkbox onChange={handleCheckAll} checked={isAllChecked}>
-              Tất cả ({products.length} sản phẩm)
+              Tất cả ({cartItems.length} sản phẩm)
             </Checkbox>
             <HeaderPrice>Đơn giá</HeaderPrice>
             <HeaderQuantity>Số lượng</HeaderQuantity>
             <HeaderTotal>Thành tiền</HeaderTotal>
             <HeaderDelete style={{ textAlign: "right" }}>
-              <DeleteOutlined />
+              <DeleteOutlined onClick={hanleRemoveAllCartItems} />
             </HeaderDelete>
           </GridHeader>
-
           {/* Product list */}
+
           <Checkbox.Group
             value={selectedProducts}
             onChange={handleProductCheck}
           >
-            {products.map((product) => {
-              const quantity = getQuantity(product.id);
+            {cartItems.map((item) => {
               return (
-                <GridRow key={product.id}>
+                <GridRow key={item.id}>
                   <ProductCell>
-                    <Checkbox value={product.id} />
-                    <ProductImage src={product.image} alt={product.name} />
+                    <Checkbox value={item.id} />
+                    <ProductImage
+                      src={
+                        typeof item.product.image === "string"
+                          ? item.product.image
+                          : item.product.image?.[0]?.url ||
+                            "https://via.placeholder.com/60"
+                      }
+                      alt={item.product.name}
+                    />
                     <ProductInfo>
-                      <ProductName>{product.name}</ProductName>
+                      <ProductName>{item.product.name}</ProductName>
                       <ProductDetails>
-                        <div>{product.color}</div>
-                        <div>{product.delivery}</div>
+                        {item.color && <div>Màu: {item.color}</div>}
+                        {item.size && <div>Size: {item.size}</div>}
+                        {item.diameter && (
+                          <div>Đường kính: {item.diameter}</div>
+                        )}
                       </ProductDetails>
                     </ProductInfo>
                   </ProductCell>
 
-                  <PriceCell>{product.price.toLocaleString()}₫</PriceCell>
+                  <PriceCell>{item.product.price.toLocaleString()}₫</PriceCell>
 
                   <QuantityCell>
                     <QuantityContainer>
                       <MinusOutlined
-                        onClick={() => decreaseQuantity(product.id)}
+                        onClick={() => handleDecreaseQuantity(item.id)}
                         className="quantity-btn"
                       />
-                      <span className="quantity-value">{quantity}</span>
+                      <span className="quantity-value">{item.quantity}</span>
                       <PlusOutlined
-                        onClick={() => increaseQuantity(product.id)}
+                        onClick={() => handleIncreaseQuantity(item.id)}
                         className="quantity-btn"
                       />
                     </QuantityContainer>
                   </QuantityCell>
 
                   <TotalCell>
-                    {(product.price * quantity).toLocaleString()}₫
+                    {(item.product.price * item.quantity).toLocaleString()}₫
                   </TotalCell>
 
-                  <DeleteCell>
+                  <DeleteCell onClick={() => dispatch(removeFromCart(item.id))}>
                     <DeleteOutlined />
                   </DeleteCell>
                 </GridRow>
@@ -195,42 +219,47 @@ const OrderComponent = () => {
           <br />
         </SectionTitle>
         {/* Thông tin giao hàng */}
-        <Section>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h4>
-              <EnvironmentOutlined /> Giao tới
-            </h4>
+        {/* Thông tin giao hàng */}
+        {user.isAuthenticated && (
+          <Section>
             <div
               style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
                 alignItems: "center",
-                cursor: "pointer",
-                color: "blue",
-                transition: "color 0.3s ease",
               }}
-              onMouseEnter={(e) => (e.target.style.color = "red")}
-              onMouseLeave={(e) => (e.target.style.color = "#1890ff")}
-              onClick={handleChangeAddress}
             >
-              Đổi địa chỉ
+              <h4>
+                <EnvironmentOutlined /> Giao tới
+              </h4>
+              <div
+                style={{
+                  alignItems: "center",
+                  cursor: "pointer",
+                  color: "blue",
+                  transition: "color 0.3s ease",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "red")}
+                onMouseLeave={(e) => (e.target.style.color = "#1890ff")}
+                onClick={handleChangeAddress}
+              >
+                Đổi địa chỉ
+              </div>
             </div>
-          </div>
-          <AddressInfo>
-            <div>
-              <strong>{selectedAddress.name}</strong>
-            </div>
-            <div>
-              {selectedAddress.phoneDelivery || "Chưa có số điện thoại"}
-            </div>
-            <div>{selectedAddress.address}</div>
-          </AddressInfo>
-        </Section>
+            <AddressInfo>
+              <div>
+                <strong>
+                  {selectedAddress.name || "Chưa có tên người nhận hàng"}
+                </strong>
+              </div>
+              <div>
+                {selectedAddress.phoneDelivery || "Chưa có số điện thoại"}
+              </div>
+              <div>{selectedAddress.address || "Chưa có địa chỉ"}</div>
+            </AddressInfo>
+          </Section>
+        )}
 
         {/* Khu vực chọn khuyến mãi */}
 
@@ -238,19 +267,35 @@ const OrderComponent = () => {
         <Section>
           <PriceRow>
             <span>Tổng tiền hàng</span>
-            <span>34.990.000₫</span>
+            <span>
+              {cartItems
+                .reduce(
+                  (total, item) => total + item.product.price * item.quantity,
+                  0
+                )
+                .toLocaleString()}
+              ₫
+            </span>
           </PriceRow>
 
           <PriceRow>
             <span>Giảm giá trực tiếp</span>
-            <span>-4.000.000₫</span>
+            <span>-0₫</span> {/* Có thể thêm logic giảm giá sau */}
           </PriceRow>
 
           <Divider style={{ margin: "16px 0" }} />
 
           <PriceRow>
             <TotalPrice>Tổng tiền thanh toán</TotalPrice>
-            <TotalPrice>30.990.000₫</TotalPrice>
+            <TotalPrice>
+              {cartItems
+                .reduce(
+                  (total, item) => total + item.product.price * item.quantity,
+                  0
+                )
+                .toLocaleString()}
+              ₫
+            </TotalPrice>
           </PriceRow>
 
           <SavingsTag>Tiết kiệm 4.000.000₫</SavingsTag>
@@ -260,7 +305,8 @@ const OrderComponent = () => {
 
         {/* Nút thanh toán */}
         <CheckoutButton type="primary" size="large">
-          Mua Hàng (1)
+          Mua Hàng (
+          {selectedProducts.length > 0 ? selectedProducts.length : cartCount})
         </CheckoutButton>
       </RightColumn>
       {/*  Modal đổi địa chỉ giao hàng */}

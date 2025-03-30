@@ -1,12 +1,23 @@
 import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import axios from "axios";
 import { updateAddress } from "../../Services/UserService";
+import resetCart from "./cartSlice";
 
 // ✅ Lấy user từ localStorage nếu có
 const getUserFromLocalStorage = () => {
   const storedUser = localStorage.getItem("user");
   return storedUser ? JSON.parse(storedUser) : null;
 };
+
+export const logoutUser = createAsyncThunk(
+  "user/logout",
+  async (_, { dispatch }) => {
+    localStorage.removeItem("user");
+    // Dispatch các action cần thiết trước khi logout
+    dispatch(resetCart());
+    return true;
+  }
+);
 
 export const updateAddressList = createAsyncThunk(
   "user/updateAddressList",
@@ -192,15 +203,6 @@ const userSlice = createSlice({
       }
     },
 
-    logoutUser: (state) => {
-      localStorage.removeItem("user"); // ✅ Xóa user khỏi localStorage khi logout
-      Object.assign(state, {
-        ...initialState,
-        isAuthenticated: false,
-        //isAdmin: true,
-      });
-    },
-
     setLoggingOut: (state, action) => {
       state.isLoggingOut = action.payload;
     },
@@ -266,11 +268,7 @@ const userSlice = createSlice({
         state.isAdmin = isAdmin;
         localStorage.setItem("user", JSON.stringify(state));
       })
-      // .addCase(deleteAddress.fulfilled, (state, action) => {
-      //   const addressId = action.payload._id; // Giả sử API trả về dữ liệu địa chỉ đã xóa
-      //   state.address = state.address.filter((addr) => addr._id !== addressId);
-      //   localStorage.setItem("user", JSON.stringify(state)); // Lưu lại vào localStorage
-      // })
+
       .addCase(updateAddressList.fulfilled, (state, action) => {
         console.log("🚀 API trả về danh sách địa chỉ mới:", action.payload);
 
@@ -336,7 +334,6 @@ const userSlice = createSlice({
 
 export const {
   setUser,
-  logoutUser,
   setLoggingOut,
   updateUserField,
   setDefaultAddress,

@@ -1,4 +1,4 @@
-import { Grid, Col, Drawer, Dropdown } from "antd";
+import { Grid, Col, Drawer, Dropdown, Badge } from "antd";
 import {
   SearchOutlined,
   MenuOutlined,
@@ -23,6 +23,7 @@ import refreshTokenApi from "../../utils/jwtService";
 import axios from "axios";
 import Loading from "../LoadingComponent/Loading";
 import { setLoading } from "../../redux/slices/loadingSlice";
+import CartIcon from "./CartIcon";
 
 const { useBreakpoint } = Grid;
 
@@ -95,6 +96,8 @@ const HeaderComponent = ({
   const dispatch = useDispatch();
   const [isUserDetailsFetched, setIsUserDetailsFetched] = useState(false);
   const isLoading = useSelector((state) => state.loading.isLoading);
+  const cartCount = useSelector((state) => state.cart.cartCount);
+  const cartItems = useSelector((state) => state.cart.cartItems);
 
   const {
     _id,
@@ -134,13 +137,17 @@ const HeaderComponent = ({
     }
   };
 
-  const handleToOder = () => {
+  const handleAddToCart = () => {
+    setCartCount((prevCount) => prevCount + 1);
+  };
+
+  const handleToOrder = () => {
     try {
       dispatch(setLoading(true));
     } finally {
       setTimeout(() => {
         dispatch(setLoading(false));
-        navigate("/order", { replace: true });
+        navigate("/order");
       }, 1000);
     }
   };
@@ -592,23 +599,46 @@ const HeaderComponent = ({
 
                   {!isHiddenShoppingCard && (
                     <Col>
-                      <ShoppingCartOutlined
-                        style={{
-                          fontSize: "30px",
-                          color: "rgb(65, 44, 189)",
-                          transition: "transform 0.2s ease, color 0.2s ease",
-                          cursor: "pointer",
-                        }}
-                        onClick={handleToOder}
-                        onMouseEnter={(e) => {
-                          e.target.style.color = "red"; // Đổi màu khi hover
-                          e.target.style.transform = "scale(1.2)"; // Phóng to nhẹ
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.color = "rgb(65, 44, 189)"; // Trả về màu gốc
-                          e.target.style.transform = "scale(1)"; // Trả về kích thước ban đầu
-                        }}
-                      />
+                      {cartCount > 0 ? (
+                        <Badge count={cartItems.length}>
+                          <ShoppingCartOutlined
+                            style={{
+                              fontSize: "30px",
+                              color: "rgb(65, 44, 189)",
+                              transition:
+                                "transform 0.2s ease, color 0.2s ease",
+                              cursor: "pointer",
+                            }}
+                            onClick={handleToOrder}
+                            onMouseEnter={(e) => {
+                              e.target.style.color = "red"; // Đổi màu khi hover
+                              e.target.style.transform = "scale(1.2)"; // Phóng to nhẹ
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.color = "rgb(65, 44, 189)"; // Trả về màu gốc
+                              e.target.style.transform = "scale(1)"; // Trả về kích thước ban đầu
+                            }}
+                          />
+                        </Badge>
+                      ) : (
+                        <ShoppingCartOutlined
+                          style={{
+                            fontSize: "30px",
+                            color: "rgb(65, 44, 189)",
+                            transition: "transform 0.2s ease, color 0.2s ease",
+                            cursor: "pointer",
+                          }}
+                          onClick={handleToOrder}
+                          onMouseEnter={(e) => {
+                            e.target.style.color = "red"; // Đổi màu khi hover
+                            e.target.style.transform = "scale(1.2)"; // Phóng to nhẹ
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.color = "rgb(65, 44, 189)"; // Trả về màu gốc
+                            e.target.style.transform = "scale(1)"; // Trả về kích thước ban đầu
+                          }}
+                        />
+                      )}
                     </Col>
                   )}
                 </>

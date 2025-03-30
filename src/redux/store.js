@@ -4,9 +4,19 @@ import profileReducer from "./slices/profileSlice";
 import loadingReducer from "./slices/loadingSlice";
 import productReducer from "./slices/productSlice";
 import adminUsersReducer from "./reducers/adminUserSlice";
+import cartReducer from "./slices/cartSlice";
 import storage from "redux-persist/lib/storage"; // Lưu vào localStorage
 import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers } from "redux";
+import { syncCartLogout } from "./middleware/syncCartLogout";
+import {
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
 
 // Cấu hình persist cho từng reducer
 const persistConfig = {
@@ -22,6 +32,7 @@ const rootReducer = combineReducers({
   loading: loadingReducer,
   product: productReducer,
   adminUsers: adminUsersReducer,
+  cart: cartReducer,
 });
 
 // Áp dụng cấu hình persist vào rootReducer
@@ -32,9 +43,11 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Tắt cảnh báo serializable check cho redux-persist
-    }),
-  devTools: true, // Bật Redux DevTools
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(syncCartLogout),
+  devTools: true,
 });
 
 // Tạo persistor để quản lý việc lưu trữ và phục hồi state

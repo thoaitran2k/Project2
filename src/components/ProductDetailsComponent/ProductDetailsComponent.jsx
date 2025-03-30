@@ -17,7 +17,9 @@ import {
   WrapperSizeOptions,
   WrapperSizeButton,
 } from "./style";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "../../redux/slices/cartSlice";
+import { useLocation, useNavigate } from "react-router";
 
 const ProductDetailsComponent = ({ product }) => {
   const colorMap = {
@@ -34,16 +36,133 @@ const ProductDetailsComponent = ({ product }) => {
   const [quantityPay, setQuantityPay] = useState(1);
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedDiameter, setSelectedDiameter] = useState(null);
   const allSizes = ["S", "M", "L", "XL", "XXL"];
-  const availableSizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  const watchDiameters = [38, 39, 40, 41, 42];
 
+  const availableSizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  const dispatch = useDispatch();
+
+  const user = useSelector((state) => state.user);
   const address = useSelector((state) => state.user.address);
+  const productDetail = useSelector(
+    (state) => state.product.productDetail.data
+  );
   const defaultAddress = address?.find((addr) => addr.isDefault) || null;
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // console.log("product", product);
   const uniqueColors = [
     ...new Set(product.variants?.map((variant) => variant.color)),
   ];
+
+  console.log("ProductDetails", productDetail);
+  const isWatch = productDetail?.type === "Đồng hồ";
+
+  const handleAddToCart = () => {
+    if (!user.isAuthenticated) {
+      alert("Bạn phải đăng nhập để mua hàng");
+      navigate("/sign-in", { state: { from: location.pathname } });
+      return;
+    }
+
+    if (!productDetail || !productDetail._id) {
+      console.error("❌ Lỗi: Không có sản phẩm hợp lệ", productDetail);
+      return;
+    }
+
+    // Xác định loại sản phẩm
+    const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
+    const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
+    const isWatch = productDetail.type === "Đồng hồ";
+    const isAccessory = ["Trang sức", "Ví", "Túi xách"].includes(
+      productDetail.type
+    );
+
+    // Kiểm tra điều kiện bắt buộc theo loại sản phẩm
+    if (isClothing || isPants) {
+      if (productDetail.sizes?.length > 0 && !selectedSize) {
+        alert("Vui lòng chọn kích thước trước khi thêm vào giỏ hàng!");
+        return;
+      }
+
+      if (productDetail.colors?.length > 0 && !selectedColor) {
+        alert("Vui lòng chọn màu sắc trước khi thêm vào giỏ hàng!");
+        return;
+      }
+    }
+
+    if (isWatch) {
+      if (productDetail.variants?.length > 0 && !selectedColor) {
+        alert("Vui lòng chọn màu sắc cho đồng hồ!");
+        return;
+      }
+    }
+
+    // Tạo item giỏ hàng với amount (mặc định = 1)
+    const itemToAdd = {
+      product: {
+        _id: productDetail._id,
+        name: productDetail.name,
+        image: productDetail.image,
+        price: productDetail.price,
+        type: productDetail.type,
+      },
+      quantity: quantityPay,
+      amount: 1, // Mặc định tính 1 vào cartCount
+
+      // Xử lý theo từng loại sản phẩm
+      ...(isClothing && {
+        size: selectedSize,
+        color: selectedColor,
+        variant: productDetail.variants?.find(
+          (v) => v.color === selectedColor && v.size === selectedSize
+        ),
+      }),
+
+      ...(isPants && {
+        size: selectedSize, // Đây là số (ví dụ: 28, 30, 32)
+        color: selectedColor,
+        variant: productDetail.variants?.find(
+          (v) => v.color === selectedColor && v.size === selectedSize
+        ),
+      }),
+
+      ...(isWatch && {
+        diameter: productDetail.diameter,
+        color: selectedColor, // Lấy từ variants
+        variant: productDetail.variants?.find((v) => v.color === selectedColor),
+      }),
+
+      // Phụ kiện không cần thêm thông tin gì đặc biệt
+    };
+
+    // Kiểm tra tồn kho
+    if (productDetail.countInStock < quantityPay) {
+      alert(
+        `Số lượng tồn kho không đủ! Chỉ còn ${productDetail.countInStock} sản phẩm`
+      );
+      return;
+    }
+
+    // Kiểm tra tồn kho variant nếu có
+    if (itemToAdd.variant && itemToAdd.variant.quantity < quantityPay) {
+      alert(
+        `Số lượng tồn kho cho biến thể này không đủ! Chỉ còn ${itemToAdd.variant.quantity} sản phẩm`
+      );
+      return;
+    }
+
+    // Đặc biệt: Nếu là phụ kiện, có thể điều chỉnh amount theo quantity
+    if (isAccessory) {
+      itemToAdd.amount = quantityPay; // Tính mỗi sản phẩm là 1 vào cartCount
+    }
+
+    dispatch(addToCart(itemToAdd));
+    // alert("Đã thêm sản phẩm vào giỏ hàng!");
+  };
 
   const increaseQuantity = () =>
     setQuantityPay((prev) => Math.min(prev + 1, 10));
@@ -295,24 +414,38 @@ const ProductDetailsComponent = ({ product }) => {
                 marginBottom: "10px",
               }}
             >
-              Chọn size:
+              {isWatch ? "Chọn đường kính:" : "Chọn size:"}
             </div>
-            <WrapperSizeOptions>
-              {allSizes.map((size, index) => {
-                const isAvailable = availableSizes.includes(size);
 
-                return (
+            {isWatch ? (
+              <WrapperSizeOptions>
+                {watchDiameters.map((diameter, index) => (
                   <WrapperSizeButton
                     key={index}
-                    className={selectedSize === size ? "selected" : ""}
-                    onClick={() => isAvailable && setSelectedSize(size)}
-                    disabled={!isAvailable}
+                    className={selectedSize === diameter ? "selected" : ""}
+                    onClick={() => setSelectedSize(diameter)}
                   >
-                    {size}
+                    {diameter}mm
                   </WrapperSizeButton>
-                );
-              })}
-            </WrapperSizeOptions>
+                ))}
+              </WrapperSizeOptions>
+            ) : (
+              <WrapperSizeOptions>
+                {allSizes.map((size, index) => {
+                  const isAvailable = availableSizes.includes(size);
+                  return (
+                    <WrapperSizeButton
+                      key={index}
+                      className={selectedSize === size ? "selected" : ""}
+                      onClick={() => isAvailable && setSelectedSize(size)}
+                      disabled={!isAvailable}
+                    >
+                      {size}
+                    </WrapperSizeButton>
+                  );
+                })}
+              </WrapperSizeOptions>
+            )}
           </div>
           <div
             style={{
@@ -377,7 +510,10 @@ const ProductDetailsComponent = ({ product }) => {
           }}
         >
           <StyledButton primary textButton="Chọn mua" />
-          <StyledButton textButton="Mua trả sau" />
+          <StyledButton
+            textButton="Thêm vào giỏ hàng"
+            onClick={() => handleAddToCart(productDetail)}
+          />
         </div>
       </Col>
     </Row>

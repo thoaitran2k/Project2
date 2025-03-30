@@ -12,59 +12,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 const { Text, Title } = Typography;
 
-// const products = [
-//   {
-//     id: 1,
-//     name: "Michael Kors Jet Set Charm Small Phone Crossbody Bag",
-//     price: "$158.00",
-//     rating: 4.5,
-//     reviews: 182,
-//     image: "https://via.placeholder.com/150",
-//     prime: true,
-//   },
-//   {
-//     id: 2,
-//     name: "DOMAT Crossbody Bag for Women, Chic Lightweight Purse",
-//     price: "$27.90",
-//     rating: 4.7,
-//     reviews: 263,
-//     image: "https://via.placeholder.com/150",
-//     prime: true,
-//   },
-//   {
-//     id: 3,
-//     name: "Michael Kors Jet Set Double Zip Wristlet, Black",
-//     price: "$103.82",
-//     oldPrice: "$120.00",
-//     rating: 4.8,
-//     reviews: 570,
-//     image: "https://via.placeholder.com/150",
-//     prime: true,
-//   },
-//   {
-//     id: 4,
-//     name: "The Sak Los Feliz Crossbody Bag in Leather",
-//     price: "$149.00",
-//     oldPrice: "$179.00",
-//     discount: "-17%",
-//     rating: 4.6,
-//     reviews: 164,
-//     image: "https://via.placeholder.com/150",
-//     prime: true,
-//   },
-//   {
-//     id: 5,
-//     name: "Fossil Women's Taryn Leather Crossbody Purse",
-//     price: "$117.00",
-//     oldPrice: "$195.00",
-//     discount: "-40%",
-//     rating: 4.4,
-//     reviews: 72,
-//     image: "https://via.placeholder.com/150",
-//     prime: true,
-//   },
-// ];
-
 const ProductCard = ({ product }) => {
   return (
     <Card
@@ -111,12 +58,17 @@ const ProductList = () => {
   }, [dispatch]);
 
   const handlePrev = () => {
-    carouselRef.current.prev();
+    carouselRef.current?.prev();
   };
 
   const handleNext = () => {
-    carouselRef.current.next();
+    carouselRef.current?.next();
   };
+
+  // Thêm kiểm tra products và products.data
+  if (!products || !products.data || products.data.length === 0) {
+    return <div style={{ padding: "20px" }}>Không có sản phẩm tương tự</div>;
+  }
 
   return (
     <div
@@ -130,7 +82,6 @@ const ProductList = () => {
     >
       <Title level={4}>Sản phẩm tương tự</Title>
 
-      {/* Nút điều hướng trái */}
       <Button
         shape="circle"
         icon={<LeftOutlined />}
@@ -144,22 +95,22 @@ const ProductList = () => {
         onClick={handlePrev}
       />
 
-      {/* Carousel */}
       <Carousel
         ref={carouselRef}
         dots={false}
-        slidesToShow={4}
+        slidesToShow={Math.min(4, products.data.length)}
         slidesToScroll={1}
-        infinite
+        infinite={products.data.length > 4}
       >
-        {products?.data.map((product) => (
-          <div key={product.id}>
+        {products.data.map((product) => (
+          <div key={product._id}>
+            {" "}
+            {/* Sử dụng product._id thay vì product.id */}
             <ProductCard product={product} />
           </div>
         ))}
       </Carousel>
 
-      {/* Nút điều hướng phải */}
       <Button
         shape="circle"
         icon={<RightOutlined />}

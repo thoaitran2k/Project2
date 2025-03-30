@@ -10,6 +10,7 @@ import ReviewComponent from "../../components/ReviewComponent/ReviewComponent";
 import SimilarProductList from "../../components/SimilarProductComponent/SimilarProduct";
 import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
 import { useLocation, useNavigate } from "react-router";
+import ProductList from "../../components/SimilarProductComponent/SimilarProduct";
 //import slugify from "slugify";
 
 const slugify = (str) =>
@@ -80,7 +81,7 @@ const ProductDetailsPage = () => {
             <p>Không tìm thấy sản phẩm</p>
           )}
 
-          <SimilarProductList />
+          <ProductList />
 
           <ReviewComponent />
         </MainContent>

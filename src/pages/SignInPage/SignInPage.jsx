@@ -13,7 +13,7 @@ import { CustomDatePicker } from "./style";
 import styled from "styled-components";
 import axios from "axios";
 import * as message from "../../components/Message/Message";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../../redux/slices/loadingSlice";
 import {
@@ -58,6 +58,7 @@ export default function SignInPage() {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {}, []);
 
@@ -150,11 +151,15 @@ export default function SignInPage() {
 
         setIsLogin(true);
         setIsAuthenticated(true);
+
         message.success("Đăng nhập thành công!");
+
         //dispatch(setUser(user));
         setTimeout(() => {
           dispatch(setLoading(false)); // Tắt trạng thái loading
-          navigate("/home");
+          // navigate("/home");
+          const redirectPath = location.state?.from || "/home";
+          navigate(redirectPath);
         }, 1500); // Chờ 500ms rồi chuyển trang
       }
     } catch (errorMsg) {
