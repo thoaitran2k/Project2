@@ -2,23 +2,37 @@ import { productTypeConfig, defaultConfig } from "./configs/productConfig";
 import { Button, Form, Input, Space, Select } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 
-const ProductVariants = ({ productType, variants, onChange }) => {
+const ProductVariants = ({
+  productType,
+  variants,
+  onChange,
+  onUpdateDiameter,
+}) => {
   const config = productTypeConfig[productType] || defaultConfig;
 
   const updateVariant = (index, field, value) => {
     const newVariants = [...variants];
     newVariants[index] = { ...newVariants[index], [field]: value };
     onChange(newVariants);
+
+    // Nếu đang cập nhật đường kính, cập nhật danh sách diameter chung
+    if (field === "diameter") {
+      const uniqueDiameters = [
+        ...new Set(newVariants.map((v) => v.diameter).filter(Boolean)),
+      ];
+      onUpdateDiameter(uniqueDiameters);
+    }
   };
 
   const addVariant = () => {
     const newVariant = { quantity: 0 };
     if (config.hasColor) newVariant.color = "";
     if (config.hasSize) newVariant.size = "";
-    if (config.hasDiameter) newVariant.diameter = "";
+    if (config.hasDiameter) newVariant.diameter = null;
 
     onChange([...variants, newVariant]);
   };
+
   const sizeOptions = [
     { value: "S", label: "S" },
     { value: "M", label: "M" },
@@ -75,19 +89,17 @@ const ProductVariants = ({ productType, variants, onChange }) => {
           )}
 
           {/* Diameter Selector */}
-          {config.hasDiameter && (
+          {config.hasDiameter && config.diameterOptions && (
             <Form.Item
               name={["variants", index, "diameter"]}
               rules={[{ required: true, message: "Vui lòng chọn đường kính!" }]}
             >
               <Select
-                placeholder="Chọn đường kính"
-                options={[
-                  { label: "38mm", value: 38 },
-                  { label: "40mm", value: 40 },
-                  { label: "42mm", value: 42 },
-                  { label: "44mm", value: 44 },
-                ]}
+                placeholder="Chọn mặt"
+                options={config.diameterOptions.map((diameter) => ({
+                  label: `${diameter}mm`,
+                  value: diameter,
+                }))} // 🔍 Kiểm tra config.diameterOptions
                 value={variant.diameter}
                 onChange={(value) => updateVariant(index, "diameter", value)}
               />
@@ -111,7 +123,15 @@ const ProductVariants = ({ productType, variants, onChange }) => {
           </Form.Item>
 
           <MinusCircleOutlined
-            onClick={() => onChange(variants.filter((_, i) => i !== index))}
+            onClick={() => {
+              const newVariants = variants.filter((_, i) => i !== index);
+              onChange(newVariants);
+              // Cập nhật danh sách đường kính chung
+              const uniqueDiameters = [
+                ...new Set(newVariants.map((v) => v.diameter).filter(Boolean)),
+              ];
+              onUpdateDiameter(uniqueDiameters);
+            }}
           />
         </Space>
       ))}

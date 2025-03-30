@@ -19,6 +19,7 @@ const productSchema = new mongoose.Schema(
         color: { type: String },
         size: { type: String },
         quantity: { type: Number, default: 0 },
+        diameter: { type: Number },
       },
     ],
     size: {
@@ -26,13 +27,13 @@ const productSchema = new mongoose.Schema(
       required: function () {
         return this.type === "Quần nam" || this.type === "Quần nữ";
       },
-    }, // Chỉ yêu cầu nếu là áo quần
+    },
     diameter: {
-      type: Number,
+      type: [Number],
       required: function () {
         return this.type === "Đồng hồ";
       },
-    }, // Chỉ yêu cầu nếu là đồng hồ
+    },
   },
   { timestamps: true }
 );

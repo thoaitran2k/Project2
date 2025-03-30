@@ -69,6 +69,9 @@ const AdminProduct = () => {
     Vàng: "#FFD700",
   };
 
+  const [modalForm] = Form.useForm(); // Cho Modal thêm sản phẩm
+  const [drawerForm] = Form.useForm(); // Cho Drawer chỉnh sửa
+
   const colorOptions = getAllColorOptions();
 
   const [typeOptions, setTypeOptions] = useState([
@@ -123,7 +126,7 @@ const AdminProduct = () => {
     type: "",
     countInStock: "",
     variants: [],
-    diameter: "",
+    diameter: [],
     size: "", // Thêm trường variants
   });
 
@@ -136,7 +139,7 @@ const AdminProduct = () => {
     type: "",
     countInStock: "",
     variants: [],
-    diameter: "",
+    diameter: [],
     sizeOptions: [],
     colorOptions: [],
   });
@@ -194,12 +197,15 @@ const AdminProduct = () => {
 
   //______________________________________________Set ID cho hàng sản phẩm cần lấy thông tin
   const handleDetailsPorduct = (id) => {
+    drawerForm.resetFields();
     setRowSelected(id);
-    setTimeout(() => {
-      dispatch(getDetailsProductById(id));
-      setIsOpenDrawer(true);
-    }, 0);
+    dispatch(getDetailsProductById(id));
+    setIsOpenDrawer(true);
   };
+
+  useEffect(() => {
+    console.log("stateProducts1111111", stateProduct);
+  }, [isOpenDrawer]);
 
   //______________________________________HANDLE XÓA TẤT CẢ SẢN PHẨM ĐƯỢC CHỌN
   const handleDeleteManyProducts = (productIds) => {
@@ -225,67 +231,123 @@ const AdminProduct = () => {
 
   useEffect(() => {
     if (productDetail?.data) {
-      setCopyProductDetails(productDetail.data);
-
       const productData = productDetail.data;
-      let variants = productData.variants || [];
+      console.log("Product detail data received:", productData);
+
+      // 1. Tạo bản sao dữ liệu gốc
+      setCopyProductDetails({ ...productData });
+
+      // 2. Xử lý variants theo loại sản phẩm
+      let processedVariants = [];
 
       if (productData.type === "Đồng hồ") {
-        variants = variants.map((v) => ({
+        processedVariants = (productData.variants || []).map((v) => ({
           ...v,
-          diameter: productData.diameter,
+          diameter: Array.isArray(v.diameter)
+            ? v.diameter
+            : [v.diameter].filter(Boolean),
+          quantity: Number(v.quantity) || 0,
         }));
       } else if (["Túi xách", "Ví", "Trang sức"].includes(productData.type)) {
-        variants = variants.map((v) => ({
-          quantity: v.quantity,
-        }));
-      } else if (["Quần nam", "Quần nữ"].includes(productData.type)) {
-        variants = variants.map((v) => ({
-          color: v.color,
-          size: v.size,
-          quantity: v.quantity,
+        processedVariants = (productData.variants || []).map((v) => ({
+          quantity: Number(v.quantity) || 0,
         }));
       } else {
-        variants = variants.map((v) => ({
-          color: v.color,
-          size: v.size,
-          quantity: v.quantity,
+        processedVariants = (productData.variants || []).map((v) => ({
+          color: v.color || "",
+          size: v.size || "",
+          quantity: Number(v.quantity) || 0,
         }));
       }
 
+      // 3. Chuẩn bị dữ liệu cập nhật
       const updatedProduct = {
-        name: productData.name,
-        price: productData.price,
-        description: productData.description,
-        rating: productData.rating,
-        image: productData.image,
-        imagesPreview: productData.imagesPreview,
-        type: productData.type,
-        countInStock: variants.reduce(
-          (sum, v) => sum + Number(v.quantity || 0),
+        name: productData.name || "",
+        price: productData.price ? Number(productData.price) : 0,
+        description: productData.description || "",
+        rating: productData.rating ? Number(productData.rating) : 0,
+        image: productData.image || "",
+        imagesPreview: Array.isArray(productData.imagesPreview)
+          ? productData.imagesPreview.filter((url) => typeof url === "string")
+          : [],
+        type: productData.type || "",
+        countInStock: processedVariants.reduce(
+          (sum, v) => sum + (v.quantity || 0),
           0
         ),
-        variants: variants,
-
+        variants: processedVariants,
         diameter:
-          productData.type === "Đồng hồ" ? variants[0]?.diameter : undefined,
+          productData.type === "Đồng hồ"
+            ? [...new Set(processedVariants.flatMap((v) => v.diameter || []))]
+            : [],
         size: ["Quần nam", "Quần nữ", "Áo nam", "Áo nữ"].includes(
           productData.type
         )
-          ? variants[0]?.size
+          ? processedVariants[0]?.size
           : undefined,
       };
 
+      console.log("Processed product data:", updatedProduct);
+
+      // 4. Cập nhật state
       setStateDetailsProduct(updatedProduct);
 
-      // Thiết lập giá trị form
+      // 5. Thiết lập giá trị form - THÊM CÁC TRƯỜNG HÌNH ẢNH
       const formValues = {
-        ...productData,
-        variants: variants,
+        name: updatedProduct.name,
+        price: updatedProduct.price,
+        description: updatedProduct.description,
+        rating: updatedProduct.rating,
+        type: updatedProduct.type,
+        variants: updatedProduct.variants,
+        diameter:
+          stateDetailsProduct.type === "Đồng hồ"
+            ? [...new Set(processedVariants.flatMap((v) => v.diameter || []))]
+            : [],
+        image: updatedProduct.image,
+        imagesPreview: updatedProduct.imagesPreview,
       };
-      form.setFieldsValue(formValues);
+
+      drawerForm.setFieldsValue(formValues);
+
+      setFileList(
+        updatedProduct.image
+          ? [
+              {
+                uid: "-1",
+                name: "image.png",
+                status: "done",
+                url: updatedProduct.image,
+              },
+            ]
+          : []
+      );
+    } else {
+      // Reset nếu không có dữ liệu
+      setStateDetailsProduct({
+        name: "",
+        price: "",
+        description: "",
+        rating: "",
+        image: "",
+        type: "",
+        countInStock: "",
+        variants: [],
+        diameter: [],
+        size: "",
+        imagesPreview: [],
+      });
+      drawerForm.resetFields();
+      setFileList([]);
     }
-  }, [productDetail]);
+  }, [productDetail, drawerForm]);
+
+  const handleUpdateDiameter = (updatedDiameters) => {
+    setStateDetailsProduct((prev) => ({
+      ...prev,
+      diameter: updatedDiameters,
+    }));
+  };
   //________________XÓA ẢNH PREVIEW KHI CHỈNH SỬA
 
   useEffect(() => {
@@ -428,7 +490,6 @@ const AdminProduct = () => {
     );
   };
 
-  const [form] = Form.useForm();
   useEffect(() => {
     //console.log("📌 Trạng thái sau khi reset:", stateProduct);
   }, [stateProduct]);
@@ -799,17 +860,19 @@ const AdminProduct = () => {
             .join(", ");
         }
 
-        // Nếu sản phẩm là Đồng hồ, hiển thị size từ 38 đến 44
+        // Nếu sản phẩm là Đồng hồ, hiển thị "Mặt" {diameter} quantity
         if (record.type === "Đồng hồ") {
-          const allowedSizes = ["38", "39", "40", "41", "42", "43", "44"];
-          record.variants.forEach(({ size, quantity }) => {
-            if (allowedSizes.includes(size)) {
-              sizeMap[size] = (sizeMap[size] || 0) + Number(quantity);
+          const diameterMap = {};
+
+          record.variants.forEach(({ diameter, quantity }) => {
+            if (diameter) {
+              diameterMap[diameter] =
+                (diameterMap[diameter] || 0) + Number(quantity);
             }
           });
 
-          return Object.entries(sizeMap)
-            .map(([size, quantity]) => `${size} (${quantity})`)
+          return Object.entries(diameterMap)
+            .map(([diameter, quantity]) => `d:${diameter}mm (${quantity})`)
             .join(", ");
         }
 
@@ -824,6 +887,7 @@ const AdminProduct = () => {
           .join(", ");
       },
     },
+
     {
       title: "Total Quantity",
       dataIndex: "totalQuantity",
@@ -864,71 +928,80 @@ const AdminProduct = () => {
   };
 
   //_____________________________________________________________________________
-  const processVariantsBeforeSubmit = ({ variants = [], productType }) => {
-    const config = productTypeConfig[productType];
-
-    return variants.map((variant) => {
-      const processed = { quantity: Number(variant.quantity) || 0 };
-
-      if (config.hasColor) processed.color = variant.color;
-      if (config.hasSize) processed.size = variant.size;
-      if (config.hasDiameter) processed.diameter = variant.diameter;
-
-      return processed;
-    });
-  };
 
   //________________________________________________________________________Update sản phẩm
-  const onApply = async () => {
-    if (
-      !stateDetailsProduct.variants ||
-      stateDetailsProduct.variants.length === 0
-    ) {
-      message.error("Vui lòng thêm ít nhất một biến thể sản phẩm!");
-      return;
-    }
-
-    const processedVariants = processVariantsBeforeSubmit({
-      variants: stateDetailsProduct.variants,
-      productType: stateDetailsProduct.type,
-    });
-
-    const config = productTypeConfig[stateDetailsProduct.type];
-    const invalidVariants = stateDetailsProduct.variants.some((variant) => {
-      if (config.hasColor && !variant.color) return true;
-      if (config.hasSize && !variant.size) return true;
-      if (config.hasDiameter && !variant.diameter) return true;
-      return !variant.quantity || Number(variant.quantity) <= 0;
-    });
-
-    if (invalidVariants) {
-      message.error("Vui lòng điền đầy đủ thông tin cho tất cả biến thể!");
-      return;
-    }
-
-    const updatedProduct = {
-      ...stateDetailsProduct,
-      variants: processedVariants,
-      countInStock: processedVariants.reduce((sum, v) => sum + v.quantity, 0),
-      imagesPreview: Array.isArray(stateDetailsProduct.imagesPreview)
-        ? stateDetailsProduct.imagesPreview.filter(
-            (url) => typeof url === "string" && url.trim() !== ""
-          )
-        : [],
-      image: stateDetailsProduct.image || "",
-    };
-
+  const Submit = async () => {
+    console.log("Bắt đầu thêm sản phẩm");
     try {
-      await dispatch(
-        updateProduct({ productId: rowSelected, updatedData: updatedProduct })
-      ).unwrap();
+      dispatch(setLoading(true));
 
-      message.success("Cập nhật sản phẩm thành công!");
+      // Kiểm tra các trường bắt buộc
+      if (!stateProduct.name || !stateProduct.type || !stateProduct.price) {
+        message.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
+        return;
+      }
 
-      setIsOpenDrawer(false);
-      form.resetFields();
+      // Xử lý variants
+      const validVariants = stateProduct.variants.filter(
+        (v) => v.color || v.size || v.diameter || v.quantity
+      );
 
-      // 🌟 Reset stateProduct sau khi cập nhật thành công
+      if (validVariants.length === 0) {
+        message.error("Vui lòng thêm ít nhất một biến thể sản phẩm!");
+        return;
+      }
+
+      if (
+        stateProduct.type === "Đồng hồ" &&
+        !validVariants.some((v) => v.diameter)
+      ) {
+        message.error("Vui lòng nhập đường kính cho đồng hồ!");
+        return;
+      }
+
+      // Xử lý ảnh
+      const imageUrls = await handleUpload();
+      if (!imageUrls || imageUrls.length === 0) {
+        message.error("Vui lòng tải lên ít nhất một ảnh!");
+        return;
+      }
+
+      // Chuẩn bị dữ liệu sản phẩm mới
+      const newProduct = {
+        name: stateProduct.name,
+        image: imageUrls[0],
+        imagesPreview: imageUrls,
+        type: stateProduct.type,
+        price: Number(stateProduct.price),
+        countInStock: validVariants.reduce(
+          (sum, v) => sum + (Number(v.quantity) || 0),
+          0
+        ),
+        rating: Number(stateProduct.rating) || 0,
+        description: stateProduct.description || "",
+        variants: validVariants,
+        diameter:
+          stateProduct.type === "Đồng hồ"
+            ? [...new Set(validVariants.map((v) => v.diameter).filter(Boolean))]
+            : [],
+        size: ["Quần nam", "Quần nữ", "Áo nam", "Áo nữ"].includes(
+          stateProduct.type
+        )
+          ? validVariants[0]?.size
+          : undefined,
+      };
+
+      console.log("Dữ liệu sản phẩm sẽ được gửi:", newProduct);
+
+      // Gửi yêu cầu tạo sản phẩm
+      const result = await dispatch(createProduct(newProduct)).unwrap();
+
+      // Xử lý sau khi thành công
+      message.success("Thêm sản phẩm thành công!");
+      dispatch(getAllProduct({ page: currentPage }));
+
+      // Reset form và đóng modal
+      modalForm.resetFields();
       setStateProduct({
         name: "",
         price: "",
@@ -942,105 +1015,137 @@ const AdminProduct = () => {
         diameter: "",
         size: "",
       });
-
-      console.log("stateDetailsProduct", stateDetailsProduct);
-      console.log("stateProduct", stateProduct);
-
-      localStorage.setItem("savedPage", currentPage);
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-
-      dispatch(getAllProduct({ page: currentPage }));
+      setIsModalOpen(false);
+      setSelectedFiles([]);
+      setFileList([]);
     } catch (error) {
-      message.error("Cập nhật sản phẩm thất bại!");
-      console.error("Lỗi khi cập nhật sản phẩm:", error);
+      console.error("Lỗi khi thêm sản phẩm:", error);
+      message.error(`Thêm sản phẩm thất bại: ${error.message}`);
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
-  //Thêm sản phẩm
-  const Submit = async () => {
-    console.log("CLick đây");
+  const processVariantsBeforeSubmit = ({ variants = [], productType }) => {
+    const config = productTypeConfig[productType];
+
+    const processedVariants = variants.map((variant) => {
+      const processed = {
+        quantity: Number(variant.quantity) || 0,
+      };
+
+      // Xử lý theo cấu hình từng loại sản phẩm
+      if (config.hasColor && variant.color) {
+        processed.color = variant.color;
+      }
+
+      if (config.hasSize && variant.size) {
+        processed.size = variant.size;
+      }
+
+      // Chỉ xử lý diameter cho sản phẩm cần diameter
+      if (config.hasDiameter && variant.diameter !== undefined) {
+        processed.diameter = Array.isArray(variant.diameter)
+          ? Number(variant.diameter[0]) || 0
+          : Number(variant.diameter) || 0;
+      }
+
+      return processed;
+    });
+
+    // Chỉ tính diameter root cho sản phẩm cần diameter
+    const uniqueDiameters = config.hasDiameter
+      ? [
+          ...new Set(
+            processedVariants
+              .map((v) => v.diameter)
+              .filter((d) => d !== undefined && !isNaN(d))
+          ),
+        ]
+      : undefined;
+
+    return {
+      variants: processedVariants,
+      diameter: uniqueDiameters,
+    };
+  };
+
+  const onApply = async () => {
+    console.log("Bắt đầu cập nhật sản phẩm");
     try {
       dispatch(setLoading(true));
 
-      const validVariants = stateProduct.variants.filter(
-        (v) => v.color || v.size || v.diameter || v.quantity
-      );
-
+      // Kiểm tra dữ liệu
       if (
-        stateProduct.type === "Đồng hồ" &&
-        !validVariants.some((v) => v.diameter)
+        !stateDetailsProduct.variants ||
+        stateDetailsProduct.variants.length === 0
       ) {
-        message.error("Vui lòng nhập đường kính cho đồng hồ!");
+        message.error("Vui lòng thêm ít nhất một biến thể sản phẩm!");
         return;
       }
 
-      const imageUrls = await handleUpload();
-      if (!imageUrls || imageUrls.length === 0) {
-        message.error("Vui lòng tải lên ít nhất một ảnh!");
-        return;
-      }
-
-      const newProduct = {
-        name: stateProduct.name,
-        image: imageUrls[0],
-        imagesPreview: imageUrls,
-        type: stateProduct.type,
-        price: Number(stateProduct.price),
-        countInStock: Number(stateProduct.countInStock),
-        rating: Number(stateProduct.rating),
-        description: stateProduct.description,
-        variants: validVariants,
-        diameter:
-          stateProduct.type === "Đồng hồ"
-            ? validVariants[0]?.diameter
-            : undefined,
-        size:
-          stateProduct.type === "Quần nam" || stateProduct.type === "Quần nữ"
-            ? validVariants[0]?.size
-            : undefined,
-      };
-
-      console.log("Dữ liệu sản phẩm trước khi gửi:", newProduct);
-      if (Object.entries(newProduct).some(([key, value]) => value === "")) {
-        console.error("🚨 Lỗi: Thiếu trường dữ liệu");
-        message.error("Vui lòng điền đầy đủ thông tin!");
-        return;
-      }
-
-      const resultAction = await dispatch(createProduct(newProduct));
-      await dispatch(getAllProduct({ page: currentPage }));
-
-      if (createProduct.fulfilled.match(resultAction)) {
-        setStateProduct({
-          name: "",
-          price: "",
-          description: "",
-          rating: "",
-          image: "",
-          imagesPreview: [],
-          type: "",
-          countInStock: "",
-          variants: [],
-          diameter: "",
-          size: "",
+      // Xử lý variants và tính diameter root
+      const { variants: processedVariants, diameter: processedDiameters } =
+        processVariantsBeforeSubmit({
+          variants: stateDetailsProduct.variants,
+          productType: stateDetailsProduct.type,
         });
 
-        setIsModalOpen(false);
-        message.success("Thêm sản phẩm thành công!");
-        // setFileList([]);
-        // form.resetFields();
+      // Kiểm tra các trường bắt buộc
+      const config = productTypeConfig[stateDetailsProduct.type] || {};
+      const invalidVariants = processedVariants.some((variant) => {
+        // Kiểm tra chung
+        if (variant.quantity <= 0) return true;
 
-        // 🌟 Reset stateDetailsProduct để tránh lỗi cập nhật sau này
-        // setStateDetailsProduct(null);
-      } else {
-        throw new Error(resultAction.payload);
+        // Kiểm tra theo loại sản phẩm
+        if (config.hasColor && !variant.color) return true;
+        if (config.hasSize && !variant.size) return true;
+
+        // Chỉ validate diameter nếu sản phẩm yêu cầu
+        if (config.hasDiameter && variant.diameter === undefined) return true;
+
+        return false;
+      });
+
+      if (invalidVariants) {
+        message.error("Vui lòng điền đầy đủ thông tin cho tất cả biến thể!");
+        return;
       }
+
+      // Chuẩn bị dữ liệu cập nhật
+      const updatedProduct = {
+        ...stateDetailsProduct,
+        variants: processedVariants,
+        diameter: processedDiameters, // Thêm diameter root
+        countInStock: processedVariants.reduce((sum, v) => sum + v.quantity, 0),
+        imagesPreview: Array.isArray(stateDetailsProduct.imagesPreview)
+          ? stateDetailsProduct.imagesPreview.filter(
+              (url) => typeof url === "string"
+            )
+          : [],
+        image: stateDetailsProduct.image || "",
+      };
+
+      console.log("Dữ liệu cập nhật sản phẩm:", updatedProduct);
+
+      // Gửi yêu cầu cập nhật
+      await dispatch(
+        updateProduct({
+          productId: rowSelected,
+          updatedData: updatedProduct,
+        })
+      ).unwrap();
+
+      // Xử lý sau khi thành công
+      message.success("Cập nhật sản phẩm thành công!");
+      dispatch(getAllProduct({ page: currentPage }));
+
+      // Reset và đóng drawer
+      drawerForm.resetFields();
+      setIsOpenDrawer(false);
     } catch (error) {
-      console.error("Lỗi khi thêm sản phẩm:", error);
-      message.error("Thêm sản phẩm thất bại!");
+      console.error("Chi tiết lỗi từ server:", error.response?.data);
+      message.error(`Cập nhật sản phẩm thất bại: ${error.message}`);
     } finally {
       dispatch(setLoading(false));
     }
@@ -1092,29 +1197,36 @@ const AdminProduct = () => {
     setStateDetailsProduct((prev) => {
       const updatedVariants = [...prev.variants];
 
-      // Nếu là sản phẩm Đồng hồ, thêm hoặc cập nhật trường diameter
-      if (prev.type === "Đồng hồ" && field === "diameter") {
-        updatedVariants[index] = {
-          ...updatedVariants[index],
-          diameter: value, // Cập nhật trường diameter
-        };
-      } else {
-        updatedVariants[index] = {
-          ...updatedVariants[index],
-          [field]: value, // Cập nhật trường tương ứng (color, size, quantity, ...)
-        };
-      }
+      // Khởi tạo variant nếu chưa có
+      updatedVariants[index] = updatedVariants[index] || {
+        quantity: 0,
+        diameter: 0,
+      };
 
-      // Tính lại tổng số lượng sản phẩm
+      // Cập nhật giá trị
+      updatedVariants[index][field] =
+        field === "quantity" ? Number(value) || 0 : value;
+
+      // Tính toán lại các giá trị tổng hợp
       const totalStock = updatedVariants.reduce(
-        (sum, variant) => sum + Number(variant.quantity || 0),
+        (sum, v) => sum + (Number(v.quantity) || 0),
         0
       );
+
+      // Tính toán diameter root từ các variants
+      const allDiameters = [
+        ...new Set(
+          updatedVariants
+            .map((v) => v.diameter)
+            .filter((d) => d !== undefined && !isNaN(d))
+        ),
+      ];
 
       return {
         ...prev,
         variants: updatedVariants,
         countInStock: totalStock,
+        diameter: allDiameters,
       };
     });
   };
@@ -1274,25 +1386,39 @@ const AdminProduct = () => {
   };
 
   const handleCancel = () => {
-    if (CopyProductDetails) {
-      setStateDetailsProduct(CopyProductDetails);
-      form.setFieldsValue(CopyProductDetails);
-    }
-
-    // setStateProduct({
-    //   name: "",
-    //   price: "",
-    //   description: "",
-    //   rating: "",
-    //   image: "",
-    //   imagesPreview: [],
-    //   type: "",
-    //   countInStock: "",
-    //   variants: [],
-    //   diameter: "",
-    //   size: "", // Thêm trường variants
-    // });
+    modalForm.resetFields();
+    setStateProduct({
+      name: "",
+      price: "",
+      description: "",
+      rating: "",
+      image: "",
+      imagesPreview: [],
+      type: "",
+      countInStock: "",
+      variants: [],
+      diameter: "",
+      size: "",
+    });
     setIsModalOpen(false);
+  };
+
+  const handleCloseDrawer = () => {
+    drawerForm.resetFields();
+    setStateDetailsProduct({
+      name: "",
+      price: "",
+      description: "",
+      rating: "",
+      image: "",
+      type: "",
+      countInStock: "",
+      variants: [],
+      diameter: "",
+      sizeOptions: [],
+      colorOptions: [],
+    });
+    setIsOpenDrawer(false);
   };
 
   const handleCancelDeleteProduct = () => {
@@ -1335,9 +1461,6 @@ const AdminProduct = () => {
             fontSize: "30px",
           }}
           onClick={() => {
-            console.log("stateDetailsProduct", stateDetailsProduct);
-            console.log("stateProduct", stateProduct);
-
             setStateProduct({
               name: "",
               price: "",
@@ -1351,7 +1474,7 @@ const AdminProduct = () => {
             });
             //setStateProduct(newProduct);
             setFileList([]);
-            form.resetFields();
+            modalForm.resetFields();
             //form.setFieldsValue(newProduct); // Xóa danh sách file nếu có
             setIsModalOpen(true); // ⏳ Delay mở modal để React cập nhật state
           }}
@@ -1417,7 +1540,7 @@ const AdminProduct = () => {
           }}
           //   initialValues={{
           //     remember: true,
-          form={form}
+          form={modalForm}
           //   }}
           onFinish={Submit}
           autoComplete="off"
@@ -1462,6 +1585,7 @@ const AdminProduct = () => {
             <ProductVariants
               productType={stateProduct.type} // Loại sản phẩm (Áo nam, Đồng hồ...)
               variants={stateProduct.variants || []} // Danh sách variants
+              onUpdateDiameter={handleUpdateDiameter}
               onChange={(newVariants) => {
                 // Cập nhật state khi có thay đổi
                 setStateProduct((prev) => ({
@@ -1730,7 +1854,7 @@ const AdminProduct = () => {
       <DrawerComponent
         title="Chi tiết sản phẩm"
         isOpen={isOpenDrawer}
-        onClose={() => setIsOpenDrawer(false)}
+        onClose={handleCloseDrawer}
         width="80%"
         style={{ transition: "transform 0.9s ease-in-out" }}
       >
@@ -1744,7 +1868,7 @@ const AdminProduct = () => {
           }}
           //   initialValues={{
           //     remember: true,
-          form={form}
+          form={drawerForm}
           //   }}
           onFinish={onApply}
           autoComplete="off"
@@ -1790,6 +1914,7 @@ const AdminProduct = () => {
             <ProductVariants
               productType={stateDetailsProduct.type}
               variants={stateDetailsProduct.variants}
+              onUpdateDiameter={handleUpdateDiameter}
               onChange={(newVariants) => {
                 const totalStock = newVariants.reduce(
                   (sum, v) => sum + (Number(v.quantity) || 0),

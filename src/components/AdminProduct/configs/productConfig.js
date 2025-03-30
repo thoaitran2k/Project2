@@ -31,6 +31,7 @@ export const productTypeConfig = {
     hasColor: true,
     hasSize: false,
     hasDiameter: true,
+    diameterOptions: [38, 39, 40, 41, 42],
     colorOptions: ["Đen", "Trắng"],
   },
   "Túi xách": { hasColor: false, hasSize: false, hasDiameter: false },
