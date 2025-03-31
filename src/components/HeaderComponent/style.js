@@ -4,10 +4,11 @@ import { Link } from "react-router-dom";
 
 export const WrapperHeader = styled(Row)`
   padding: 10px 5px;
-  background-color: #ece9df;
+  background-color: rgb(255, 255, 255);
   height: 100%;
   display: flex;
   align-items: center;
+  border-bottom: solid 2px #ccc;
 
   position: fixed;
   top: 0;
@@ -25,11 +26,11 @@ export const WrapperLogo = styled.span`
 
 export const LoginButton = styled.div`
   background: rgb(213, 224, 231);
-  border-radius: 5px;
+  border-radius: 50%;
   padding: 10px 20px;
   font-size: 16px;
   font-weight: bold;
-  color: rgb(8, 61, 129);
+  color: rgb(139, 150, 165);
   text-shadow: 1px 1px 2px #000;
   cursor: pointer;
   display: flex;

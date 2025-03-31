@@ -152,6 +152,9 @@ const productSlice = createSlice({
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
     },
+    setProducts: (state, action) => {
+      state.products = action.payload; // Lưu danh sách sản phẩm
+    },
   },
 
   extraReducers: (builder) => {
@@ -257,5 +260,5 @@ const productSlice = createSlice({
   },
 });
 
-export const { setSearchTerm } = productSlice.actions;
+export const { setSearchTerm, setProducts } = productSlice.actions;
 export default productSlice.reducer;

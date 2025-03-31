@@ -43,7 +43,7 @@ const Sidebar = () => {
         }}
         onClick={() => setOpen(true)}
       >
-        <MenuOutlined /> Menu
+        <MenuOutlined style={{ fontSize: "17px" }} /> Menu
       </div>
 
       <Drawer
@@ -255,7 +255,7 @@ const HeaderComponent = ({
 
         await dispatch(logoutUser()).unwrap();
         await persistor.purge();
-        navigate("/sign-in", { replace: true });
+        //navigate("/sign-in", { replace: true });
       } catch (error) {
         console.error("Lỗi khi đăng xuất:", error);
       }
@@ -427,10 +427,10 @@ const HeaderComponent = ({
                         style={{
                           width: "100px",
                           padding: "10px 20px",
-                          backgroundColor: "#ECE9DF",
+                          backgroundColor: "#2C839E",
                           color: "BLUE",
                           border: "solid 2px rgb(44, 131, 158)",
-                          borderRadius: "5px",
+                          borderRadius: "35%",
                           cursor: "pointer",
                           fontSize: "26px",
                         }}
@@ -467,8 +467,10 @@ const HeaderComponent = ({
                               gap: "5px",
                             }}
                           >
-                            <SearchOutlined />
-                            <div style={{ margin: "0 5px" }}>Tìm kiếm</div>
+                            <SearchOutlined style={{ fontSize: "17px" }} />
+                            <div style={{ margin: "0 5px", fontSize: "17px" }}>
+                              Tìm kiếm
+                            </div>
                           </div>
                         </StyledLink>
                       </div>
@@ -512,14 +514,13 @@ const HeaderComponent = ({
                           <LoginButton
                             style={{
                               display: "flex",
-                              flexDirection: "column",
-                              gap: "5px",
+                              flexDirection: "row",
                               alignItems: "center",
-                              padding: "8px",
+                              padding: "2px",
                               minWidth: "80px",
                               width: "auto",
                               height: "auto",
-                              background: "#ECE9DF",
+                              background: "transparent",
                               border: "none",
                               boxShadow: "none",
                             }}
@@ -543,7 +544,7 @@ const HeaderComponent = ({
                                   src={
                                     gender === "Nữ"
                                       ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
-                                      : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365420/avatars/e9yxquyfuaifggq201ma.jpg"
+                                      : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1743435676/avatars/pt0w7sb1lyvzyivnci8r.jpg"
                                   }
                                   alt="Default Avatar"
                                   style={{
@@ -571,21 +572,41 @@ const HeaderComponent = ({
                     ) : (
                       <button
                         style={{
-                          width: "120px", // Tăng chiều rộng để đảm bảo chữ không bị bó hẹp
-                          height: "50px", // Đặt chiều cao cụ thể để giúp căn giữa chữ
-                          backgroundColor: "#ECE9DF",
-                          color: "blue",
+                          width: "130px",
+                          height: "50px",
+                          backgroundColor: "#2C839E",
+                          color: "white",
                           border: "solid 2px rgb(44, 131, 158)",
-                          borderRadius: "5px",
+                          borderRadius: "50px",
                           cursor: "pointer",
                           fontSize: "20px",
-                          fontWeight: "bold",
+                          fontWeight: "400",
 
-                          /** Căn giữa chữ theo cả hai chiều */
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           textAlign: "center",
+                          transition: "all 0.3s ease-in-out", // Hiệu ứng chuyển động mượt mà
+
+                          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)", // Đổ bóng nhẹ tạo hiệu ứng nổi
+                        }}
+                        onMouseOver={(e) => {
+                          e.target.style.backgroundColor = "#1B5C74"; // Màu đậm hơn khi hover
+                          e.target.style.transform = "scale(1.05)"; // Phóng to nhẹ
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.backgroundColor = "#2C839E"; // Trả lại màu cũ
+                          e.target.style.transform = "scale(1)"; // Trả lại kích thước cũ
+                        }}
+                        onMouseDown={(e) => {
+                          e.target.style.boxShadow =
+                            "0px 2px 4px rgba(0, 0, 0, 0.3)"; // Giảm đổ bóng khi nhấn
+                          e.target.style.transform = "scale(0.98)"; // Nhấn xuống nhẹ
+                        }}
+                        onMouseUp={(e) => {
+                          e.target.style.boxShadow =
+                            "0px 4px 8px rgba(0, 0, 0, 0.2)"; // Trả lại đổ bóng
+                          e.target.style.transform = "scale(1.05)"; // Trả lại hiệu ứng hover
                         }}
                         onClick={() => navigate("/sign-in")}
                       >

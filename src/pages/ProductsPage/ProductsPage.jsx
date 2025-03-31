@@ -12,9 +12,10 @@ import SideBar from "../../components/SideBar/SideBar";
 import styled from "styled-components";
 import { Breadcrumb } from "antd";
 import SearchComponent from "../../components/SearchComponent/SearchComponent";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
 import { useLocation, useNavigate } from "react-router";
+import { setSearchTerm, setProducts } from "../../redux/slices/productSlice";
 
 const ProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,6 +24,7 @@ const ProductsPage = () => {
   const [limit, setLimit] = useState(8);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [selectedTypes, setSelectedTypes] = useState([]);
 
   const searchParams = new URLSearchParams(location.search);
@@ -134,6 +136,12 @@ const ProductsPage = () => {
     retry: 3,
     retryDelay: 1000,
   });
+
+  useEffect(() => {
+    if (products?.data) {
+      dispatch(setProducts(products.data)); // Cập nhật Redux mỗi khi dữ liệu thay đổi
+    }
+  }, [products, dispatch]);
 
   useEffect(() => {
     const ratingFromUrl = searchParams.get("ratings");

@@ -4,6 +4,7 @@ import { Input, Button, Row, Col, List, Spin } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { setSearchTerm } from "../../redux/slices/productSlice";
 import axios from "axios";
+import { useNavigate } from "react-router";
 
 const { Search } = Input;
 
@@ -16,6 +17,8 @@ const SearchComponent = ({ setLimit = () => {} }) => {
   const [recentSearches, setRecentSearches] = useState([]);
   const [resetProducts, setResetProducts] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Lấy lịch sử tìm kiếm từ localStorage
@@ -126,7 +129,7 @@ const SearchComponent = ({ setLimit = () => {} }) => {
     dispatch(setSearchTerm(value));
     setResetProducts(true);
 
-    console.log("📌 searchTerm mới sau khi dispatch:", value);
+    //console.log("📌 searchTerm mới sau khi dispatch:", value);
 
     setLimit(8);
 

@@ -38,7 +38,7 @@ export default function Home() {
 
   return (
     <Container>
-      <BannerLink to="/some-link">
+      <BannerLink>
         <BannerImage src={bagBanner} alt="Banner" />
       </BannerLink>
       <div style={{ maxWidth: "1400px", padding: "20px" }}>
@@ -129,7 +129,7 @@ const StyledCardTitle = styled.div`
   text-align: center;
 `;
 
-const BannerLink = styled(Link)`
+const BannerLink = styled.div`
   width: 100%;
   // margin-top: 20px;
   text-decoration: none;

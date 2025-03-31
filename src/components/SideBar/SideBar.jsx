@@ -22,7 +22,9 @@ const SideBar = ({
   const isProductPage = location.pathname.startsWith("/product-type/");
   const [searchParams, setSearchParams] = useSearchParams();
   const searchTerm = useSelector((state) => state.product.searchTerm);
-  const products = useSelector((state) => state.product.products?.data || []);
+
+  const products = useSelector((state) => state.product?.products || []);
+  const product = useSelector((state) => state.product);
   const [selectedRatings, setSelectedRatings] = useState([]);
 
   const [minPrice, setMinPrice] = useState("");
@@ -153,6 +155,9 @@ const SideBar = ({
     }
   }, [searchTerm, searchParams, setSearchParams]);
 
+  //console.log("STATE PRODUCT", product);
+  // console.log("products", products);
+
   const filteredType = useMemo(() => {
     if (isTypeProductPage) {
       return type.filter(
@@ -167,15 +172,22 @@ const SideBar = ({
     const filteredProducts = products.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    //console.log("filteredProducts", filteredProducts);
+
     const matchedTypes = new Set(filteredProducts.map((p) => p.type));
     return type.filter((item) => matchedTypes.has(item.value));
   }, [searchTerm, type, products, isTypeProductPage, selectedTypeFromUrl]);
+  console.log("filteredType4", filteredType);
 
   const handleCategoryChange = useCallback(
     (values) => {
+      console.log("filteredType1", filteredType);
+
       // Chỉ cập nhật nếu giá trị mới khác giá trị cũ
       if (JSON.stringify(selectedTypes) !== JSON.stringify(values)) {
         setSelectedTypes(values);
+        console.log("filteredType2", filteredType);
 
         const newSearchParams = new URLSearchParams(searchParams);
         if (values.length === 0) {
@@ -185,7 +197,10 @@ const SideBar = ({
         }
         setSearchParams(newSearchParams, { replace: true });
       }
+
+      console.log("filteredType3", filteredType);
     },
+
     [selectedTypes, searchParams, setSearchParams]
   );
 
@@ -206,10 +221,12 @@ const SideBar = ({
                       ? selectedTypes.filter((type) => type !== item.value)
                       : [...selectedTypes, item.value];
 
-                    if (!isTypeProductPage) {
-                      setSelectedTypes(newSelectedTypes);
-                    }
-                    // handleCategoryChange(newSelectedTypes);
+                    // if (!isTypeProductPage) {
+                    //   setSelectedTypes(newSelectedTypes);
+                    // }
+
+                    console.log("newSelectedTypes", newSelectedTypes);
+                    handleCategoryChange(newSelectedTypes);
                   }}
                   isSelected={selectedTypes.includes(item.value)}
                 >
