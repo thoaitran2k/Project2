@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Card, Divider, Button, Tag, Checkbox } from "antd";
+import { Card, Divider, Button, Tag, Checkbox, message } from "antd";
 import AddressModal from "./AddressModal";
+
 import {
   clearCart,
   removeFromCart,
   updateCartItemAmount,
+  updateCartOnServer,
 } from "../../redux/slices/cartSlice";
 import {
   ShoppingCartOutlined,
@@ -32,8 +34,9 @@ const OrderComponent = () => {
   );
 
   const { isAuthenticated } = useSelector((state) => state.user);
-  const { cartItems, cartCount } = useSelector((state) => state.cart);
+  const { cartCount } = useSelector((state) => state.cart);
 
+  const cartItems = useSelector((state) => state.cart.cartItems);
   const cart = useSelector((state) => state.cart);
 
   const dispatch = useDispatch();
@@ -41,7 +44,6 @@ const OrderComponent = () => {
 
   console.log("defaultAddress", defaultAddress);
   console.log("address", user.address);
-  console.log("user", user);
 
   const isAllChecked = selectedProducts.length === cartItems.length;
 
@@ -56,6 +58,12 @@ const OrderComponent = () => {
       );
     }
   };
+
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(updateCartOnServer());
+    }
+  }, [cartItems, dispatch, user]);
 
   const handleDecreaseQuantity = (itemId) => {
     const item = cartItems.find((item) => item.id === itemId);
@@ -72,13 +80,12 @@ const OrderComponent = () => {
   const hanleRemoveAllCartItems = () => {
     if (selectedProducts.length > 0) {
       dispatch(clearCart());
+
       setSelectedProducts([]);
     } else {
       message.warning("Bạn chưa chọn sản phẩm nào!");
     }
   };
-
-  hanleRemoveAllCartItems;
 
   const handleChangeAddress = () => {
     console.log("Thay đổi địa chỉ");

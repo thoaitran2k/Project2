@@ -1,4 +1,4 @@
-import { Row, Col, Image, Breadcrumb } from "antd";
+import { Row, Col, Image, Breadcrumb, message } from "antd";
 import React, { useState } from "react";
 import imageProduct from "../../assets/aonam.jpg";
 import imageSmallProduct from "../../assets/vi.jpg";
@@ -18,7 +18,7 @@ import {
   WrapperSizeButton,
 } from "./style";
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart } from "../../redux/slices/cartSlice";
+import { addToCart, updateCartOnServer } from "../../redux/slices/cartSlice";
 import { useLocation, useNavigate } from "react-router";
 
 const ProductDetailsComponent = ({ product }) => {
@@ -58,10 +58,9 @@ const ProductDetailsComponent = ({ product }) => {
     ...new Set(product.variants?.map((variant) => variant.color)),
   ];
 
-  console.log("ProductDetails", productDetail);
   const isWatch = productDetail?.type === "Đồng hồ";
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!user.isAuthenticated) {
       alert("Bạn phải đăng nhập để mua hàng");
       navigate("/sign-in", { state: { from: location.pathname } });
@@ -82,26 +81,42 @@ const ProductDetailsComponent = ({ product }) => {
     );
 
     // Kiểm tra điều kiện bắt buộc theo loại sản phẩm
-    if (isClothing || isPants) {
-      if (productDetail.sizes?.length > 0 && !selectedSize) {
-        alert("Vui lòng chọn kích thước trước khi thêm vào giỏ hàng!");
-        return;
-      }
-
-      if (productDetail.colors?.length > 0 && !selectedColor) {
-        alert("Vui lòng chọn màu sắc trước khi thêm vào giỏ hàng!");
-        return;
-      }
+    if (
+      (isClothing || isPants) &&
+      productDetail.sizes?.length > 0 &&
+      !selectedSize
+    ) {
+      alert("Vui lòng chọn kích thước trước khi thêm vào giỏ hàng!");
+      return;
     }
 
-    if (isWatch) {
-      if (productDetail.variants?.length > 0 && !selectedColor) {
-        alert("Vui lòng chọn màu sắc cho đồng hồ!");
-        return;
-      }
+    if (
+      (isClothing || isPants || isWatch) &&
+      productDetail.colors?.length > 0 &&
+      !selectedColor
+    ) {
+      alert("Vui lòng chọn màu sắc trước khi thêm vào giỏ hàng!");
+      return;
     }
 
-    // Tạo item giỏ hàng với amount (mặc định = 1)
+    if (isWatch && productDetail.variants?.length > 0 && !selectedSize) {
+      alert("Vui lòng chọn đường kính trước khi thêm vào giỏ hàng!");
+      return;
+    }
+
+    // Tìm đúng biến thể của sản phẩm (đối với quần áo & đồng hồ)
+    const selectedVariant = productDetail.variants?.find(
+      (v) =>
+        v.color === selectedColor &&
+        (isWatch ? v.diameter === selectedSize : v.size === selectedSize)
+    );
+
+    if (isWatch && !selectedVariant) {
+      alert("Không tìm thấy biến thể phù hợp!");
+      return;
+    }
+
+    // Tạo item giỏ hàng với số lượng mặc định là 1
     const itemToAdd = {
       product: {
         _id: productDetail._id,
@@ -111,35 +126,27 @@ const ProductDetailsComponent = ({ product }) => {
         type: productDetail.type,
       },
       quantity: quantityPay,
-      amount: 1, // Mặc định tính 1 vào cartCount
+      amount: isAccessory ? quantityPay : 1, // Phụ kiện tính toàn bộ vào cartCount, còn lại mặc định 1
 
-      // Xử lý theo từng loại sản phẩm
-      ...(isClothing && {
-        size: selectedSize,
-        color: selectedColor,
-        variant: productDetail.variants?.find(
-          (v) => v.color === selectedColor && v.size === selectedSize
-        ),
-      }),
+      // Xử lý biến thể theo từng loại sản phẩm
+      ...(isClothing || isPants
+        ? {
+            size: selectedSize,
+            color: selectedColor,
+            variant: selectedVariant,
+          }
+        : {}),
 
-      ...(isPants && {
-        size: selectedSize, // Đây là số (ví dụ: 28, 30, 32)
-        color: selectedColor,
-        variant: productDetail.variants?.find(
-          (v) => v.color === selectedColor && v.size === selectedSize
-        ),
-      }),
-
-      ...(isWatch && {
-        diameter: productDetail.diameter,
-        color: selectedColor, // Lấy từ variants
-        variant: productDetail.variants?.find((v) => v.color === selectedColor),
-      }),
-
-      // Phụ kiện không cần thêm thông tin gì đặc biệt
+      ...(isWatch
+        ? {
+            diameter: selectedSize, // Lấy đúng đường kính từ biến thể đã chọn
+            color: selectedColor, // Lấy đúng màu từ biến thể đã chọn
+            variant: selectedVariant,
+          }
+        : {}),
     };
 
-    // Kiểm tra tồn kho
+    // Kiểm tra tồn kho tổng thể sản phẩm
     if (productDetail.countInStock < quantityPay) {
       alert(
         `Số lượng tồn kho không đủ! Chỉ còn ${productDetail.countInStock} sản phẩm`
@@ -147,20 +154,23 @@ const ProductDetailsComponent = ({ product }) => {
       return;
     }
 
-    // Kiểm tra tồn kho variant nếu có
-    if (itemToAdd.variant && itemToAdd.variant.quantity < quantityPay) {
+    // Kiểm tra tồn kho của biến thể nếu có
+    if (selectedVariant && selectedVariant.countInStock < quantityPay) {
       alert(
-        `Số lượng tồn kho cho biến thể này không đủ! Chỉ còn ${itemToAdd.variant.quantity} sản phẩm`
+        `Số lượng tồn kho cho biến thể này không đủ! Chỉ còn ${selectedVariant.countInStock} sản phẩm`
       );
       return;
     }
+    try {
+      dispatch(addToCart(itemToAdd));
 
-    // Đặc biệt: Nếu là phụ kiện, có thể điều chỉnh amount theo quantity
-    if (isAccessory) {
-      itemToAdd.amount = quantityPay; // Tính mỗi sản phẩm là 1 vào cartCount
+      dispatch(updateCartOnServer());
+      message.success("Đã thêm sản phẩm vào giỏ hàng");
+    } catch (error) {
+      console.error("Lỗi khi đồng bộ giỏ hàng:", error);
+      alert("Thêm vào giỏ hàng thành công nhưng chưa đồng bộ lên server");
     }
 
-    dispatch(addToCart(itemToAdd));
     // alert("Đã thêm sản phẩm vào giỏ hàng!");
   };
 
@@ -419,13 +429,13 @@ const ProductDetailsComponent = ({ product }) => {
 
             {isWatch ? (
               <WrapperSizeOptions>
-                {watchDiameters.map((diameter, index) => (
+                {watchDiameters.map((d, index) => (
                   <WrapperSizeButton
                     key={index}
-                    className={selectedSize === diameter ? "selected" : ""}
-                    onClick={() => setSelectedSize(diameter)}
+                    className={selectedSize === d ? "selected" : ""}
+                    onClick={() => setSelectedSize(d)}
                   >
-                    {diameter}mm
+                    {d}mm
                   </WrapperSizeButton>
                 ))}
               </WrapperSizeOptions>

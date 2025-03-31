@@ -22,7 +22,8 @@ import {
 const persistConfig = {
   key: "root", // Key để lưu trữ trong localStorage
   storage, // Sử dụng localStorage
-  whitelist: ["user", "profile", "product", "adminUsers"], // Chỉ lưu các reducer này
+  whitelist: ["cart", "profile", "product", "adminUsers"], // Chỉ lưu các reducer này
+  blacklist: ["user"],
 };
 
 // Kết hợp các reducer

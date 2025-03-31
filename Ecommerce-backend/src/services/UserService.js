@@ -10,7 +10,11 @@ const mongoose = require("mongoose");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
+
+//UPDATE GIỎ HÀNG_____________________________________________________
+
 //_______________________________________________ĐĂNG KÝ TÀI KHOẢN
+
 const createUser = async ({
   username,
   email,

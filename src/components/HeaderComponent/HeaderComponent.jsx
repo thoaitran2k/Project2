@@ -24,6 +24,7 @@ import axios from "axios";
 import Loading from "../LoadingComponent/Loading";
 import { setLoading } from "../../redux/slices/loadingSlice";
 import CartIcon from "./CartIcon";
+import { persistor } from "../../redux/store";
 
 const { useBreakpoint } = Grid;
 
@@ -164,7 +165,7 @@ const HeaderComponent = ({
     alert("Bạn đã hết phiên đăng nhập");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    dispatch(logoutUser()); // Dispatch logout action
+    dispatch(logoutUser());
     navigate("/sign-in", { replace: true });
   };
 
@@ -182,7 +183,6 @@ const HeaderComponent = ({
 
       const decodedToken = JSON.parse(atob(token.split(".")[1]));
       const userId = decodedToken.id;
-      console.log(`📡 Gửi request lấy thông tin user: ${userId}`);
 
       // Gửi yêu cầu API để lấy thông tin người dùng
       const response = await axios.get(
@@ -223,6 +223,7 @@ const HeaderComponent = ({
 
       // Lưu thông tin người dùng vào Redux & localStorage
       dispatch(setUser(newUserData));
+
       localStorage.setItem("user", JSON.stringify(newUserData));
     } catch (error) {
       console.error("Lỗi khi lấy thông tin người dùng:", error);
@@ -231,42 +232,38 @@ const HeaderComponent = ({
   };
 
   // Hàm logout
-  const handleLogout = () => {
-    swal({
+  const handleLogout = async () => {
+    const willLogout = await swal({
       title: "Bạn muốn đăng xuất?",
-      icon: "",
+      icon: "warning",
       buttons: {
         cancel: "Hủy",
         confirm: {
           text: "OK",
           value: true,
-          visible: true,
-          className: "",
-          closeModal: true,
         },
       },
       dangerMode: true,
-    }).then((willLogout) => {
-      if (willLogout) {
-        dispatch(setLoggingOut(true)); // Bật trạng thái loading
-        setTimeout(() => {
-          localStorage.clear();
-          dispatch(logoutUser());
-          dispatch(setLoggingOut(false));
-          navigate("/sign-in", { replace: true });
-        }, 1500);
-      }
     });
+
+    if (willLogout) {
+      try {
+        // Chỉ xóa thông tin user, không xóa cart
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+
+        await dispatch(logoutUser()).unwrap();
+        await persistor.purge();
+        navigate("/sign-in", { replace: true });
+      } catch (error) {
+        console.error("Lỗi khi đăng xuất:", error);
+      }
+    }
   };
 
   useEffect(() => {
-    // console.log("🔥 useEffect đang chạy...");
-    // console.log("isAuthenticated:", isAuthenticated);
-    // console.log("isUserDetailsFetched:", isUserDetailsFetched);
-    // console.log("accessToken:", localStorage.getItem("accessToken"));
-
     if (!isUserDetailsFetched && localStorage.getItem("accessToken")) {
-      // console.log("🚀 Gọi fetchUserDetails() từ useEffect");
       fetchUserDetails();
       setIsUserDetailsFetched(true);
     }

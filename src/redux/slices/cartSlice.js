@@ -1,5 +1,32 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { logoutUser } from "./userSlice";
+import axios from "axios";
+
+export const updateCartOnServer = createAsyncThunk(
+  "cart/updateCartOnServer",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const user = getState().user;
+      if (!user) throw new Error("User chưa đăng nhập");
+
+      const { cartItems } = getState().cart;
+
+      console.log("Dữ liệu trả về", cartItems);
+      const response = await axios.post(
+        "http://localhost:3002/api/cart/update",
+        {
+          userId: user._id,
+          cartItems,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Lỗi khi cập nhật giỏ hàng:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 const cartSlice = createSlice({
   name: "cart",
@@ -8,6 +35,53 @@ const cartSlice = createSlice({
     cartCount: 0,
   },
   reducers: {
+    setCartFromServer: (state, action) => {
+      console.log("🟢 Reducer nhận action:", action); // Xem toàn bộ action payload
+
+      const { cartItems = [], cartCount = 0 } = action.payload;
+
+      console.log("🔹 Dữ liệu cartItems trước khi vào reducer:", cartItems);
+
+      if (!Array.isArray(cartItems)) {
+        console.error("❌ cartItems không phải là mảng!", cartItems);
+        state.cartItems = [];
+        state.cartCount = 0;
+        return;
+      }
+
+      const validatedItems = cartItems
+        .map((item) => {
+          if (!item.product || !item.product._id) {
+            console.warn("⚠️ Bỏ qua item không hợp lệ:", item);
+            return null;
+          }
+          return {
+            ...item,
+            product: {
+              _id: item.product._id,
+              name: item.product.name || "Không có tên",
+              price: item.product.price || 0,
+              image: item.product.image || "",
+              type: item.product.type || "unknown",
+            },
+            id: item.id || `${item.product._id}-${Date.now()}`,
+            quantity: item.quantity || 1,
+          };
+        })
+        .filter(Boolean);
+
+      console.log(
+        "✅ Số lượng item hợp lệ sau khi filter:",
+        validatedItems.length
+      );
+
+      state.cartItems = validatedItems;
+      state.cartCount = validatedItems.reduce(
+        (sum, item) => sum + (item.quantity || 1),
+        0
+      );
+    },
+
     addToCart: (state, action) => {
       if (!action.payload?.product) {
         console.error("❌ Lỗi: payload không hợp lệ", action.payload);
@@ -95,10 +169,14 @@ const cartSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    builder.addCase(logoutUser.fulfilled, (state) => {
-      state.cartItems = [];
-      state.cartCount = 0;
-    });
+    builder
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.cartItems = [];
+        state.cartCount = 0;
+      })
+      .addCase(updateCartOnServer.fulfilled, () => {
+        console.log("✅ Giỏ hàng đã được cập nhật lên server");
+      });
   },
 });
 
@@ -106,6 +184,7 @@ export const {
   addToCart,
   removeFromCart,
   updateCartItemAmount,
+  setCartFromServer,
   clearCart,
   resetCart,
 } = cartSlice.actions;

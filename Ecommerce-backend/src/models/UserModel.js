@@ -38,6 +38,24 @@ const userSchema = new mongoose.Schema(
     isBlocked: { type: Boolean, default: false },
     failedAttempts: { type: Number, default: 0 },
     blockedUntil: { type: Date, default: null },
+    orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
+    cart: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        size: String,
+        color: String,
+        diameter: String,
+      },
+    ],
   },
   {
     timestamps: true,

@@ -16,6 +16,51 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^0\d{9,10}$/;
 const { uploadImageToCloudinary } = require("../services/uploadService");
 
+//_______________________________________UPDATE GIỎ HÀNG
+// controllers/UserController.js
+const updateCart = async (req, res) => {
+  try {
+    const { userId, cartItems } = req.body;
+
+    if (!userId || !Array.isArray(cartItems)) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ" });
+    }
+
+    const normalizedCart = cartItems.map((item) => ({
+      product: item.product?._id,
+      quantity: item.quantity,
+      ...(item.size && { size: item.size }),
+      ...(item.color && { color: item.color }),
+      ...(item.diameter && { diameter: item.diameter }),
+    }));
+
+    // console.log("📌 Giỏ hàng chuẩn hóa:", normalizedCart);
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { cart: normalizedCart },
+      { new: true } // Trả về dữ liệu mới sau update
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+
+    res.json({
+      success: true,
+      message: "Cập nhật giỏ hàng thành công",
+      cart: user.cart,
+    });
+  } catch (error) {
+    console.error("❌ Lỗi khi cập nhật giỏ hàng:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi cập nhật giỏ hàng",
+      error: error.message,
+    });
+  }
+};
+
 //___________________________________________MỞ - KHÓA TÀI KHOẢN NGƯỜI DÙNG
 const blockUser = async (req, res) => {
   try {
@@ -520,7 +565,7 @@ const refreshToken = async (req, res) => {
 const uploadAvatar = async (req, res) => {
   try {
     const file = req.file; // File được gửi từ FE
-    console.log("File nhận được từ frontend:", req.file);
+
     if (!file) {
       return res.status(400).json({ message: "Không có file được tải lên!" });
     }
@@ -711,4 +756,5 @@ module.exports = {
   getInfoAddress,
   blockUser,
   sendNotificationBlockUserMail,
+  updateCart,
 };

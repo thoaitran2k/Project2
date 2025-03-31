@@ -16,6 +16,8 @@ import * as message from "../../components/Message/Message";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../../redux/slices/loadingSlice";
+import { fetchCart } from "../../redux/slices/userSlice";
+import { setCartFromServer } from "../../redux/slices/cartSlice";
 import {
   loginUser,
   forgotPasswordUser,
@@ -59,8 +61,6 @@ export default function SignInPage() {
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {}, []);
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
@@ -132,7 +132,8 @@ export default function SignInPage() {
       return;
     }
 
-    dispatch(setLoading(true)); // Bật trạng thái loading
+    dispatch(setLoading(true));
+    // Bật trạng thái loading
 
     try {
       const response = await loginUser(formData.email, formData.password);
@@ -148,16 +149,56 @@ export default function SignInPage() {
 
         const userDetails = await getUserDetails(userId, accessToken);
         console.log("Thông tin người dùng:", userDetails);
+        message.success("Đăng nhập thành công!");
 
         setIsLogin(true);
         setIsAuthenticated(true);
 
-        message.success("Đăng nhập thành công!");
+        if (userDetails._id) {
+          try {
+            const cartResponse = await dispatch(
+              fetchCart(userDetails._id)
+            ).unwrap();
 
-        //dispatch(setUser(user));
+            // Thêm validate trước khi dispatch
+            if (!cartResponse || !Array.isArray(cartResponse.cartItems)) {
+              throw new Error("Dữ liệu giỏ hàng không hợp lệ");
+            }
+
+            console.log("cartResponse", cartResponse);
+
+            cartResponse.cartItems.forEach((item) => {
+              console.log("Item:", item);
+              if (!item.product) {
+                console.error("Lỗi: item.product bị undefined", item);
+              } else {
+                console.log("Product type:", item.product.type); // Kiểm tra giá trị type
+              }
+            });
+
+            console.log("🔹 Trước khi dispatch setCartFromServer:", {
+              cartItems: cartResponse.cartItems,
+              cartCount:
+                cartResponse.cartCount || cartResponse.cartItems.length,
+            });
+
+            dispatch(
+              setCartFromServer({
+                cartItems: cartResponse.cartItems,
+                cartCount:
+                  cartResponse.cartCount || cartResponse.cartItems.length,
+              })
+            );
+          } catch (error) {
+            console.error("Lỗi khi xử lý giỏ hàng:", error);
+            // Fallback: set giỏ hàng trống
+            dispatch(setCartFromServer({ cartItems: [], cartCount: 0 }));
+          }
+        }
+        //dispatch(fetchCart(userDetails._id));
         setTimeout(() => {
-          dispatch(setLoading(false)); // Tắt trạng thái loading
-          // navigate("/home");
+          dispatch(setLoading(false));
+          navigate("/home");
           const redirectPath = location.state?.from || "/home";
           navigate(redirectPath);
         }, 1500); // Chờ 500ms rồi chuyển trang
@@ -167,7 +208,8 @@ export default function SignInPage() {
     } finally {
       setTimeout(() => {
         dispatch(setLoading(false)); // Tắt trạng thái loading
-      }, 1500); // Đảm bảo loading luôn được tắt, kể cả khi lỗi
+      }, 1500);
+      // Đảm bảo loading luôn được tắt, kể cả khi lỗi
     }
   };
 

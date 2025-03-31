@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import axios from "axios";
 import { updateAddress } from "../../Services/UserService";
-import resetCart from "./cartSlice";
+import { resetCart } from "./cartSlice";
 
 // ✅ Lấy user từ localStorage nếu có
 const getUserFromLocalStorage = () => {
@@ -12,10 +12,41 @@ const getUserFromLocalStorage = () => {
 export const logoutUser = createAsyncThunk(
   "user/logout",
   async (_, { dispatch }) => {
-    localStorage.removeItem("user");
-    // Dispatch các action cần thiết trước khi logout
-    dispatch(resetCart());
-    return true;
+    try {
+      const savedCart = localStorage.getItem("cart"); // 🔹 Lưu giỏ hàng trước khi reset
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      dispatch(setUser(null));
+      dispatch(resetCart()); // 🔹 Không dùng clearCart() để giữ localStorage
+
+      if (savedCart) localStorage.setItem("savedCart", savedCart); // 🔹 Lưu lại giỏ hàng
+
+      return true;
+    } catch (error) {
+      throw new Error("Logout failed!");
+    }
+  }
+);
+
+export const fetchCart = createAsyncThunk(
+  "user/fetchCart",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3002/api/cart/${userId}`
+      );
+
+      console.log("response", response);
+      // Đảm bảo trả về đúng định dạng mà cartSlice mong đợi
+      return {
+        cartItems: response.data?.cartItems || [],
+        cartCount: response.data?.cartItems?.length || 0,
+      };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Lỗi lấy giỏ hàng!");
+    }
   }
 );
 
@@ -107,10 +138,18 @@ const userSlice = createSlice({
     setUser: (state, action) => {
       const userData = action.payload;
 
+      if (!action.payload) {
+        // Khi logout (payload = null)
+        return initialState; // Reset user state nhưng không ảnh hưởng cart
+      }
+
       if (!userData) {
-        console.error("Payload không hợp lệ!");
+        Object.assign(state, initialState);
+        localStorage.removeItem("user");
+
         return;
       }
+
       state.address = Array.isArray(userData.address)
         ? userData.address
         : state.address;
@@ -247,6 +286,8 @@ const userSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      .addCase(fetchCart.fulfilled, (state, action) => {})
+
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         const {
           username,

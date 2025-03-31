@@ -12,11 +12,11 @@ const updateUsers = async () => {
     );
 
     const result = await User.updateMany(
-      {},
-      { $set: { failedAttempts: 0, blockedUntil: null } }
+      { cart: { $exists: false } }, // Chỉ cập nhật những user chưa có trường cart
+      { $set: { cart: [] } } // Thêm trường cart với giá trị mặc định là mảng rỗng
     );
-    console.log(`✅ Đã cập nhật ${result.modifiedCount} user!`);
 
+    console.log(`✅ Đã cập nhật ${result.modifiedCount} user!`);
     mongoose.connection.close();
   } catch (error) {
     console.error("❌ Lỗi khi cập nhật:", error);
