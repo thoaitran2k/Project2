@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import {
+  ArrowRightOutlined,
+  DownOutlined,
+  PhoneOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
 
 const NavbarComponent = ({
   isOpen,
@@ -61,7 +66,7 @@ const NavbarComponent = ({
       <MainContainer>
         <NavContainer>
           {mainCategories.map((category, index) => (
-            <CategorySection key={index}>
+            <div key={index}>
               <CategoryHeader
                 onClick={() => {
                   if (category.items.length > 0) {
@@ -76,27 +81,37 @@ const NavbarComponent = ({
                 {category.items.length > 0 && (
                   <ArrowIcon
                     $expanded={selectedCategory?.title === category.title}
-                  />
+                  >
+                    {selectedCategory?.title === category.title ? (
+                      <DownOutlined />
+                    ) : (
+                      <RightOutlined />
+                    )}
+                  </ArrowIcon>
                 )}
               </CategoryHeader>
-            </CategorySection>
+
+              {selectedCategory?.title === category.title && (
+                <SubItemsContainer>
+                  {selectedCategory.items.map((item, idx) => (
+                    <SubItem key={idx} onClick={() => handleNavigate(item)}>
+                      {item}
+                    </SubItem>
+                  ))}
+                </SubItemsContainer>
+              )}
+            </div>
           ))}
         </NavContainer>
-
-        {selectedCategory && selectedCategory.items.length > 0 && (
-          <SubMenuContainer>
-            {selectedCategory.items.map((item, idx) => (
-              <SubItem key={idx} onClick={() => handleNavigate(item)}>
-                {item}
-              </SubItem>
-            ))}
-          </SubMenuContainer>
-        )}
       </MainContainer>
+
       {isOpen && (
         <SupportInfo>
-          <SupportTitle>Chúng tôi có thể giúp gì cho bạn?</SupportTitle>
-          <PhoneNumber>+84 0794330648</PhoneNumber>
+          <SupportTitle>Hỗ trợ khách hàng</SupportTitle>
+          <ContactInfo>
+            <PhoneIcon />
+            <span>+84 0794330648</span>
+          </ContactInfo>
         </SupportInfo>
       )}
     </Wrapper>
@@ -121,17 +136,6 @@ const MainContainer = styled.div`
 const NavContainer = styled.div`
   width: 280px;
   border-right: 1px solid #e8e8e8;
-`;
-
-const SubMenuContainer = styled.div`
-  width: 200px;
-  padding: 0 20px;
-  border-left: 1px solid #e8e8e8;
-`;
-
-const CategorySection = styled.div`
-  position: relative;
-  border-bottom: 1px solid #e8e8e8;
 `;
 
 const CategoryHeader = styled.div`
@@ -182,7 +186,20 @@ const SupportTitle = styled.div`
   font-weight: bold;
 `;
 
-const PhoneNumber = styled.div`
-  font-size: 15px;
+const SubItemsContainer = styled.div`
+  padding-left: 16px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+`;
+
+const ContactInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
   color: #666;
+`;
+
+const PhoneIcon = styled(PhoneOutlined)`
+  font-size: 14px;
 `;
