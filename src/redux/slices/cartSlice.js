@@ -12,7 +12,7 @@ export const updateCartOnServer = createAsyncThunk(
       const { cartItems } = getState().cart;
 
       console.log("Dữ liệu trả về", cartItems);
-      const response = await axios.post(
+      const response = await axios.put(
         "http://localhost:3002/api/cart/update",
         {
           userId: user._id,

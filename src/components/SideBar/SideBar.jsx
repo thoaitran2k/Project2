@@ -178,16 +178,12 @@ const SideBar = ({
     const matchedTypes = new Set(filteredProducts.map((p) => p.type));
     return type.filter((item) => matchedTypes.has(item.value));
   }, [searchTerm, type, products, isTypeProductPage, selectedTypeFromUrl]);
-  console.log("filteredType4", filteredType);
 
   const handleCategoryChange = useCallback(
     (values) => {
-      console.log("filteredType1", filteredType);
-
       // Chỉ cập nhật nếu giá trị mới khác giá trị cũ
       if (JSON.stringify(selectedTypes) !== JSON.stringify(values)) {
         setSelectedTypes(values);
-        console.log("filteredType2", filteredType);
 
         const newSearchParams = new URLSearchParams(searchParams);
         if (values.length === 0) {
@@ -197,8 +193,6 @@ const SideBar = ({
         }
         setSearchParams(newSearchParams, { replace: true });
       }
-
-      console.log("filteredType3", filteredType);
     },
 
     [selectedTypes, searchParams, setSearchParams]

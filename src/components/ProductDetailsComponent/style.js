@@ -93,8 +93,11 @@ export const StyledButton = styled(ButtonComponent)`
 
     &:hover {
       background: ${(props) =>
-        props.primary ? "rgb(202, 10, 58)" : "rgb(9, 9, 65)"};
-      color: ${(props) => (props.primary ? "white" : "white")};
+        props.primary
+          ? "rgb(247, 246, 246) !important"
+          : "rgb(9, 9, 65) !important"};
+      color: ${(props) =>
+        props.primary ? "red !important" : "white !important"};
     }
   }
 `;

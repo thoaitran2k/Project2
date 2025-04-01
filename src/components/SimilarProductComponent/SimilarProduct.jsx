@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Card, Rate, Button, Space, Typography, Carousel } from "antd";
+import { CarouselStyled } from "./style";
 import {
   HeartOutlined,
   LeftOutlined,
@@ -12,30 +13,30 @@ import { useDispatch, useSelector } from "react-redux";
 
 const { Text, Title } = Typography;
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ productSimilar }) => {
   return (
     <Card
       hoverable
       style={{ width: 320, margin: "10px", background: "transparent" }}
-      cover={<img alt={product.name} src={product.image} />}
+      cover={<img alt={productSimilar.name} src={productSimilar.image} />}
     >
-      <Title level={5}>{product.name}</Title>
-      <Rate disabled defaultValue={product.rating} />
-      <Text type="secondary">({product.reviews} reviews)</Text>
+      <Title level={5}>{productSimilar.name}</Title>
+      <Rate disabled defaultValue={productSimilar.rating} />
+      <Text type="secondary">({productSimilar.reviews} reviews)</Text>
       <div style={{ marginTop: "10px" }}>
-        {product.oldPrice && (
+        {productSimilar.oldPrice && (
           <Text delete style={{ marginRight: "10px" }}>
-            {product.oldPrice}
+            {productSimilar.oldPrice}
           </Text>
         )}
-        <Text strong>{product.price.toLocaleString("vi-VN")} VNĐ</Text>
+        <Text strong>{productSimilar.price.toLocaleString("vi-VN")} VNĐ</Text>
       </div>
-      {product.discount && (
+      {productSimilar.discount && (
         <Text type="danger" style={{ display: "block", marginTop: "5px" }}>
-          {product.discount}
+          {productSimilar.discount}
         </Text>
       )}
-      {product.prime && (
+      {productSimilar.prime && (
         <Text type="success" style={{ display: "block", marginTop: "5px" }}>
           ✔ Prime
         </Text>
@@ -48,14 +49,11 @@ const ProductCard = ({ product }) => {
   );
 };
 
-const ProductList = () => {
+const ProductList = ({ productType }) => {
   const carouselRef = useRef(null);
   const dispatch = useDispatch();
-  const { products } = useSelector((state) => state.product);
 
-  useEffect(() => {
-    dispatch(getAllProduct());
-  }, [dispatch]);
+  const { products } = useSelector((state) => state.product);
 
   const handlePrev = () => {
     carouselRef.current?.prev();
@@ -66,9 +64,13 @@ const ProductList = () => {
   };
 
   // Thêm kiểm tra products và products.data
-  if (!products || !products.data || products.data.length === 0) {
+  if (!products || products.length === 0) {
     return <div style={{ padding: "20px" }}>Không có sản phẩm tương tự</div>;
   }
+
+  const productSimilars = products.filter(
+    (product) => product.type === productType
+  );
 
   return (
     <div
@@ -95,21 +97,26 @@ const ProductList = () => {
         onClick={handlePrev}
       />
 
-      <Carousel
+      <CarouselStyled
         ref={carouselRef}
         dots={false}
-        slidesToShow={Math.min(4, products.data.length)}
+        slidesToShow={Math.min(4, productSimilars?.length || 0)}
         slidesToScroll={1}
-        infinite={products.data.length > 4}
+        infinite={productSimilars?.length > 4}
+        arrows={productSimilars?.length >= 4} // Chỉ hiện mũi tên khi có đủ 4 sản phẩm
+        variableWidth={true} // Tắt nếu bạn muốn các item có width bằng nhau
+        // centerPadding="40px" // Khoảng cách padding khi center mode
+        className="custom-carousel" // Thêm class riêng
       >
-        {products.data.map((product) => (
-          <div key={product._id}>
-            {" "}
-            {/* Sử dụng product._id thay vì product.id */}
-            <ProductCard product={product} />
+        {productSimilars?.map((productSimilar) => (
+          <div
+            key={productSimilar._id}
+            className="carousel-item" // Thêm class cho item
+          >
+            <ProductCard productSimilar={productSimilar} />
           </div>
         ))}
-      </Carousel>
+      </CarouselStyled>
 
       <Button
         shape="circle"

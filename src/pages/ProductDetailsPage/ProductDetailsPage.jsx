@@ -28,6 +28,8 @@ const ProductDetailsPage = () => {
     (state) => state.product
   );
 
+  const productType = productDetail?.data.type || "Không xác định";
+
   const productId = id.match(/[a-f0-9]{24}$/)?.[0];
 
   const location = useLocation();
@@ -81,7 +83,7 @@ const ProductDetailsPage = () => {
             <p>Không tìm thấy sản phẩm</p>
           )}
 
-          <ProductList />
+          <ProductList productType={productType} />
 
           <ReviewComponent />
         </MainContent>

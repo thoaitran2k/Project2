@@ -9,6 +9,8 @@ import { getProductType } from "../../Services/ProductService";
 import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
 import { useLocation, useNavigate } from "react-router";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setProducts } from "../../redux/slices/productSlice";
 
 // Mapping danh mục không dấu sang có dấu
 const categoryMapping = {
@@ -33,6 +35,7 @@ const TypeProductPage = () => {
   const { type } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [selectedTypes, setSelectedTypes] = useState([]);
 
   // Lấy giá trị lọc từ URL
@@ -78,6 +81,14 @@ const TypeProductPage = () => {
     queryKey: ["products", formattedType, priceRange],
     queryFn: () => getProductType({ type: formattedType }),
   });
+
+  console.log("products", products);
+
+  useEffect(() => {
+    if (products) {
+      dispatch(setProducts(products)); // Cập nhật Redux mỗi khi dữ liệu thay đổi
+    }
+  }, [products, dispatch]);
 
   // Xử lý khi thay đổi giá từ SideBar
   const handlePriceFilter = ({ min, max }) => {
@@ -129,7 +140,7 @@ const TypeProductPage = () => {
 
   // Reset bộ lọc
   const resetFilters = () => {
-    setPriceRange({ min: 0, max: Infinity }); // Reset input giá về 0
+    setPriceRange({ min: 0, max: Infinity });
     setSelectedTypes([]);
     setSelectedRatings([]);
 

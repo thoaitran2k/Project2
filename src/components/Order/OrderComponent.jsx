@@ -78,12 +78,19 @@ const OrderComponent = () => {
   };
 
   const hanleRemoveAllCartItems = () => {
-    if (selectedProducts.length > 0) {
-      dispatch(clearCart());
-
-      setSelectedProducts([]);
-    } else {
+    if (selectedProducts.length === 0) {
       message.warning("Bạn chưa chọn sản phẩm nào!");
+      return;
+    }
+
+    if (isAllChecked) {
+      dispatch(clearCart()); // Xóa toàn bộ giỏ hàng nếu đã chọn tất cả
+    } else {
+      selectedProducts.forEach((itemId) => {
+        dispatch(removeFromCart(itemId)); // Xóa từng sản phẩm đã tích
+      });
+
+      setSelectedProducts([]); // Reset danh sách chọn
     }
   };
 

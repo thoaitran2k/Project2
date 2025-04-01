@@ -3,7 +3,7 @@ const userController = require("../controllers/UserController");
 const router = express.Router();
 const User = require("../models/UserModel"); // Import đúng
 
-router.post("/update", userController.updateCart);
+router.put("/update", userController.updateCart);
 
 router.get("/:userId", async (req, res) => {
   try {

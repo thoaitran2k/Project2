@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { setUser } from "./redux/slices/userSlice";
 import { startTokenRefresh, stopTokenRefresh } from "./utils/TokenManager";
 import ProductDetailsComponent from "./components/ProductDetailsComponent/ProductDetailsComponent";
+import { addToCart, updateCartOnServer } from "../src/redux/slices/cartSlice";
 
 function App() {
   const dispatch = useDispatch();
@@ -31,6 +32,28 @@ function App() {
     }
     setIsUserLoaded(true);
   }, [dispatch]);
+
+  useEffect(() => {
+    if (user.isAuthenticated) {
+      // Kiểm tra nếu có giỏ hàng tạm thời trong localStorage
+      const tempCartItem = localStorage.getItem("tempCartItem");
+      const item = JSON.parse(tempCartItem);
+      console.log("Temp cart item:", item);
+      console.log("Item type:", item?.product?.type);
+      if (tempCartItem) {
+        const item = JSON.parse(tempCartItem);
+
+        // Dispatch action thêm sản phẩm vào giỏ hàng
+        dispatch(addToCart(item));
+
+        // Đồng bộ giỏ hàng lên server
+        dispatch(updateCartOnServer());
+
+        // Xóa giỏ hàng tạm thời sau khi đã thêm
+        localStorage.removeItem("tempCartItem");
+      }
+    }
+  }, [user.isAuthenticated, dispatch]);
 
   useEffect(() => {
     if (isUserLoaded) {
