@@ -36,6 +36,7 @@ import { setLoading } from "../../redux/slices/loadingSlice";
 import CartIcon from "./CartIcon";
 import { persistor } from "../../redux/store";
 import styled from "styled-components";
+import { color } from "framer-motion";
 
 const { useBreakpoint } = Grid;
 
@@ -84,8 +85,8 @@ const HeaderComponent = ({
   const isLoading = useSelector((state) => state.loading.isLoading);
   const cartCount = useSelector((state) => state.cart.cartCount);
   const cartItems = useSelector((state) => state.cart.cartItems);
-
   const [showMessage, setShowMessage] = useState(false);
+  const [showMessageCart, setShowMessageCart] = useState(false);
   const {
     _id,
     isLoggingOut,
@@ -142,18 +143,38 @@ const HeaderComponent = ({
     }
   }, []);
 
-  const CartIcon = ({ count, onClick }) => (
-    <Badge count={count || null}>
-      <ShoppingCartOutlined
-        style={{
-          fontSize: "22px",
-          color: "black",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-        }}
-        onClick={onClick}
-      />
-    </Badge>
+  const CartIcon = ({ count, onClick, isAuthenticated }) => (
+    <CartStyledHover>
+      <Badge count={isAuthenticated ? count || null : null}>
+        <CartIconStyled
+          onClick={onClick}
+          onMouseEnter={() => !isAuthenticated && setShowMessageCart(true)}
+          onMouseLeave={() => setShowMessageCart(false)}
+        />
+      </Badge>
+
+      {!isAuthenticated && showMessageCart && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            marginTop: "8px",
+            backgroundColor: "#fff",
+            color: "#ff4d4f",
+            fontSize: "12px",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            whiteSpace: "nowrap",
+            zIndex: 10,
+          }}
+        >
+          Đăng nhập để xem giỏ hàng
+        </div>
+      )}
+    </CartStyledHover>
   );
 
   const getDefaultAvatar = (gender) =>
@@ -387,7 +408,7 @@ const HeaderComponent = ({
                 </UserAvatar>
               </Dropdown>
             ) : (
-              <div
+              <UserNoLogin
                 style={{
                   position: "relative",
                   fontSize: 17,
@@ -404,24 +425,35 @@ const HeaderComponent = ({
                   <div
                     style={{
                       position: "absolute",
-                      top: "100%", // Đặt thông báo phía dưới phần tử chính
-                      left: 0,
-                      marginTop: "5px",
-                      color: "red",
-                      fontSize: "14px",
+                      top: "100%",
+                      left: "35%",
+                      transform: "translateX(-50%)",
+                      marginTop: "8px",
+                      backgroundColor: "#fff",
+                      color: "#ff4d4f",
+                      fontSize: "12px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      whiteSpace: "nowrap",
+                      //zIndex: 10,
                     }}
                   >
                     Bạn chưa đăng nhập
                   </div>
                 )}
-              </div>
+              </UserNoLogin>
             )}
           </Col>
 
           {/* Shopping cart (nếu không bị ẩn) */}
           {!isHiddenShoppingCard && (
             <Col>
-              <CartIcon count={cartItems.length} onClick={handleToOrder} />
+              <CartIcon
+                count={cartItems.length}
+                onClick={handleToOrder}
+                isAuthenticated={isAuthenticated}
+              />
             </Col>
           )}
         </WrapperHeader>
@@ -431,3 +463,29 @@ const HeaderComponent = ({
 };
 
 export default HeaderComponent;
+
+const UserNoLogin = styled.div`
+  &:hover {
+    text-decoration: underline;
+    color: #92c6ff;
+  }
+`;
+
+const CartIconStyled = styled(ShoppingCartOutlined)`
+  font-size: 22px;
+  color: black;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px;
+  border-radius: 50%;
+
+  &:hover {
+    text-decoration: underline;
+    background-color: #92c6ff;
+  }
+`;
+
+const CartStyledHover = styled.div`
+  position: relative;
+  display: inline-block;
+`;

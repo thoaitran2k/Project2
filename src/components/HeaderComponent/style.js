@@ -54,19 +54,19 @@ export const StyledLink = styled(Link)`
 
   &:hover {
     text-decoration: underline;
+    color: #92c6ff !important;
   }
 `;
 
 export const UserAvatar = styled.div`
   justify-content: left;
-  gap: 2px;
   align-items: center;
-
   cursor: pointer;
   padding: 2px;
 `;
 
 export const UserName = styled.span`
+  text-align: center;
   font-size: 15px;
   color: red;
   font-weight: 400;
