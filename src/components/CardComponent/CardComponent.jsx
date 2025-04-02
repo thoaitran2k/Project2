@@ -10,7 +10,8 @@ import { Link } from "react-router-dom";
 import Loading from "../LoadingComponent/Loading";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../../redux/slices/loadingSlice";
-
+import { UserSearch } from "lucide-react";
+import { useSearch } from "../Layout/SearchContext";
 const columns = 4;
 
 const StarRating = ({ rating }) => {
@@ -53,6 +54,8 @@ const CardComponent = ({ products, totalProducts }) => {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
 
+  const { isSearchOpen, toggleSearch } = useSearch();
+
   const createSlug = (name, id) => {
     return (
       name
@@ -72,6 +75,9 @@ const CardComponent = ({ products, totalProducts }) => {
     setTimeout(() => {
       dispatch(setLoading(false));
     }, 1000);
+    if (isSearchOpen) {
+      toggleSearch();
+    }
   };
 
   return (

@@ -4,26 +4,62 @@ import {
   Routes,
   Route,
   useLocation,
-  ScrollRestoration,
+  useNavigate,
+  Navigate,
 } from "react-router-dom";
-
 import { useDispatch, useSelector } from "react-redux";
 import { routes } from "./routes";
-import HeaderComponent from "./components/HeaderComponent/HeaderComponent";
-import Layout from "./components/Layout/Layout";
-import FooterComponent from "./components/FooterComponent/FooterComponent";
-import styled from "styled-components";
-import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
 import { setUser } from "./redux/slices/userSlice";
 import { startTokenRefresh, stopTokenRefresh } from "./utils/TokenManager";
-import ProductDetailsComponent from "./components/ProductDetailsComponent/ProductDetailsComponent";
 import { addToCart, updateCartOnServer } from "../src/redux/slices/cartSlice";
+import styled from "styled-components";
+import ProductDetailsComponent from "./components/ProductDetailsComponent/ProductDetailsComponent";
+import PageTransitionEffect from "./Effect/PageTransitionEffect";
+import Layout from "./components/Layout/Layout";
+import { AnimatePresence, motion } from "framer-motion";
+import { SearchProvider, useSearch } from "./components/Layout/SearchContext";
+import SearchPage from "./pages/SearchPage/SearchPage";
+// import { SearchProvider } from "./components/Layout/SearchContext";
 
 function App() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isNavigatingFromApp, setIsNavigatingFromApp] = useState(false); // Để theo dõi điều hướng từ trong ứng dụng
+  const [targetPath, setTargetPath] = useState(null);
   const user = useSelector((state) => state.user);
   const [isUserLoaded, setIsUserLoaded] = useState(false);
+  const [applySlideDownEffect, setApplySlideDownEffect] = useState(false);
+  const { isSearchOpen } = useSearch();
+
+  // Kiểm tra nếu điều hướng từ trong ứng dụng (không phải từ Back của trình duyệt)
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsNavigatingFromApp(false); // Nếu là sự kiện popState (nút back), không cho hiệu ứng
+    };
+
+    // Lắng nghe sự kiện popstate (Back button)
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  // Áp dụng hiệu ứng khi chuyển trang qua ứng dụng
+  useEffect(() => {
+    if (targetPath && isNavigatingFromApp) {
+      setTimeout(() => {
+        navigate(targetPath); // Chuyển trang sau khi animation hoàn thành
+      }, 2000); // Đợi 2s để animation hoàn thành
+    }
+  }, [targetPath, navigate, isNavigatingFromApp]);
+
+  // Điều hướng qua ứng dụng
+  const handleNavigate = (path) => {
+    setTargetPath(path); // Bắt đầu hiệu ứng
+    setIsNavigatingFromApp(true); // Đánh dấu là đang điều hướng từ ứng dụng
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -35,21 +71,11 @@ function App() {
 
   useEffect(() => {
     if (user.isAuthenticated) {
-      // Kiểm tra nếu có giỏ hàng tạm thời trong localStorage
       const tempCartItem = localStorage.getItem("tempCartItem");
-      const item = JSON.parse(tempCartItem);
-      console.log("Temp cart item:", item);
-      console.log("Item type:", item?.product?.type);
       if (tempCartItem) {
         const item = JSON.parse(tempCartItem);
-
-        // Dispatch action thêm sản phẩm vào giỏ hàng
         dispatch(addToCart(item));
-
-        // Đồng bộ giỏ hàng lên server
         dispatch(updateCartOnServer());
-
-        // Xóa giỏ hàng tạm thời sau khi đã thêm
         localStorage.removeItem("tempCartItem");
       }
     }
@@ -67,41 +93,59 @@ function App() {
 
   return (
     <AppContainer>
-      <Router>
-        {/* <ScrollRestoration /> */}
-        <ScrollToTop />
-        <MainContent>
-          <Routes>
-            {routes.map((route) => {
-              const Page = route.page;
-              const ischeckAuth = !route.isPrivate || user.isAdmin; // Kiểm tra quyền admin
-              const LayoutComponent = route.isShowHeader
-                ? Layout
-                : React.Fragment;
-              return (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={
-                    ischeckAuth ? (
-                      <LayoutComponent>
-                        <Page />
-                      </LayoutComponent>
-                    ) : (
-                      <Navigate to="/home" /> // Chuyển hướng nếu không có quyền
-                    )
-                  }
-                />
-              );
-            })}
-            <Route
-              path="/product-details/:id"
-              element={<ProductDetailsComponent />}
-            />
-          </Routes>
-        </MainContent>
-        {/* <FooterComponent /> */}
-      </Router>
+      <MainContent>
+        <PageTransitionEffect targetPath={targetPath} />
+        <Routes>
+          {routes.map((route) => {
+            const Page = route.page;
+            const ischeckAuth = !route.isPrivate || user.isAdmin;
+            const LayoutComponent = route.isShowHeader
+              ? Layout
+              : React.Fragment;
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  ischeckAuth ? (
+                    <LayoutComponent>
+                      <Page />
+                    </LayoutComponent>
+                  ) : (
+                    <Navigate to="/home" />
+                  )
+                }
+              />
+            );
+          })}
+          <Route
+            path="/product-details/:id"
+            element={<ProductDetailsComponent />}
+          />
+        </Routes>
+        <AnimatePresence>
+          {isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              transition={{ duration: 0.8 }}
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "white",
+                zIndex: 1000,
+                overflowY: "auto",
+              }}
+            >
+              <SearchPage />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </MainContent>
     </AppContainer>
   );
 }
@@ -109,14 +153,20 @@ function App() {
 // Cuộn lên đầu khi đổi trang
 const ScrollToTop = () => {
   const location = useLocation();
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [location.pathname]);
 
   return null;
 };
 
-export default App;
+export default () => (
+  <Router>
+    {" "}
+    {/* Đảm bảo Router bao bọc App component */}
+    <App />
+  </Router>
+);
 
 // CSS
 const AppContainer = styled.div`

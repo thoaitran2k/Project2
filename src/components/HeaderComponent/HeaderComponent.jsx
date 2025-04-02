@@ -37,6 +37,7 @@ import CartIcon from "./CartIcon";
 import { persistor } from "../../redux/store";
 import styled from "styled-components";
 import { color } from "framer-motion";
+import { useSearch } from "../Layout/SearchContext";
 
 const { useBreakpoint } = Grid;
 
@@ -44,6 +45,16 @@ const Sidebar = () => {
   const [open, setOpen] = useState(false);
   const screens = useBreakpoint();
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [drawerWidth, setDrawerWidth] = useState(300); // State để điều chỉnh width
+
+  // Khi category được chọn, mở rộng drawer
+  useEffect(() => {
+    if (selectedCategory?.items?.length > 0) {
+      setDrawerWidth(600); // Gấp đôi width khi có danh mục con
+    } else {
+      setDrawerWidth(300); // Trở lại width ban đầu
+    }
+  }, [selectedCategory]);
 
   return (
     <div
@@ -54,20 +65,31 @@ const Sidebar = () => {
         <span style={{ fontSize: screens.xs ? "14px" : "16px" }}>Menu</span>
       </MenuTrigger>
 
-      {/* Dropdown Menu */}
-      {open && (
-        <DropdownMenu>
-          <CloseButton onClick={() => setOpen(false)}>
-            <CloseOutlined />
-          </CloseButton>
-          <NavbarComponent
-            onClose={() => setOpen(false)}
-            isOpen={open}
-            setSelectedCategory={setSelectedCategory}
-            selectedCategory={selectedCategory}
-          />
-        </DropdownMenu>
-      )}
+      <Drawer
+        title="Danh mục sản phẩm"
+        placement="left"
+        closable={true}
+        onClose={() => {
+          setOpen(false);
+          setSelectedCategory(null); // Reset khi đóng drawer
+        }}
+        open={open}
+        width={drawerWidth}
+        bodyStyle={{ padding: 0, display: "flex" }} // Thêm display flex
+        headerStyle={{
+          padding: "16px 24px",
+          borderBottom: "1px solid #f0f0f0",
+        }}
+      >
+        <NavbarComponent
+          onClose={() => setOpen(false)}
+          isOpen={open}
+          setSelectedCategory={setSelectedCategory}
+          selectedCategory={selectedCategory}
+          mode="vertical"
+          drawerWidth={drawerWidth} // Truyền width xuống NavbarComponent
+        />
+      </Drawer>
     </div>
   );
 };
@@ -100,6 +122,24 @@ const HeaderComponent = ({
     isAdmin,
   } = useSelector((state) => state.user);
 
+  const { toggleSearch } = useSearch();
+
+  const handleSearchClick = () => {
+    const searchParams = new URLSearchParams(location.search);
+
+    // if (searchParams.has("search")) {
+    //   searchParams.delete("search");
+    // } else {
+    //   searchParams.set("search", "true");
+    // }
+
+    // navigate(`${location.pathname}?${searchParams.toString()}`, {
+    //   replace: true,
+    // });
+
+    // Đảo trạng thái tìm kiếm ngay lập tức
+    toggleSearch();
+  };
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
     const token = localStorage.getItem("accessToken");
@@ -145,7 +185,10 @@ const HeaderComponent = ({
 
   const CartIcon = ({ count, onClick, isAuthenticated }) => (
     <CartStyledHover>
-      <Badge count={isAuthenticated ? count || null : null}>
+      <Badge
+        style={{ marginTop: 10, marginRight: 5 }}
+        count={isAuthenticated ? count || null : null}
+      >
         <CartIconStyled
           onClick={onClick}
           onMouseEnter={() => !isAuthenticated && setShowMessageCart(true)}
@@ -340,6 +383,34 @@ const HeaderComponent = ({
                 : "unset",
           }}
         >
+          {/* Menu (nếu không bị ẩn) */}
+          {!isHiddenMenu && (
+            <Col style={{ marginLeft: "20px" }} span={screens.xs ? 4 : 2}>
+              <Sidebar />
+            </Col>
+          )}
+
+          {!isHiddenSerach && !screens.xs && (
+            <Col span={2}>
+              {/* <StyledLink to="/search"> */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                }}
+                onClick={handleSearchClick}
+              >
+                <SearchOutlined style={{ fontSize: "17px" }} />
+                <div style={{ margin: "0 5px", fontSize: "17px" }}>
+                  Tìm kiếm
+                </div>
+              </div>
+              {/* </StyledLink> */}
+            </Col>
+          )}
+
           {/* Logo - luôn hiển thị */}
           <Col
             span={
@@ -366,28 +437,7 @@ const HeaderComponent = ({
             </div>
           </Col>
 
-          {/* Menu (nếu không bị ẩn) */}
-          {!isHiddenMenu && (
-            <Col span={screens.xs ? 4 : 2}>
-              <Sidebar />
-            </Col>
-          )}
-
           {/* Search (nếu không bị ẩn) */}
-          {!isHiddenSerach && !screens.xs && (
-            <Col span={2}>
-              <StyledLink to="/products">
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
-                >
-                  <SearchOutlined style={{ fontSize: "17px" }} />
-                  <div style={{ margin: "0 5px", fontSize: "17px" }}>
-                    Tìm kiếm
-                  </div>
-                </div>
-              </StyledLink>
-            </Col>
-          )}
 
           {/* User/Auth section */}
           <Col span={screens.xs ? 0 : 2}>
@@ -472,7 +522,7 @@ const UserNoLogin = styled.div`
 `;
 
 const CartIconStyled = styled(ShoppingCartOutlined)`
-  font-size: 22px;
+  font-size: 25px;
   color: black;
   cursor: pointer;
   transition: all 0.2s ease;

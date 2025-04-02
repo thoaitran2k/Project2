@@ -50,8 +50,8 @@ export const routes = [
   {
     path: "/search",
     page: SearchPage,
-    isShowHeader: true,
-    isShowFooter: true,
+    isShowHeader: false,
+    isShowFooter: false,
   },
   {
     path: "*",

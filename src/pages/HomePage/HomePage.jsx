@@ -140,8 +140,14 @@ const HomePage = () => {
               <Col span={24}>
                 <MediumBanner>
                   <BannerContent>
-                    <BannerTitle>FOr MeN</BannerTitle>
-                    <BannerButton>Shop Now</BannerButton>
+                    <BannerTitle>f0r MeN</BannerTitle>
+                    <BannerButton
+                      onClick={() => {
+                        navigate("/product-type/ao-nam");
+                      }}
+                    >
+                      Shop Now
+                    </BannerButton>
                   </BannerContent>
                 </MediumBanner>
               </Col>

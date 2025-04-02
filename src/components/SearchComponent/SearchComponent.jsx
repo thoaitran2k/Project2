@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Input, Button, Row, Col, List, Spin } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { setSearchTerm } from "../../redux/slices/productSlice";
 import axios from "axios";
 import { useNavigate } from "react-router";
+import { useSearch } from "../Layout/SearchContext";
 
 const { Search } = Input;
 
@@ -15,10 +16,13 @@ const SearchComponent = ({ setLimit = () => {} }) => {
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+  const isLoading = useSelector((state) => state.loading.isLoading);
   const [resetProducts, setResetProducts] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
 
   const navigate = useNavigate();
+
+  const { isSearchOpen, toggleSearch } = useSearch();
 
   useEffect(() => {
     // Lấy lịch sử tìm kiếm từ localStorage
@@ -36,7 +40,7 @@ const SearchComponent = ({ setLimit = () => {} }) => {
       const response = await axios.get(
         `${import.meta.env.VITE_URL_BACKEND}/product/get-all`
       );
-      setAllProducts(response.data || []);
+      setAllProducts(response.data || []); // Lưu tất cả sản phẩm vào state
       dispatch(setSearchTerm("")); // Đặt lại Redux về trạng thái ban đầu
     } catch (error) {
       console.error("Lỗi lấy danh sách sản phẩm:", error);
@@ -92,54 +96,39 @@ const SearchComponent = ({ setLimit = () => {} }) => {
   const handleClearSearch = () => {
     setSearchValue("");
     setSuggestions([]);
-    dispatch(setSearchTerm(""));
-    setLimit(8);
-    fetchAllProducts();
-  };
-
-  // Xử lý khi nhập
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setSearchValue(value);
-    setShowSuggestions(true);
-
-    if (value.trim()) {
-      setTimeout(() => fetchSuggestions(value.trim()), 300);
-    } else {
-      setSuggestions(recentSearches);
-    }
+    dispatch(setSearchTerm("")); // Xóa tìm kiếm trong Redux
+    setLimit(8); // Đặt lại số lượng sản phẩm mặc định
+    fetchAllProducts(); // Đảm bảo lấy lại tất cả sản phẩm khi xóa tìm kiếm
   };
 
   useEffect(() => {
     const storedSearches =
       JSON.parse(localStorage.getItem("recentSearches")) || [];
     setRecentSearches(storedSearches);
-    setSuggestions(storedSearches); // ✅ Hiển thị lịch sử ngay khi vào trang
+    setSuggestions(storedSearches); // Hiển thị lịch sử ngay khi vào trang
     fetchAllProducts();
   }, []);
 
   // Thực hiện tìm kiếm
   const handleSearch = (value) => {
     if (!value.trim()) {
-      dispatch(setSearchTerm(""));
+      dispatch(setSearchTerm("")); // Đặt lại tìm kiếm nếu ô tìm kiếm trống
       setResetProducts(true);
       return;
     }
 
-    dispatch(setSearchTerm(value));
+    dispatch(setSearchTerm(value)); // Lưu từ khóa tìm kiếm vào Redux
     setResetProducts(true);
 
-    //console.log("📌 searchTerm mới sau khi dispatch:", value);
-
-    setLimit(8);
+    setLimit(8); // Đặt lại số lượng sản phẩm mặc định
 
     const newSearchParams = new URLSearchParams(location.search);
     newSearchParams.set("search", value);
     navigate(`${location.pathname}?${newSearchParams.toString()}`, {
-      replace: true, // Quan trọng: thay thế entry hiện tại
+      replace: true, // Quan trọng: thay thế entry hiện tại trong URL
     });
 
-    // Lưu lịch sử tìm kiếm
+    // Lưu lịch sử tìm kiếm vào localStorage
     const updatedSearches = [
       value,
       ...recentSearches.filter((item) => item !== value),
@@ -148,87 +137,116 @@ const SearchComponent = ({ setLimit = () => {} }) => {
     localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
   };
 
+  const handleCloseSearch = () => {
+    // const prevPage = location.state?.from || "/home";
+    // navigate(prevPage);
+    toggleSearch();
+  };
+
+  // useEffect(() => {
+  //   const prevPage = location.state?.from;
+  //   navigate(prevPage);
+  // }, [toggleSearch, navigate]);
+
   return (
-    <Row
-      justify="center"
-      style={{ marginBottom: "20px", position: "relative" }}
-    >
-      <Col span={8}>
-        <Search
-          placeholder="Tìm kiếm sản phẩm..."
-          allowClear
-          enterButton={
-            <Button
-              style={{ backgroundColor: "rgb(60, 201, 211)" }}
-              icon={<SearchOutlined />}
-            >
-              Tìm kiếm
-            </Button>
-          }
-          size="large"
-          value={searchValue}
-          onChange={(e) => {
-            const value = e.target.value;
-            setSearchValue(value);
-            setShowSuggestions(true);
-
-            if (!value.trim()) {
-              handleClearSearch();
-            } else {
-              setTimeout(() => fetchSuggestions(value.trim()), 300);
-            }
-          }}
-          onSearch={handleSearch}
-          onFocus={() => setShowSuggestions(true)} // ✅ Hiển thị gợi ý khi focus
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // ✅ Ẩn gợi ý khi click ra ngoài
-          onClear={handleClearSearch} // ✅ Khi nhấn nút ❌ sẽ gọi hàm này
-        />
-
-        {/* Hiển thị danh sách gợi ý */}
-        {showSuggestions && (
-          <List
-            bordered
-            style={{
-              position: "absolute",
-              width: "100%",
-              zIndex: 1000,
-              background: "white",
-              cursor: "pointer",
-              marginTop: "5px",
-              borderRadius: "5px",
-              boxShadow: "0px 4px 8px rgba(0,0,0,0.1)",
-            }}
-            dataSource={
-              suggestions.length > 0
-                ? suggestions
-                : [{ name: "Không có sản phẩm", disabled: true }]
-            }
-            renderItem={(item) => (
-              <List.Item
-                style={{
-                  padding: "10px",
-                  cursor: item.disabled ? "default" : "pointer",
-                  color: item.disabled ? "gray" : "black",
-                  transition: "background 0.2s ease-in-out", // Hiệu ứng chuyển đổi mượt
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.disabled)
-                    e.currentTarget.style.background = "#f0f0f0";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
-                }}
-                onClick={() =>
-                  !item.disabled && handleSelectSuggestion(item.name)
-                }
+    <>
+      <div
+        onClick={handleCloseSearch}
+        style={{
+          textAlign: "right",
+          cursor: "pointer",
+          marginRight: "20px",
+          marginTop: "20px",
+          fontSize: "17px",
+        }}
+      >
+        X
+      </div>
+      <Row
+        justify="center"
+        style={{
+          marginBottom: "20px",
+          position: "relative",
+        }}
+      >
+        <Col span={8}>
+          <Search
+            placeholder="Tìm kiếm sản phẩm..."
+            allowClear
+            enterButton={
+              <Button
+                style={{ backgroundColor: "rgb(60, 201, 211)" }}
+                icon={<SearchOutlined />}
               >
-                {loading ? <Spin /> : item.name}
-              </List.Item>
-            )}
+                Tìm kiếm
+              </Button>
+            }
+            size="large"
+            value={searchValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchValue(value);
+              setShowSuggestions(true);
+
+              // Tự động tìm kiếm khi người dùng nhập
+              if (!value.trim()) {
+                handleClearSearch(); // Nếu ô tìm kiếm trống, gọi hàm clear
+              } else {
+                setTimeout(() => fetchSuggestions(value.trim()), 300); // Gọi API tìm kiếm gợi ý sau 300ms
+                handleSearch(value.trim()); // Thực hiện tìm kiếm ngay lập tức
+              }
+            }}
+            onFocus={() => setShowSuggestions(true)} // Hiển thị gợi ý khi focus
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Ẩn gợi ý khi click ra ngoài
+            onClear={handleClearSearch} // Khi nhấn nút ❌ sẽ gọi hàm này
           />
-        )}
-      </Col>
-    </Row>
+
+          {/* Hiển thị danh sách gợi ý */}
+          {showSuggestions && (
+            <List
+              bordered
+              style={{
+                position: "absolute",
+                width: "100%",
+                zIndex: 1000,
+                background: "white",
+                cursor: "pointer",
+                marginTop: "5px",
+                borderRadius: "5px",
+                boxShadow: "0px 4px 8px rgba(0,0,0,0.1)",
+              }}
+              dataSource={
+                suggestions.length > 0
+                  ? suggestions
+                  : [{ name: "Không có sản phẩm", disabled: true }]
+              }
+              renderItem={(item) => (
+                <List.Item
+                  style={{
+                    padding: "10px",
+                    cursor: item.disabled ? "default" : "pointer",
+                    color: item.disabled ? "gray" : "black",
+                    transition: "background 0.2s ease-in-out", // Hiệu ứng chuyển đổi mượt
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!item.disabled)
+                      e.currentTarget.style.background = "#f0f0f0";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "white";
+                  }}
+                  onClick={() =>
+                    !item.disabled && handleSelectSuggestion(item.name)
+                  }
+                >
+                  {loading ? <Spin /> : item.name}
+                </List.Item>
+              )}
+            />
+          )}
+        </Col>
+      </Row>
+    </>
   );
 };
 
