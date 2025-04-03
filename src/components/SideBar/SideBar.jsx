@@ -5,6 +5,7 @@ import { getAllTypeProduct } from "../../Services/ProductService";
 import { useLocation, useParams } from "react-router";
 import { useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useSearch } from "../Layout/SearchContext";
 
 const SideBar = ({
   selectedTypes = [],
@@ -13,6 +14,10 @@ const SideBar = ({
   onRatingFilter,
 }) => {
   const [type, setType] = useState([]);
+
+  const { isSearchOpen, toggleSearch } = useSearch();
+
+  //console.log("isSearchOpen", isSearchOpen);
 
   const { type: selectedTypeFromUrl } = useParams();
   //const [filteredType, setFilteredType] = useState([]); // Danh mục được lọc khi search
@@ -181,6 +186,7 @@ const SideBar = ({
 
   const handleCategoryChange = useCallback(
     (values) => {
+      if (isSearchOpen) return;
       // Chỉ cập nhật nếu giá trị mới khác giá trị cũ
       if (JSON.stringify(selectedTypes) !== JSON.stringify(values)) {
         setSelectedTypes(values);
@@ -195,7 +201,7 @@ const SideBar = ({
       }
     },
 
-    [selectedTypes, searchParams, setSearchParams]
+    [selectedTypes, searchParams, setSearchParams, isSearchOpen]
   );
 
   return (
@@ -215,12 +221,10 @@ const SideBar = ({
                       ? selectedTypes.filter((type) => type !== item.value)
                       : [...selectedTypes, item.value];
 
-                    // if (!isTypeProductPage) {
-                    //   setSelectedTypes(newSelectedTypes);
-                    // }
+                    setSelectedTypes(newSelectedTypes);
 
-                    console.log("newSelectedTypes", newSelectedTypes);
-                    handleCategoryChange(newSelectedTypes);
+                    //console.log("newSelectedTypes", newSelectedTypes);
+                    //handleCategoryChange(newSelectedTypes);
                   }}
                   isSelected={selectedTypes.includes(item.value)}
                 >

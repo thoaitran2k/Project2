@@ -96,9 +96,17 @@ const SearchComponent = ({ setLimit = () => {} }) => {
   const handleClearSearch = () => {
     setSearchValue("");
     setSuggestions([]);
-    dispatch(setSearchTerm("")); // Xóa tìm kiếm trong Redux
-    setLimit(8); // Đặt lại số lượng sản phẩm mặc định
-    fetchAllProducts(); // Đảm bảo lấy lại tất cả sản phẩm khi xóa tìm kiếm
+    dispatch(setSearchTerm("")); // Xóa trong Redux
+    setLimit(8); // Reset limit
+
+    // Thêm phần xử lý URL
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.delete("search"); // Xóa param search khỏi URL
+    navigate(`${location.pathname}?${searchParams.toString()}`, {
+      replace: true,
+    });
+
+    fetchAllProducts(); // Fetch lại toàn bộ sản phẩm
   };
 
   useEffect(() => {
@@ -150,18 +158,6 @@ const SearchComponent = ({ setLimit = () => {} }) => {
 
   return (
     <>
-      <div
-        onClick={handleCloseSearch}
-        style={{
-          textAlign: "right",
-          cursor: "pointer",
-          marginRight: "20px",
-          marginTop: "20px",
-          fontSize: "17px",
-        }}
-      >
-        X
-      </div>
       <Row
         justify="center"
         style={{
@@ -188,17 +184,17 @@ const SearchComponent = ({ setLimit = () => {} }) => {
               setSearchValue(value);
               setShowSuggestions(true);
 
-              // Tự động tìm kiếm khi người dùng nhập
               if (!value.trim()) {
-                handleClearSearch(); // Nếu ô tìm kiếm trống, gọi hàm clear
+                handleClearSearch();
               } else {
-                setTimeout(() => fetchSuggestions(value.trim()), 300); // Gọi API tìm kiếm gợi ý sau 300ms
-                handleSearch(value.trim()); // Thực hiện tìm kiếm ngay lập tức
+                fetchSuggestions(value.trim()); // Gọi API ngay lập tức
+                handleSearch(value.trim()); // Cập nhật URL ngay lập tức
               }
             }}
             onFocus={() => setShowSuggestions(true)} // Hiển thị gợi ý khi focus
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Ẩn gợi ý khi click ra ngoài
-            onClear={handleClearSearch} // Khi nhấn nút ❌ sẽ gọi hàm này
+            onClear={handleClearSearch}
+            onSearch={(value) => handleSearch(value)}
           />
 
           {/* Hiển thị danh sách gợi ý */}

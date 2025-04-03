@@ -61,35 +61,37 @@ const Sidebar = () => {
       style={{ position: "relative", display: "flex", alignItems: "center" }}
     >
       <MenuTrigger onClick={() => setOpen(!open)}>
-        <MenuOutlined style={{ fontSize: "18px", marginRight: 8 }} />
+        <MenuOutlined style={{ fontSize: "18px", marginRight: 5 }} />
         <span style={{ fontSize: screens.xs ? "14px" : "16px" }}>Menu</span>
       </MenuTrigger>
-
-      <Drawer
-        title="Danh mục sản phẩm"
-        placement="left"
-        closable={true}
-        onClose={() => {
-          setOpen(false);
-          setSelectedCategory(null); // Reset khi đóng drawer
-        }}
-        open={open}
-        width={drawerWidth}
-        bodyStyle={{ padding: 0, display: "flex" }} // Thêm display flex
-        headerStyle={{
-          padding: "16px 24px",
-          borderBottom: "1px solid #f0f0f0",
-        }}
-      >
-        <NavbarComponent
-          onClose={() => setOpen(false)}
-          isOpen={open}
-          setSelectedCategory={setSelectedCategory}
-          selectedCategory={selectedCategory}
-          mode="vertical"
-          drawerWidth={drawerWidth} // Truyền width xuống NavbarComponent
-        />
-      </Drawer>
+      <div>
+        <br />
+        <Drawer
+          title="Danh mục sản phẩm"
+          placement="left"
+          closable={true}
+          onClose={() => {
+            setOpen(false);
+            setSelectedCategory(null); // Reset khi đóng drawer
+          }}
+          open={open}
+          width={drawerWidth}
+          bodyStyle={{ padding: 0, display: "flex" }} // Thêm display flex
+          headerStyle={{
+            padding: "16px 24px",
+            borderBottom: "1px solid #f0f0f0",
+          }}
+        >
+          <NavbarComponent
+            onClose={() => setOpen(false)}
+            isOpen={open}
+            setSelectedCategory={setSelectedCategory}
+            selectedCategory={selectedCategory}
+            mode="vertical"
+            drawerWidth={drawerWidth} // Truyền width xuống NavbarComponent
+          />
+        </Drawer>
+      </div>
     </div>
   );
 };
@@ -127,18 +129,16 @@ const HeaderComponent = ({
   const handleSearchClick = () => {
     const searchParams = new URLSearchParams(location.search);
 
-    // if (searchParams.has("search")) {
-    //   searchParams.delete("search");
-    // } else {
-    //   searchParams.set("search", "true");
-    // }
+    searchParams.set("search", "true");
 
-    // navigate(`${location.pathname}?${searchParams.toString()}`, {
-    //   replace: true,
-    // });
+    console.log("searchParams", searchParams);
+
+    toggleSearch();
+    navigate(`${location.pathname}?${searchParams.toString()}`, {
+      replace: true,
+    });
 
     // Đảo trạng thái tìm kiếm ngay lập tức
-    toggleSearch();
   };
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -380,18 +380,18 @@ const HeaderComponent = ({
             justifyContent:
               isHiddenMenu && isHiddenSerach && isHiddenShoppingCard
                 ? "space-between"
-                : "unset",
+                : "center",
           }}
         >
           {/* Menu (nếu không bị ẩn) */}
           {!isHiddenMenu && (
-            <Col style={{ marginLeft: "20px" }} span={screens.xs ? 4 : 2}>
+            <Col style={{}} span={screens.xs ? 4 : 2}>
               <Sidebar />
             </Col>
           )}
 
           {!isHiddenSerach && !screens.xs && (
-            <Col span={2}>
+            <Col span={1.2}>
               {/* <StyledLink to="/search"> */}
               <div
                 style={{
@@ -417,8 +417,8 @@ const HeaderComponent = ({
               isHiddenMenu && isHiddenSerach && isHiddenShoppingCard
                 ? undefined
                 : screens.xs
-                ? 16
-                : 16
+                ? 17
+                : 17
             }
             style={{ textAlign: "center" }}
           >
@@ -429,8 +429,10 @@ const HeaderComponent = ({
                 display: "inline-block",
                 marginLeft:
                   isHiddenMenu && isHiddenSerach && isHiddenShoppingCard
-                    ? "50px"
-                    : 0,
+                    ? "50"
+                    : screens.xs
+                    ? -0
+                    : -55,
               }}
             >
               <WrapperLogo>LOGO</WrapperLogo>

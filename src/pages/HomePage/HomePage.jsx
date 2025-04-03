@@ -12,6 +12,9 @@ import shop2Banner from "../../assets/thiet-ke-shop-quan-ao-dep.jpg";
 import shop3Banner from "../../assets/thiet-ke-shop-quan-ao-nam-4.jpg";
 import shop4banner from "../../assets/Cac-san-pham-can-duoc-trung-bay-sao-cho-thu-hut-khach-hang.jpg";
 import shop5banner from "../../assets/mua-vi-da-nam-xin-o-dau-tot-chat-luong-tai-tphcm-news-181.jpg";
+
+import shopwallet from "../../assets/the-gioi-bop-da.jpg";
+import shopwatch from "../../assets/thiet-ke-shop-dong-ho-1.jpg";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../../redux/slices/loadingSlice";
 
@@ -105,6 +108,7 @@ const HomePage = () => {
       {/* Hero Banner Section */}
       <HeroSection>
         <Row gutter={[24, 24]}>
+          {/* Cột chính với Hero Banner */}
           <Col xs={24} md={12}>
             <HeroBanner>
               <HeroContent>
@@ -126,7 +130,7 @@ const HomePage = () => {
                   </>
                 ) : (
                   <>
-                    <HeroTitle>Products suitable for women</HeroTitle>
+                    <HeroTitle>Exclusive Collection for Women</HeroTitle>
                     <ShopButton onClick={handleToTypePageWomenShirt}>
                       Shop now
                     </ShopButton>
@@ -135,23 +139,26 @@ const HomePage = () => {
               </HeroContent>
             </HeroBanner>
           </Col>
+
+          {/* Cột phụ chứa các banner nhỏ */}
           <Col xs={24} md={12}>
-            <Row gutter={[24, 24]}>
+            <Row gutter={[12, 12]}>
+              {/* Banner dành cho nam */}
               <Col span={24}>
                 <MediumBanner>
                   <BannerContent>
-                    <BannerTitle>f0r MeN</BannerTitle>
+                    <BannerTitle>For Men</BannerTitle>
                     <BannerButton
-                      onClick={() => {
-                        navigate("/product-type/ao-nam");
-                      }}
+                      onClick={() => navigate("/product-type/ao-nam")}
                     >
                       Shop Now
                     </BannerButton>
                   </BannerContent>
                 </MediumBanner>
               </Col>
-              <Col xs={24} sm={12}>
+
+              {/* Hai banner nhỏ xếp ngang nhau */}
+              <Col xs={8}>
                 <SmallBanner>
                   <BannerContent>
                     <BannerTitle>#1 eCommerce Platform</BannerTitle>
@@ -159,13 +166,21 @@ const HomePage = () => {
                   </BannerContent>
                 </SmallBanner>
               </Col>
-              <Col xs={24} sm={12}>
-                <SmallBanner>
+              <Col xs={8}>
+                <SmallBanner2>
+                  <BannerContent>
+                    <BannerTitle>#1 eCommerce Platform</BannerTitle>
+                    <BannerText>25k+ Client Testimonials</BannerText>
+                  </BannerContent>
+                </SmallBanner2>
+              </Col>
+              <Col xs={8}>
+                <SmallBanner3>
                   <BannerContent>
                     <BannerTitle>Mid Summer</BannerTitle>
-                    <BannerText>Instance Outlets</BannerText>
+                    <BannerText>Instant Outlets</BannerText>
                   </BannerContent>
-                </SmallBanner>
+                </SmallBanner3>
               </Col>
             </Row>
           </Col>
@@ -261,7 +276,7 @@ const HeroSection = styled.section`
 
 const HeroBanner = styled.div`
   position: relative;
-  height: 500px;
+  height: 493px;
   background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
     url(${shop1Banner});
   background-size: cover;
@@ -328,6 +343,32 @@ const SmallBanner = styled.div`
   height: 240px;
   background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
     url(${shop3Banner});
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+`;
+
+const SmallBanner2 = styled.div`
+  height: 240px;
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    url(${shopwatch});
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+`;
+
+const SmallBanner3 = styled.div`
+  height: 240px;
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    url(${shopwallet});
   background-size: cover;
   background-position: center;
   border-radius: 12px;

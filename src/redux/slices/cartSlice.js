@@ -11,7 +11,7 @@ export const updateCartOnServer = createAsyncThunk(
 
       const { cartItems } = getState().cart;
 
-      console.log("Dữ liệu trả về", cartItems);
+      // console.log("Dữ liệu trả về", cartItems);
       const response = await axios.put(
         "http://localhost:3002/api/cart/update",
         {
@@ -175,7 +175,7 @@ const cartSlice = createSlice({
         state.cartCount = 0;
       })
       .addCase(updateCartOnServer.fulfilled, () => {
-        console.log("✅ Giỏ hàng đã được cập nhật lên server");
+        //console.log("✅ Giỏ hàng đã được cập nhật lên server");
       });
   },
 });

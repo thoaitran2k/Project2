@@ -83,20 +83,6 @@ const ProductsPage = () => {
   };
 
   useEffect(() => {
-    if (!location.state?.breadcrumb) {
-      navigate(location.pathname + location.search, {
-        replace: true,
-        state: {
-          breadcrumb: [
-            { path: "/home", name: "Trang chủ" },
-            { path: "/products", name: "Tìm kiếm sản phẩm" },
-          ],
-        },
-      });
-    }
-  }, [location.pathname, location.state]);
-
-  useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const searchTermFromUrl = searchParams.get("search");
     const typesFromUrl = searchParams.get("type");

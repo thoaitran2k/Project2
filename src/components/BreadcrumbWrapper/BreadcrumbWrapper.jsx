@@ -14,34 +14,44 @@ const categoryMapping = {
 
 const BreadcrumbWrapper = ({ breadcrumb }) => {
   const location = useLocation();
-
   const pathSegments = location.pathname.split("/").filter(Boolean);
+
+  // let dynamicBreadcrumbs = [{ path: "/", name: "Trang chủ" }];
+
   let dynamicBreadcrumbs = [{ path: "/home", name: "Trang chủ" }];
 
-  if (pathSegments[0] === "product-type") {
-    const type = decodeURIComponent(pathSegments[1]); // Decode đúng cách
-    const formattedType = categoryMapping[type] || type.replace(/-/g, " ");
-    dynamicBreadcrumbs.push({
-      path: `/product-type/${encodeURIComponent(type)}`,
-      name: formattedType,
-    });
+  if (location.pathname === "/products") {
+    dynamicBreadcrumbs.push({ path: "/products", name: "Sản phẩm" });
   }
 
+  if (pathSegments.length > 1 && pathSegments[0] === "product-type") {
+    const type = decodeURIComponent(pathSegments[1] || ""); // Kiểm tra tránh lỗi
+    const formattedType = categoryMapping[type] || type.replace(/-/g, " ");
+
+    if (formattedType) {
+      dynamicBreadcrumbs.push({
+        path: `/product-type/${encodeURIComponent(type)}`,
+        name: formattedType,
+      });
+    }
+  }
+
+  // Gộp breadcrumb nếu có
   const breadcrumbs =
     breadcrumb || location.state?.breadcrumb || dynamicBreadcrumbs;
 
   return (
     <BreadcrumbContainer>
       {breadcrumbs.map(({ path, name }, index) => {
-        const isActive = path === location.pathname;
+        const isLast = index === breadcrumbs.length - 1;
         return (
-          <span key={path} className={isActive ? "active" : "inactive"}>
-            {isActive ? (
+          <span key={path} className={isLast ? "active" : "inactive"}>
+            {isLast ? (
               <span className="current">{name}</span>
             ) : (
               <Link to={path}>{name}</Link>
             )}
-            {index < breadcrumbs.length - 1 && " > "}
+            {!isLast && " > "}
           </span>
         );
       })}
@@ -53,8 +63,7 @@ export default BreadcrumbWrapper;
 
 const BreadcrumbContainer = styled.nav`
   font-size: 16px;
-  margin: 0 20px;
-  margin-bottom: 10px;
+  margin: 0 20px 10px;
 
   span {
     display: inline;

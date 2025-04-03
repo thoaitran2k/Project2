@@ -18,9 +18,11 @@ import { useLocation, useNavigate } from "react-router";
 import { setSearchTerm, setProducts } from "../../redux/slices/productSlice";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSearch } from "../../components/Layout/SearchContext";
+import TypeProductsList from "./TypeProductsList";
 
 const SearchPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [types, setTypes] = useState([]);
   const [resetProducts, setResetProducts] = useState(false);
   const searchTerm = useSelector((state) => state.product.searchTerm);
   const [limit, setLimit] = useState(8);
@@ -39,14 +41,14 @@ const SearchPage = () => {
 
   const { isSearchOpen, toggleSearch } = useSearch();
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
+  // useEffect(() => {
+  //   const searchParams = new URLSearchParams(location.search);
 
-    // Chỉ đóng SearchPage nếu trước đó nó đang mở và search đã bị xóa khỏi URL
-    if (!searchParams.has("search") && isSearchOpen) {
-      toggleSearch();
-    }
-  }, [location.search]);
+  //   // Chỉ đóng SearchPage nếu trước đó nó đang mở và search đã bị xóa khỏi URL
+  //   if (!searchParams.has("?search") && isSearchOpen) {
+  //     toggleSearch();
+  //   }
+  // }, [location.search]);
 
   // useEffect(() => {
   //   toggleSearch();
@@ -119,20 +121,6 @@ const SearchPage = () => {
   };
 
   useEffect(() => {
-    if (!location.state?.breadcrumb) {
-      navigate(location.pathname + location.search, {
-        replace: true,
-        state: {
-          breadcrumb: [
-            { path: "/home", name: "Trang chủ" },
-            { path: "/products", name: "Tìm kiếm sản phẩm" },
-          ],
-        },
-      });
-    }
-  }, [location.pathname, location.state]);
-
-  useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const searchTermFromUrl = searchParams.get("search");
     const typesFromUrl = searchParams.get("type");
@@ -161,6 +149,20 @@ const SearchPage = () => {
       return { data: [], total: 0 };
     }
   };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await ProductService.getAllTypeProduct();
+        const data = response.data;
+        setTypes(data); // Giữ nguyên dạng mảng string
+      } catch (error) {
+        console.error("🚨 Lỗi lấy danh mục:", error.message);
+        setTypes([]);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const {
     isLoading,
@@ -227,6 +229,20 @@ const SearchPage = () => {
   //   }, 500);
   // };
 
+  // useEffect(() => {
+  //   const newSearchParams = new URLSearchParams(location.search);
+
+  //   if (selectedTypes.length > 0) {
+  //     newSearchParams.set("type", selectedTypes.join(","));
+  //   } else {
+  //     newSearchParams.delete("type");
+  //   }
+
+  //   navigate(`${location.pathname}?${newSearchParams.toString()}`, {
+  //     replace: true,
+  //   });
+  // }, [selectedTypes]);
+
   return (
     // <motion.div
     //   initial={{ y: -100, opacity: 0 }}
@@ -278,37 +294,42 @@ const SearchPage = () => {
     //   </AnimatePresence>
     <>
       <br />
-      <FullScreenWrapper>
-        <SearchComponent setLimit={setLimit} />
-        <ProductsContainer>
-          <MainContent>
-            {isLoading ? (
-              <p>Loading...</p>
-            ) : filteredProducts.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                <p>Không tìm thấy sản phẩm phù hợp</p>
-                <Button type="primary" onClick={resetFilters}>
+      {/* <FullScreenWrapper> */}
+      <SearchComponent setLimit={setLimit} />
+      <TypeProductsList
+        types={types}
+        selectedTypes={selectedTypes}
+        setSelectedTypes={setSelectedTypes}
+      />
+      <ProductsContainer>
+        <MainContent>
+          {isLoading ? (
+            <p>Loading...</p>
+          ) : filteredProducts.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px" }}>
+              <p>Không tìm thấy sản phẩm phù hợp</p>
+              {/* <Button type="primary" onClick={resetFilters}>
                   Xoá bộ lọc
-                </Button>
-              </div>
-            ) : (
-              <CardComponent products={displayedProducts} />
-            )}
+                </Button> */}
+            </div>
+          ) : (
+            <CardComponent products={displayedProducts} />
+          )}
 
-            {totalFilteredProducts > limit && (
-              <WrapperButtonContainer>
-                <WrapperButtonMore
-                  style={{ marginTop: 50 }}
-                  type="default"
-                  onClick={() => setLimit((prev) => prev + 8)}
-                >
-                  Xem thêm
-                </WrapperButtonMore>
-              </WrapperButtonContainer>
-            )}
-          </MainContent>
-        </ProductsContainer>
-      </FullScreenWrapper>
+          {totalFilteredProducts > limit && (
+            <WrapperButtonContainer>
+              <WrapperButtonMore
+                style={{ marginTop: 50 }}
+                type="default"
+                onClick={() => setLimit((prev) => prev + 8)}
+              >
+                Xem thêm
+              </WrapperButtonMore>
+            </WrapperButtonContainer>
+          )}
+        </MainContent>
+      </ProductsContainer>
+      {/* </FullScreenWrapper> */}
     </>
     // </div>
     // </motion.div>
@@ -320,7 +341,34 @@ const MainContent = styled.div`
   flex-direction: column;
   min-height: 90vh;
   width: 100%;
-  min-width: 80vw;
+  min-width: 98vw;
+`;
+
+const TypeListContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  justify-content: center;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  margin: 16px 0;
+`;
+
+const TypeButton = styled.button`
+  padding: 8px 16px;
+  border: 1px solid ${(props) => (props.$isSelected ? "#1890ff" : "#d9d9d9")};
+  background-color: ${(props) => (props.$isSelected ? "#e6f7ff" : "white")};
+  color: ${(props) => (props.$isSelected ? "#1890ff" : "inherit")};
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+
+  &:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+  }
 `;
 
 const FullScreenWrapper = styled.div`

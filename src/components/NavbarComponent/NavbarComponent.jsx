@@ -6,154 +6,13 @@ import {
   RightOutlined,
   PhoneOutlined,
   MenuOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import { Drawer, Grid } from "antd";
 
 const { useBreakpoint } = Grid;
 
 // Styled Components
-const MenuTrigger = styled.div`
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  &:hover {
-    background-color: #f5f5f5;
-    border-radius: 4px;
-  }
-`;
-
-const Wrapper = styled.div`
-  font-family: "Louis Vuitton Web", "Helvetica Neue", Arial, sans-serif;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: #fff;
-  width: ${(props) => (props.$expanded ? "560px" : "280px")};
-  transition: width 0.3s ease;
-`;
-
-const MainContainer = styled.div`
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-`;
-
-const LeftNav = styled.div`
-  width: 280px;
-  border-right: 1px solid #e8e8e8;
-  padding: 16px 0;
-  flex-shrink: 0;
-`;
-
-const RightNav = styled.div`
-  width: 280px;
-  padding: 16px 0;
-  border-right: 1px solid #e8e8e8;
-  flex-shrink: 0;
-`;
-
-const CategoryHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 400;
-  cursor: pointer;
-  color: ${(props) => (props.$active ? "#000" : "#333")};
-  background-color: ${(props) => (props.$active ? "#f9f9f9" : "transparent")};
-  transition: all 0.2s;
-  letter-spacing: 0.5px;
-
-  &:hover {
-    background-color: #f9f9f9;
-  }
-`;
-
-const SubCategoryTitle = styled.div`
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #000;
-`;
-
-const SubItem = styled.div`
-  padding: 10px 24px 10px 36px;
-  font-size: 14px;
-  cursor: pointer;
-  color: #666;
-  transition: all 0.2s;
-
-  &:hover {
-    color: #000;
-    background-color: #f9f9f9;
-  }
-`;
-
-const SupportInfo = styled.div`
-  padding: 24px;
-  border-top: 1px solid #e8e8e8;
-  background-color: #f9f9f9;
-`;
-
-const Divider = styled.div`
-  height: 1px;
-  background-color: #e8e8e8;
-  margin: 16px 0;
-`;
-
-const SectionTitle = styled.div`
-  padding: 12px 24px;
-  font-size: 14px;
-  color: #999;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`;
-
-const SupportTitle = styled.div`
-  font-size: 15px;
-  margin-bottom: 12px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-`;
-
-const ContactInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-`;
-
-const PhoneIcon = styled(PhoneOutlined)`
-  font-size: 14px;
-`;
-
-const GenderCategories = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const GenderCategory = styled.div`
-  font-size: 14px;
-  cursor: pointer;
-  color: #666;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #000;
-    text-decoration: underline;
-  }
-`;
-
-const ArrowIcon = styled.span`
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-`;
 
 // Navbar Component
 const NavbarComponent = ({
@@ -167,13 +26,15 @@ const NavbarComponent = ({
   const navigate = useNavigate();
 
   const mainCategories = [
-    { title: "Quà tặng", items: ["Sản phẩm mới"] },
-    { title: "Túi và Phụ kiện bằng da", items: [] },
-    { title: "Đồ Nữ", items: ["Đồ Nam", "Trang sức", "Đồng hồ", "Nước hoa"] },
-    { title: "Rương, Phụ kiện du lịch và Trang trí nội thất", items: [] },
-    { title: "Dịch vụ", items: [] },
-    { title: "Maison Louis Vuitton", items: [] },
-    { title: "BST Louis Vuitton x Murakami", items: [] },
+    { title: "Đồ nam", items: ["Áo nam", "Quần nam"] },
+    { title: "Túi và Phụ kiện bằng da", items: ["Túi xách", "Ví da"] },
+    { title: "Đồ Nữ", items: ["Áo nữ", "Quần nữ"] },
+    {
+      title: "Phụ kiện và trang sức cho nữ",
+      items: ["Túi xách nữ", "Trang sức nữ"],
+    },
+    { title: "Phụ kiện thời trang cho nam", items: ["Ví", "Đồng hồ"] },
+    { title: "Dịch vụ", items: ["Chăm sóc khách hàng", "Liên hệ trả hàng"] },
   ];
 
   const viewedCategories = [
@@ -200,6 +61,9 @@ const NavbarComponent = ({
           {mainCategories.map((category, index) => (
             <div key={index}>
               <CategoryHeader
+                data-active={
+                  selectedCategory?.title === category.title ? "true" : "false"
+                } // Thêm thuộc tính data-active
                 onClick={() => {
                   if (category.items.length > 0) {
                     toggleCategory(category);
@@ -209,7 +73,7 @@ const NavbarComponent = ({
                 }}
                 $active={selectedCategory?.title === category.title}
               >
-                {category.title}
+                <UnderlineText>{category.title}</UnderlineText>
                 {category.items.length > 0 && (
                   <ArrowIcon>
                     {selectedCategory?.title === category.title ? "" : ""}
@@ -228,14 +92,10 @@ const NavbarComponent = ({
                 onClick={() => toggleCategory(category)}
                 $active={selectedCategory?.title === category.title}
               >
-                {category.title}
+                <UnderlineText>{category.title}</UnderlineText>
                 {category.items.length > 0 && (
                   <ArrowIcon>
-                    {selectedCategory?.title === category.title ? (
-                      <DownOutlined />
-                    ) : (
-                      <RightOutlined />
-                    )}
+                    {selectedCategory?.title === category.title ? "" : ""}
                   </ArrowIcon>
                 )}
               </CategoryHeader>
@@ -245,19 +105,40 @@ const NavbarComponent = ({
 
         {selectedCategory?.items?.length > 0 && (
           <RightNav>
-            <SubCategoryTitle>{selectedCategory.title}</SubCategoryTitle>
-            {selectedCategory.items.map((item, idx) => (
-              <SubItem
-                key={idx}
-                onClick={() =>
-                  handleNavigate(
-                    `/${selectedCategory.title.toLowerCase()}/${item.toLowerCase()}`
-                  )
-                }
-              >
-                {item}
-              </SubItem>
-            ))}
+            {selectedCategory?.items.map((item, idx) => {
+              // Tạo slug từ item, chuyển thành chữ thường, thay khoảng trắng và ký tự đặc biệt
+              const categorySlugMap = {
+                "Áo nam": "ao-nam",
+                "Quần nam": "quan-nam",
+                "Ví da": "vi",
+                "Đồng hồ": "dong-ho",
+                "Túi xách nữ": "tui-xach",
+                "Túi xách": "tui-xach",
+                Ví: "vi",
+                "Trang sức nữ": "trang-suc",
+                "Áo nữ": "ao-nu",
+                "Quần nữ": "quan-nu",
+              };
+
+              // Lấy slug từ map nếu có
+              const categorySlug =
+                categorySlugMap[item] ||
+                item
+                  .toLowerCase()
+                  .replace(/\s+/g, "-") // Thay khoảng trắng thành dấu gạch ngang
+                  .replace(/[^\w\-]+/g, ""); // Loại bỏ các ký tự đặc biệt
+
+              return (
+                <SubItem
+                  key={idx}
+                  onClick={() =>
+                    handleNavigate(`/product-type/${categorySlug}`)
+                  }
+                >
+                  {item}
+                </SubItem>
+              );
+            })}
           </RightNav>
         )}
       </MainContainer>
@@ -324,7 +205,7 @@ export const Sidebar = () => {
         bodyStyle={{ padding: 0, display: "flex" }}
         headerStyle={{
           padding: "16px 24px",
-          borderBottom: "1px solid #f0f0f0",
+          //borderBottom: "1px solid #f0f0f0",
         }}
       >
         <NavbarComponent
@@ -339,5 +220,174 @@ export const Sidebar = () => {
     </div>
   );
 };
+
+const MenuTrigger = styled.div`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  &:hover {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
+`;
+
+const Wrapper = styled.div`
+  font-family: "Louis Vuitton Web", "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #fff;
+  width: ${(props) => (props.$expanded ? "560px" : "280px")};
+  transition: width 0.3s ease;
+`;
+
+const MainContainer = styled.div`
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+`;
+
+const LeftNav = styled.div`
+  width: 280px;
+  //border-right: 1px solid #e8e8e8;
+  padding: 16px 0;
+  flex-shrink: 0;
+`;
+
+const RightNav = styled.div`
+  width: 400px;
+  padding: 16px 0;
+  border-left: 1px solid rgb(56, 53, 53);
+  flex-shrink: 0;
+`;
+
+const CategoryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  color: ${(props) => (props.$active ? "#000" : "#333")};
+  background-color: ${(props) => (props.$active ? "" : "transparent")};
+  transition: background-color 0.2s;
+  letter-spacing: 0.5px;
+`;
+
+const UnderlineText = styled.span`
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px; /* Khoảng cách với chữ */
+    width: 0;
+    height: 1px;
+    background-color: currentColor;
+    transition: width 0.3s ease-in-out;
+  }
+
+  /* Khi không active, sẽ có underline khi hover */
+  ${CategoryHeader}:not([data-active='true']) &:hover::after {
+    width: 100%;
+  }
+
+  /* Không có underline khi active */
+  ${CategoryHeader}[data-active='true'] &::after {
+    width: 100%; /* Giữ underline khi active */
+  }
+
+  /* Đảm bảo khi không active, hover chỉ có hiệu ứng từ trái sang phải */
+  ${CategoryHeader}:not([data-active='true']) &:not(:hover)::after {
+    width: 0; /* Khi không hover, không có underline */
+  }
+`;
+
+const SubCategoryTitle = styled.div`
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+`;
+
+const SubItem = styled.div`
+  padding: 10px 24px 10px 36px;
+  font-size: 16px;
+  cursor: pointer;
+  color: black;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #000;
+    background-color: rgb(241, 239, 239);
+  }
+`;
+
+const SupportInfo = styled.div`
+  padding: 24px;
+  border-top: 1px solid #e8e8e8;
+  background-color: #f9f9f9;
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background-color: #e8e8e8;
+  margin: 16px 0;
+`;
+
+const SectionTitle = styled.div`
+  padding: 12px 24px;
+  font-size: 14px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+`;
+
+const SupportTitle = styled.div`
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+`;
+
+const ContactInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+`;
+
+const PhoneIcon = styled(PhoneOutlined)`
+  font-size: 14px;
+`;
+
+const GenderCategories = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const GenderCategory = styled.div`
+  font-size: 14px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #000;
+    text-decoration: underline;
+  }
+`;
+
+const ArrowIcon = styled.span`
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+`;
 
 export default NavbarComponent;

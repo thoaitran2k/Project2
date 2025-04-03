@@ -42,9 +42,6 @@ const OrderComponent = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  console.log("defaultAddress", defaultAddress);
-  console.log("address", user.address);
-
   const isAllChecked = selectedProducts.length === cartItems.length;
 
   const handleIncreaseQuantity = (itemId) => {

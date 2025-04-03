@@ -19,6 +19,8 @@ import Layout from "./components/Layout/Layout";
 import { AnimatePresence, motion } from "framer-motion";
 import { SearchProvider, useSearch } from "./components/Layout/SearchContext";
 import SearchPage from "./pages/SearchPage/SearchPage";
+import SearchOverlay from "./components/SearchComponent/SearchOverlay";
+import SearchComponent from "./components/SearchComponent/SearchComponent";
 // import { SearchProvider } from "./components/Layout/SearchContext";
 
 function App() {
@@ -141,7 +143,7 @@ function App() {
                 overflowY: "auto",
               }}
             >
-              <SearchPage />
+              <SearchOverlay />
             </motion.div>
           )}
         </AnimatePresence>
