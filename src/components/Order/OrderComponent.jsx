@@ -30,7 +30,10 @@ const OrderComponent = () => {
 
   const user = useSelector((state) => state.user);
   const defaultAddress = user.address.find((addr) => addr.isDefault);
-  const [selectedAddress, setSelectedAddress] = useState(defaultAddress);
+  const [selectedAddress, setSelectedAddress] = useState(() => {
+    if (!user.address || user.address.length === 0) return null;
+    return user.address.find((addr) => addr.isDefault) || user.address[0];
+  });
   const { isAuthenticated, address, _id } = useSelector((state) => state.user);
   const { cartItems, cartCount } = useSelector((state) => state.cart);
 
@@ -38,6 +41,8 @@ const OrderComponent = () => {
   const navigate = useNavigate();
 
   const isAllChecked = selectedProducts.length === cartItems.length;
+
+  console.log("cartItems", cartItems);
 
   const handleIncreaseQuantity = (itemId) => {
     const item = cartItems.find((item) => item.id === itemId);
@@ -105,8 +110,21 @@ const OrderComponent = () => {
     setSelectedProducts(checkedValues);
   };
 
+  console.log("selectedAddress", selectedAddress);
+
   const handleCheckout = () => {
-    navigate("/checkout");
+    const selectedItems = cartItems.filter((item) =>
+      selectedProducts.includes(item.id)
+    );
+
+    navigate("/checkout", {
+      state: {
+        selectedItems,
+        total: calculateSelectedTotal(),
+        discount: calculateDiscounts(),
+        selectedAddress,
+      },
+    });
   };
 
   // const increaseQuantity = () =>
@@ -127,6 +145,73 @@ const OrderComponent = () => {
       </div>
     );
   }
+
+  //Hàm tính tổng tiền sản phẩm
+  const calculateSelectedTotal = () => {
+    return cartItems
+      .filter((item) => selectedProducts.includes(item.id))
+      .reduce((total, item) => total + item.product.price * item.quantity, 0);
+  };
+
+  //Hàm tính giảm giá
+  const calculateDiscounts = () => {
+    return cartItems
+      .filter((item) => selectedProducts.includes(item.id))
+      .reduce((total, item) => {
+        const itemDiscount = item.product.discount || 0; // % discount
+        const discountPerItem = (item.product.price * itemDiscount) / 100;
+        return total + discountPerItem * item.quantity;
+      }, 0);
+  };
+
+  const calculateSubtotal = () => {
+    return cartItems
+      .filter((item) => selectedProducts.includes(item.id))
+      .reduce((total, item) => total + item.product.price * item.quantity, 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const discount = calculateDiscounts();
+    return subtotal - discount;
+  };
+
+  const logSelectedItems = () => {
+    const selectedItems = cartItems.filter((item) =>
+      selectedProducts.includes(item.id)
+    );
+
+    //console.log("Các sản phẩm đã chọn:", selectedItems);
+
+    selectedItems.forEach((item, index) => {
+      const isWatch = item.product.type === "Đồng hồ";
+      const actualSize = isWatch ? item.variant?.diameter : item.size;
+
+      console.log(`Sản phẩm ${index + 1}:`, {
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        color: item.color,
+        size: actualSize,
+        discount: item.product.discount,
+        total: item.product.price * item.quantity,
+      });
+    });
+
+    const totalPrice = selectedItems.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
+
+    //console.log("Tổng tiền:", totalPrice);
+  };
+
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      logSelectedItems();
+    }
+  }, [selectedProducts]);
+
   return (
     <OrderContainer>
       <LeftColumn>
@@ -277,44 +362,28 @@ const OrderComponent = () => {
         <Section>
           <PriceRow>
             <span>Tạm tính</span>
-            <span>
-              {cartItems
-                .reduce(
-                  (total, item) => total + item.product.price * item.quantity,
-                  0
-                )
-                .toLocaleString()}
-              ₫
-            </span>
+            <span>{calculateSelectedTotal().toLocaleString()}₫</span>
           </PriceRow>
           <PriceRow>
             <span>Thuế</span>
-            <span>₫</span> {/* Có thể thêm logic giảm giá sau */}
+            <span>₫</span>
           </PriceRow>
 
           <PriceRow>
             <span>Giảm giá trực tiếp</span>
-            <span>-0₫</span> {/* Có thể thêm logic giảm giá sau */}
+            <span>-{calculateDiscounts().toLocaleString()}₫</span>
           </PriceRow>
 
           <PriceRow>
             <span>Phí giao hàng</span>
-            <span>₫</span> {/* Có thể thêm logic giảm giá sau */}
+            <span>₫</span>
           </PriceRow>
 
           <Divider style={{ margin: "16px 0" }} />
 
           <PriceRow>
             <TotalPrice>Tổng tiền thanh toán</TotalPrice>
-            <TotalPrice>
-              {cartItems
-                .reduce(
-                  (total, item) => total + item.product.price * item.quantity,
-                  0
-                )
-                .toLocaleString()}
-              ₫
-            </TotalPrice>
+            <TotalPrice>{calculateTotal().toLocaleString()}₫</TotalPrice>
           </PriceRow>
 
           <SavingsTag>Tiết kiệm 4.000.000₫</SavingsTag>
@@ -329,8 +398,7 @@ const OrderComponent = () => {
           disabled={selectedProducts.length === 0}
           onClick={handleCheckout}
         >
-          Mua Hàng (
-          {selectedProducts.length > 0 ? selectedProducts.length : cartCount})
+          Mua Hàng ({selectedProducts.length})
         </CheckoutButton>
       </RightColumn>
       {/*  Modal đổi địa chỉ giao hàng */}

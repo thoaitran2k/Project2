@@ -48,15 +48,6 @@ function App() {
     };
   }, []);
 
-  // Áp dụng hiệu ứng khi chuyển trang qua ứng dụng
-  useEffect(() => {
-    if (targetPath && isNavigatingFromApp) {
-      setTimeout(() => {
-        navigate(targetPath); // Chuyển trang sau khi animation hoàn thành
-      }, 2000); // Đợi 2s để animation hoàn thành
-    }
-  }, [targetPath, navigate, isNavigatingFromApp]);
-
   // Điều hướng qua ứng dụng
   const handleNavigate = (path) => {
     setTargetPath(path); // Bắt đầu hiệu ứng
@@ -96,7 +87,15 @@ function App() {
   return (
     <AppContainer>
       <MainContent>
-        <PageTransitionEffect targetPath={targetPath} />
+        <PageTransitionEffect
+          targetPath={targetPath}
+          onComplete={() => {
+            navigate(targetPath);
+            setTargetPath(null); // Reset lại để không re-trigger
+            setIsNavigatingFromApp(false);
+          }}
+        />
+
         <Routes>
           {routes.map((route) => {
             const Page = route.page;

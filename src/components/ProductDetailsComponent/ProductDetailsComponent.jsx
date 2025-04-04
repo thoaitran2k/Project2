@@ -242,6 +242,7 @@ const ProductDetailsComponent = ({ product }) => {
         image: productDetail.image,
         price: productDetail.price,
         type: productDetail.type,
+        discount: productDetail.discount,
       },
       quantity: quantityPay,
       amount: isAccessory ? quantityPay : 1, // Phụ kiện tính toàn bộ vào cartCount, còn lại mặc định 1

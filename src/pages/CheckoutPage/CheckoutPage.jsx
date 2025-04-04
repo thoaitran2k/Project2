@@ -2,14 +2,25 @@ import React from "react";
 import CheckoutComponent from "../../components/Checkout/CheckoutComponent";
 import styled from "styled-components";
 import zaloicon from "../../assets/zaloicon.png";
+import { useNavigate } from "react-router";
 
 const CheckoutPage = () => {
+  const navigate = useNavigate();
   return (
     <>
       <HeaderCheckoutContainer>
         <CheckoutHeaderWrapper>
           <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-            <div style={{ borderRight: "solid 1px blue", width: "80px" }}>
+            <div
+              onClick={() => {
+                navigate("/home");
+              }}
+              style={{
+                borderRight: "solid 1px blue",
+                width: "80px",
+                cursor: "pointer",
+              }}
+            >
               LOGO
             </div>
 

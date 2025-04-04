@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Card, Radio, Button, Input, Typography, Divider, Tag } from "antd";
 import {
@@ -13,34 +13,262 @@ import {
 import cash from "../../assets/cash.png";
 import momo from "../../assets/momoicon.jpg";
 import zalopay from "../../assets/zalopayicon.png";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
+import { useSelector } from "react-redux";
+import AddressModal from "../Order/AddressModal";
 
 const { Title, Text } = Typography;
 
 const CheckoutComponent = () => {
+  const { state } = useLocation();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const user = useSelector((state) => state.user);
+  const { selectedItems = [], total = 0, discount = 0 } = state || {};
+  const getInitialAddress = () => {
+    try {
+      const savedData = JSON.parse(localStorage.getItem("checkoutData"));
+      if (savedData?.selectedAddress) return savedData.selectedAddress;
+    } catch (e) {
+      console.error("Lỗi đọc dữ liệu checkout", e);
+    }
+    return (
+      state?.selectedAddress ||
+      user.address?.find((addr) => addr.isDefault) ||
+      user.address?.[0] ||
+      null
+    );
+  };
+
+  // Sử dụng trong component
+  const [selectedAddressOrder, setSelectedAddressOrder] = useState(null);
+
+  const { address } = useSelector((state) => state.user);
+
+  const addressOrder = useSelector((state) => state.user?.address);
+
+  const [orderData, setOrderData] = useState({
+    products: [],
+    subtotal: 0,
+    discount: 0,
+    shippingFee: 0,
+    total: 0,
+    savings: 0,
+    address: null,
+  });
+
+  useEffect(() => {
+    const address = getInitialAddress();
+    setSelectedAddressOrder(address);
+
+    const savedData = JSON.parse(localStorage.getItem("checkoutData")) || {};
+    const items = state?.selectedItems || savedData.selectedItems || [];
+
+    if (items.length === 0) return;
+
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
+    const discount = state?.discount || savedData.discount || 0;
+    const shippingFee = subtotal > 100000 ? 0 : 15000;
+
+    setOrderData({
+      products: items,
+      subtotal,
+      discount,
+      shippingFee,
+      total: subtotal - discount + shippingFee,
+      savings: discount,
+      address: address
+        ? {
+            name: address.name,
+            phone: address.phoneDelivery || address.phone,
+            address: address.address,
+          }
+        : null,
+    });
+  }, [state]);
+
+  useEffect(() => {
+    if (selectedAddressOrder) {
+      setOrderData((prev) => ({
+        ...prev,
+        address: {
+          name: selectedAddressOrder.name,
+          phone:
+            selectedAddressOrder.phoneDelivery || selectedAddressOrder.phone,
+          address: selectedAddressOrder.address,
+        },
+      }));
+
+      // Cập nhật localStorage
+      const currentData =
+        JSON.parse(localStorage.getItem("checkoutData")) || {};
+      localStorage.setItem(
+        "checkoutData",
+        JSON.stringify({
+          ...currentData,
+          selectedAddress: selectedAddressOrder,
+        })
+      );
+    }
+  }, [selectedAddressOrder]);
+
+  const handleChangeAddress = () => {
+    console.log("Thay đổi địa chỉ");
+    setIsOpenModal(true);
+  };
+
+  const handleSelectAddress = (address) => {
+    setSelectedAddressOrder(address);
+    setIsOpenModal(false);
+  };
+
+  useEffect(() => {
+    const initData = () => {
+      if (state?.selectedItems) {
+        const subtotal = state.selectedItems.reduce(
+          (sum, item) => sum + item.product.price * item.quantity,
+          0
+        );
+        const discount = state.discount || 0;
+        const shippingFee = subtotal > 100000 ? 0 : 15000;
+
+        setOrderData({
+          products: state.selectedItems,
+          subtotal,
+          discount,
+          shippingFee,
+          total: subtotal - discount + shippingFee,
+          savings: discount,
+          address: state.selectedAddress || {
+            name: "Nguyễn Văn A",
+            phone: "0987654321",
+            address: "123 Đường ABC, Phường XYZ, Quận 1, TP.HCM",
+          },
+        });
+
+        // Lưu vào localStorage để tránh mất dữ liệu khi refresh
+        localStorage.setItem(
+          "checkoutData",
+          JSON.stringify({
+            selectedItems: state.selectedItems,
+            selectedAddress: state.selectedAddress,
+            subtotal,
+            discount,
+          })
+        );
+      } else {
+        // Fallback khi truy cập trực tiếp URL
+        const savedData = JSON.parse(localStorage.getItem("checkoutData"));
+        console.log("savedData", savedData);
+        if (savedData) {
+          const subtotal = savedData.selectedItems.reduce(
+            (sum, item) => sum + item.product.price * item.quantity,
+            0
+          );
+          const shippingFee = subtotal > 100000 ? 0 : 15000;
+
+          setOrderData({
+            products: savedData.selectedItems,
+            subtotal,
+            discount: savedData.discount || 0,
+            shippingFee,
+            total: subtotal - (savedData.discount || 0) + shippingFee,
+            savings: savedData.discount || 0,
+            address: savedData.selectedAddress || {
+              name: addressOrder.name,
+              phone: addressOrder.phone,
+              address: addressOrder.address,
+            },
+          });
+        }
+      }
+    };
+
+    initData();
+  }, [state]);
+
+  console.log("orderData ", orderData);
+
+  const handlePlaceOrder = () => {
+    if (!paymentMethod) {
+      message.error("Vui lòng chọn phương thức thanh toán");
+      return;
+    }
+
+    // Gọi API đặt hàng ở đây
+    console.log("Đặt hàng với thông tin:", {
+      products: orderData.products,
+      paymentMethod,
+      address: orderData.address,
+      total: orderData.total,
+    });
+
+    // Sau khi đặt hàng thành công
+    navigate("/order-success", {
+      state: {
+        orderId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        total: orderData.total,
+      },
+    });
+
+    // Xóa dữ liệu checkout
+    localStorage.removeItem("checkoutData");
+  };
+
+  if (orderData.products.length === 0) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h3>Không có sản phẩm nào để thanh toán</h3>
+        <Button type="primary" onClick={() => navigate("/order")}>
+          Quay lại giỏ hàng
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <CheckoutContainer>
       <LeftColumn>
-        {/* Product Section */}
+        {/* Product Section - Hiển thị tất cả sản phẩm đã chọn */}
         <Section>
-          <ProductItem>
-            <ProductImage src="https://via.placeholder.com/60" alt="product" />
-            <ProductInfo>
-              <ProductName>Chuột không dây LOGITECH M331</ProductName>
-              <div>SL: x2</div>
-              <PriceText>
-                <Text delete>319.800 ₫</Text>
-                <br />
-                <Text type="danger">312.620 ₫</Text>
-              </PriceText>
-            </ProductInfo>
-          </ProductItem>
-          <Divider style={{ margin: "12px 0" }} />
+          {orderData.products.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <ProductItem>
+                <ProductImage
+                  src={item.product.image || "https://via.placeholder.com/60"}
+                  alt={item.product.name}
+                />
+                <ProductInfo>
+                  <ProductName>{item.product.name}</ProductName>
+                  <div>SL: x{item.quantity}</div>
+                  {item.color && <div>Màu: {item.color}</div>}
+                  {item.size && <div>Size: {item.size}</div>}
+                  <PriceText>
+                    <Text delete>
+                      {(item.product.price * item.quantity).toLocaleString()}₫
+                    </Text>
+                    <br />
+                    <Text type="danger">
+                      {(
+                        item.product.price *
+                        item.quantity *
+                        (1 - (item.product.discount || 0) / 100)
+                      ).toLocaleString()}
+                      ₫
+                    </Text>
+                  </PriceText>
+                </ProductInfo>
+              </ProductItem>
+              {index < orderData.products.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
 
           {/* Promotion Section */}
+          <Divider style={{ margin: "12px 0" }} />
           <div>
             <ArrowLink>
               <span>
@@ -134,81 +362,98 @@ const CheckoutComponent = () => {
       </LeftColumn>
 
       <RightColumn>
-        {/* Shipping Section */}
+        {/* Shipping Section - Hiển thị địa chỉ giao hàng */}
         <Section>
           <SectionTitle>
-            <EnvironmentOutlined />{" "}
+            <EnvironmentOutlined />
             <span style={{ fontSize: 16 }}>Thông tin giao hàng</span>
           </SectionTitle>
-          <AddressInfo>
-            <div>
-              <strong>Nguyễn Văn A</strong>
-            </div>
-            <div>0987654321</div>
-            <div>123 Đường ABC, Phường XYZ, Quận 1, TP.HCM</div>
-          </AddressInfo>
+
+          {selectedAddressOrder ? (
+            <AddressInfo>
+              <div>
+                <strong>{selectedAddressOrder.name}</strong>
+              </div>
+              <div>
+                {selectedAddressOrder.phoneDelivery ||
+                  selectedAddressOrder.phone}
+              </div>
+              <div>{selectedAddressOrder.address}</div>
+            </AddressInfo>
+          ) : (
+            <div style={{ color: "red" }}>Bạn chưa có địa chỉ giao hàng</div>
+          )}
+
           <Divider style={{ margin: "12px 0" }} />
-          <ArrowLink>
+          <ArrowLink onClick={handleChangeAddress}>
             <span>Thay đổi địa chỉ giao hàng</span>
             <RightOutlined />
           </ArrowLink>
         </Section>
 
-        {/* Price Summary */}
+        {/* Price Summary - Tính toán động */}
         <div style={{ backgroundColor: "white" }}>
           <OrderInfo>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span>Đơn hàng</span>
               <span
-                onClick={() => {
-                  navigate(-1);
-                  console.log("Trở về ");
-                }}
                 style={{ color: "#1AB2FF", cursor: "pointer" }}
+                onClick={() => navigate(-1)}
               >
                 Thay đổi
               </span>
             </div>
-            <span>Chi tiết: 2 sản phẩm</span>
+            <span>Chi tiết: {orderData.products.length} sản phẩm</span>
           </OrderInfo>
+
           <Section>
             <PriceRow>
               <span>Tạm tính</span>
-              <span>312.620 ₫</span>
+              <span>{orderData.subtotal.toLocaleString()}₫</span>
             </PriceRow>
             <PriceRow>
               <span>Giảm giá</span>
-              <span>-7.180 ₫</span>
+              <span>-{orderData.discount.toLocaleString()}₫</span>
             </PriceRow>
             <PriceRow>
               <span>Phí giao hàng</span>
-              <span>0 ₫</span>
+              <span>{orderData.shippingFee.toLocaleString()}₫</span>
             </PriceRow>
 
             <Divider style={{ margin: "16px 0" }} />
 
             <PriceRow>
               <TotalPrice>Tổng tiền thanh toán</TotalPrice>
-              <TotalPrice>312.620 ₫</TotalPrice>
+              <TotalPrice>{orderData.total.toLocaleString()}₫</TotalPrice>
             </PriceRow>
 
-            <SavingsTag>Tiết kiệm 7.180₫</SavingsTag>
+            {orderData.savings > 0 && (
+              <SavingsTag>
+                Tiết kiệm {orderData.savings.toLocaleString()}₫
+              </SavingsTag>
+            )}
 
             <VATText>(Bao gồm VAT nếu có)</VATText>
           </Section>
         </div>
 
-        <CheckoutButton type="primary" block>
+        <CheckoutButton
+          type="primary"
+          block
+          onClick={handlePlaceOrder}
+          disabled={!paymentMethod}
+        >
           Đặt hàng
         </CheckoutButton>
       </RightColumn>
+
+      {/*  Modal đổi địa chỉ giao hàng */}
+      <AddressModal
+        isOpen={isOpenModal}
+        onClose={() => setIsOpenModal(false)}
+        onSelect={handleSelectAddress}
+        // currentAddress={selectedAddressOrder}
+      />
     </CheckoutContainer>
   );
 };
