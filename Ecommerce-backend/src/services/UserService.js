@@ -490,9 +490,6 @@ const deleteAddress = async (userId, addressId) => {
       return { status: "FAIL", message: "Người dùng không tồn tại!" };
     }
 
-    console.log("Danh sách địa chỉ trước khi xóa:", user.address);
-    console.log("ID cần xóa:", addressId);
-
     // Kiểm tra nếu `address` chưa tồn tại hoặc không phải mảng
     if (!Array.isArray(user.address)) {
       user.address = []; // Gán thành mảng rỗng nếu chưa có

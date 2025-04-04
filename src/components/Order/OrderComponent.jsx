@@ -23,21 +23,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
 const OrderComponent = () => {
-  const [quantities, setQuantities] = useState({});
+  //const [quantities, setQuantities] = useState({});
   const [quantityPay, setQuantityPay] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
+
   const user = useSelector((state) => state.user);
   const defaultAddress = user.address.find((addr) => addr.isDefault);
-  const [selectedAddress, setSelectedAddress] = useState(
-    user.address.find((addr) => addr.isDefault) || user.address[0] || null
-  );
-
-  const { isAuthenticated } = useSelector((state) => state.user);
-  const { cartCount } = useSelector((state) => state.cart);
-
-  const cartItems = useSelector((state) => state.cart.cartItems);
-  const cart = useSelector((state) => state.cart);
+  const [selectedAddress, setSelectedAddress] = useState(defaultAddress);
+  const { isAuthenticated, address, _id } = useSelector((state) => state.user);
+  const { cartItems, cartCount } = useSelector((state) => state.cart);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -110,12 +105,16 @@ const OrderComponent = () => {
     setSelectedProducts(checkedValues);
   };
 
-  const increaseQuantity = () =>
-    setQuantityPay((prev) => Math.min(prev + 1, 10));
-  const decreaseQuantity = () =>
-    setQuantityPay((prev) => Math.max(prev - 1, 1));
+  const handleCheckout = () => {
+    navigate("/checkout");
+  };
 
-  const getQuantity = (id) => quantities[id] || 1;
+  // const increaseQuantity = () =>
+  //   setQuantityPay((prev) => Math.min(prev + 1, 10));
+  // const decreaseQuantity = () =>
+  //   setQuantityPay((prev) => Math.max(prev - 1, 1));
+
+  // const getQuantity = (id) => quantities[id] || 1;
 
   if (!isAuthenticated) {
     return (
@@ -261,13 +260,13 @@ const OrderComponent = () => {
             <AddressInfo>
               <div>
                 <strong>
-                  {selectedAddress.name || "Chưa có tên người nhận hàng"}
+                  {selectedAddress?.name || "Chưa có tên người nhận hàng"}
                 </strong>
               </div>
               <div>
-                {selectedAddress.phoneDelivery || "Chưa có số điện thoại"}
+                {selectedAddress?.phoneDelivery || "Chưa có số điện thoại"}
               </div>
-              <div>{selectedAddress.address || "Chưa có địa chỉ"}</div>
+              <div>{selectedAddress?.address || "Chưa có địa chỉ"}</div>
             </AddressInfo>
           </Section>
         )}
@@ -277,7 +276,7 @@ const OrderComponent = () => {
         {/* Tổng kết thanh toán */}
         <Section>
           <PriceRow>
-            <span>Tổng tiền hàng</span>
+            <span>Tạm tính</span>
             <span>
               {cartItems
                 .reduce(
@@ -288,10 +287,19 @@ const OrderComponent = () => {
               ₫
             </span>
           </PriceRow>
+          <PriceRow>
+            <span>Thuế</span>
+            <span>₫</span> {/* Có thể thêm logic giảm giá sau */}
+          </PriceRow>
 
           <PriceRow>
             <span>Giảm giá trực tiếp</span>
             <span>-0₫</span> {/* Có thể thêm logic giảm giá sau */}
+          </PriceRow>
+
+          <PriceRow>
+            <span>Phí giao hàng</span>
+            <span>₫</span> {/* Có thể thêm logic giảm giá sau */}
           </PriceRow>
 
           <Divider style={{ margin: "16px 0" }} />
@@ -315,7 +323,12 @@ const OrderComponent = () => {
         </Section>
 
         {/* Nút thanh toán */}
-        <CheckoutButton type="primary" size="large">
+        <CheckoutButton
+          type="primary"
+          size="large"
+          disabled={selectedProducts.length === 0}
+          onClick={handleCheckout}
+        >
           Mua Hàng (
           {selectedProducts.length > 0 ? selectedProducts.length : cartCount})
         </CheckoutButton>
@@ -326,7 +339,6 @@ const OrderComponent = () => {
         onClose={() => setIsOpenModal(false)}
         onSelect={handleSelectAddress}
       />
-      ;
     </OrderContainer>
   );
 };

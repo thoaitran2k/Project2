@@ -180,6 +180,6 @@ const AppContainer = styled.div`
 `;
 
 const MainContent = styled.main`
-  flex: 1;
-  padding-top: 20px;
+  // flex: 1;
+  // padding-top: 20px;
 `;

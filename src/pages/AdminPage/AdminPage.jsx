@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "antd";
 import { AppstoreOutlined, UserOutlined } from "@ant-design/icons";
 import HeaderComponent from "../../components/HeaderComponent/HeaderComponent";
 import AdminUser from "../../components/AdminUser/AdminUser";
 import AdminProduct from "../../components/AdminProduct/AdminProduct";
+import AdjustDiscountProducts from "../../components/AdminProduct/AdjustDiscountProducts";
+import { getAllProduct } from "../../redux/slices/productSlice";
 
 // Menu items
 const items = [
@@ -24,7 +26,7 @@ const items = [
     label: "Sản phẩm",
     children: [
       { key: "product_list", label: "Danh sách sản phẩm" },
-      { key: "product_add", label: "Thêm sản phẩm" },
+      { key: "product_add", label: "Điều chỉnh giảm giá" },
     ],
   },
 ];
@@ -32,6 +34,7 @@ const items = [
 const AdminPage = () => {
   const user = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [stateOpenKeys, setStateOpenKeys] = useState([]); // Trạng thái mở submenu
   const [selectedKey, setSelectedKey] = useState(
     localStorage.getItem("selectedKey") || "user_list" // Khởi tạo từ localStorage
@@ -47,6 +50,18 @@ const AdminPage = () => {
     }
     return null;
   };
+
+  useEffect(() => {
+    const parentKey = findParentKey(selectedKey);
+    if (parentKey) {
+      setStateOpenKeys([parentKey]);
+
+      // Khi mở menu Sản phẩm, tự động gọi API
+      if (parentKey === "product") {
+        dispatch(getAllProduct({ limit: 100, page: 1 })); // Gọi API với limit lớn
+      }
+    }
+  }, [selectedKey, dispatch]);
 
   // Tự động mở submenu cha khi selectedKey thay đổi
   useEffect(() => {
@@ -78,7 +93,10 @@ const AdminPage = () => {
   const handleOnClick = ({ key }) => {
     setSelectedKey(key);
     localStorage.setItem("selectedKey", key); // Lưu key vào localStorage
-    console.log("Saved to localStorage:", key); // Kiểm tra
+    console.log("Saved to localStorage:", key);
+    if (key.startsWith("product_")) {
+      dispatch(getAllProduct({ limit: 100, page: 1 }));
+    } // Kiểm tra
   };
 
   // Render nội dung theo menu được chọn
@@ -91,7 +109,11 @@ const AdminPage = () => {
       case "product_list":
         return <AdminProduct />;
       case "product_add":
-        return <h2>Thêm sản phẩm</h2>;
+        return (
+          <h2>
+            <AdjustDiscountProducts />
+          </h2>
+        );
       default:
         return <h2>Chọn một mục từ menu</h2>;
     }
@@ -127,7 +149,7 @@ const AdminPage = () => {
 // CSS Styles
 const styles = {
   container: {
-    marginTop: "3vh",
+    marginTop: "5vh",
     display: "flex",
     height: "100vh",
     width: "100%", // Đảm bảo full màn hình

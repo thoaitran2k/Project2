@@ -80,6 +80,8 @@ const CardComponent = ({ products, totalProducts }) => {
     }
   };
 
+  console.log("product.discount", products.name);
+
   return (
     <>
       <WrapperCardProduct onClick={handleClick}>
@@ -106,7 +108,7 @@ const CardComponent = ({ products, totalProducts }) => {
                   </RatingRow>
                   <ProductPrice>
                     {product.price.toLocaleString("vi-VN")}₫
-                    <Discount> - {product.discount || 5}%</Discount>
+                    <Discount> - {product.discount}%</Discount>
                   </ProductPrice>
                 </ProductInfo>
               </ProductCard>

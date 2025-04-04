@@ -146,4 +146,42 @@ router.get("/search", async (req, res) => {
   }
 });
 
+//ADJUST DISCOUNT BASED ON TYPE
+router.put("/update-discount-by-type", async (req, res) => {
+  try {
+    const { productType, discount } = req.body;
+
+    // Validate input
+    if (
+      !productType ||
+      discount === undefined ||
+      discount < 0 ||
+      discount > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid input. productType is required and discount must be between 0-100",
+      });
+    }
+
+    // Cập nhật tất cả sản phẩm có type trùng khớp
+    const result = await Product.updateMany(
+      { type: productType },
+      { $set: { discount: discount } }
+    );
+
+    res.json({
+      success: true,
+      message: `Đã cập nhật discount thành ${discount}% cho ${result.modifiedCount} sản phẩm loại ${productType}`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

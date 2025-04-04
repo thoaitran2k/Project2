@@ -203,10 +203,6 @@ const AdminProduct = () => {
     setIsOpenDrawer(true);
   };
 
-  useEffect(() => {
-    console.log("stateProducts1111111", stateProduct);
-  }, [isOpenDrawer]);
-
   //______________________________________HANDLE XÓA TẤT CẢ SẢN PHẨM ĐƯỢC CHỌN
   const handleDeleteManyProducts = (productIds) => {
     if (!Array.isArray(productIds)) {
@@ -232,7 +228,6 @@ const AdminProduct = () => {
   useEffect(() => {
     if (productDetail?.data) {
       const productData = productDetail.data;
-      console.log("Product detail data received:", productData);
 
       // 1. Tạo bản sao dữ liệu gốc
       setCopyProductDetails({ ...productData });
