@@ -63,6 +63,8 @@ const cartSlice = createSlice({
               price: item.product.price || 0,
               image: item.product.image || "",
               type: item.product.type || "unknown",
+              discount:
+                item.product.discount !== undefined ? item.product.discount : 0,
             },
             id: item.id || `${item.product._id}-${Date.now()}`,
             quantity: item.quantity || 1,
@@ -95,6 +97,7 @@ const cartSlice = createSlice({
         color,
         variant,
         diameter,
+        discount,
       } = action.payload;
 
       // Kiểm tra product có tồn tại và có thuộc tính type không
@@ -128,6 +131,7 @@ const cartSlice = createSlice({
           ...(color && { color }),
           ...(variant && { variant }),
           ...(diameter && { diameter }),
+          ...(discount !== undefined && { discount }),
         });
       }
 

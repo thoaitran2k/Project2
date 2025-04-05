@@ -68,4 +68,57 @@ const sendVerificationCode = async (email, code, type = "register") => {
   }
 };
 
-module.exports = { sendVerificationCode };
+const sendPromotionCode = async (email, promoData, userName) => {
+  try {
+    const { code, discountValue, discountType, expiredAt } = promoData;
+
+    const discountText =
+      discountType === "percent"
+        ? `${discountValue}%`
+        : `${discountValue.toLocaleString()}₫`;
+
+    const msg = {
+      to: email,
+      from: "thoaitptp23@gmail.com",
+      subject: "🎉 Mã khuyến mãi chào mừng từ chúng tôi",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #d32f2f;">Chào mừng ${userName} đến với cửa hàng của chúng tôi!</h1>
+          <p style="font-size: 16px;">Cảm ơn bạn đã đăng ký tài khoản. Đây là món quà đặc biệt dành riêng cho bạn:</p>
+          
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px;">
+            <h2 style="color: #d32f2f; margin: 0;">${code}</h2>
+            <p style="font-size: 18px; margin: 10px 0;">Giảm giá ${discountText}</p>
+            <p style="font-size: 14px;">Áp dụng đến: ${new Date(
+              expiredAt
+            ).toLocaleDateString()}</p>
+          </div>
+          
+          <p style="font-size: 16px;">Hãy sử dụng mã khi thanh toán để nhận ưu đãi đặc biệt này!</p>
+          <p style="font-size: 14px; color: #777;">Mã chỉ có hiệu lực 1 lần duy nhất cho tài khoản của bạn.</p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p>Trân trọng,</p>
+            <p>Đội ngũ hỗ trợ</p>
+            <p>Hotline: 0794330648 - Liên hệ: Trần Phú Thoại</p>
+          </div>
+        </div>
+      `,
+    };
+
+    await sgMail.send(msg);
+    return { status: "SUCCESS", message: "Email mã khuyến mãi đã được gửi" };
+  } catch (error) {
+    console.error(
+      "Lỗi gửi email mã khuyến mãi:",
+      error.response?.body || error.message
+    );
+    return {
+      status: "ERROR",
+      message: "Gửi email mã khuyến mãi thất bại",
+      error: error.response?.body || error.message,
+    };
+  }
+};
+
+module.exports = { sendVerificationCode, sendPromotionCode };

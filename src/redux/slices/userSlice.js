@@ -41,7 +41,14 @@ export const fetchCart = createAsyncThunk(
       console.log("response", response);
       // Đảm bảo trả về đúng định dạng mà cartSlice mong đợi
       return {
-        cartItems: response.data?.cartItems || [],
+        cartItems:
+          response.data.cartItems.map((item) => ({
+            ...item,
+            product: {
+              ...item.product,
+              discount: item.product.discount || 0, // Chỉ set default khi không có
+            },
+          })) || [],
         cartCount: response.data?.cartItems?.length || 0,
       };
     } catch (error) {

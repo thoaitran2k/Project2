@@ -8,6 +8,8 @@ import AdminUser from "../../components/AdminUser/AdminUser";
 import AdminProduct from "../../components/AdminProduct/AdminProduct";
 import AdjustDiscountProducts from "../../components/AdminProduct/AdjustDiscountProducts";
 import { getAllProduct } from "../../redux/slices/productSlice";
+import CreatePromotion from "../../components/AdminProduct/CreatePromotion";
+import PromotionTable from "../../components/AdminProduct/PromotionTable";
 
 // Menu items
 const items = [
@@ -26,7 +28,8 @@ const items = [
     label: "Sản phẩm",
     children: [
       { key: "product_list", label: "Danh sách sản phẩm" },
-      { key: "product_add", label: "Điều chỉnh giảm giá" },
+      { key: "product_discount", label: "Điều chỉnh giảm giá" },
+      { key: "product_promotion", label: "Tạo mã giảm giá" },
     ],
   },
 ];
@@ -108,11 +111,18 @@ const AdminPage = () => {
         return <h2>Thêm người dùng</h2>;
       case "product_list":
         return <AdminProduct />;
-      case "product_add":
+      case "product_discount":
         return (
           <h2>
             <AdjustDiscountProducts />
           </h2>
+        );
+      case "product_promotion":
+        return (
+          <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
+            <CreatePromotion />
+            <PromotionTable />
+          </div>
         );
       default:
         return <h2>Chọn một mục từ menu</h2>;

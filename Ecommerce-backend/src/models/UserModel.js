@@ -54,6 +54,12 @@ const userSchema = new mongoose.Schema(
         size: String,
         color: String,
         diameter: String,
+        discount: {
+          type: Number,
+          default: 0,
+          min: 0,
+          max: 100,
+        },
       },
     ],
   },

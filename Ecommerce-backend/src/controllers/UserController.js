@@ -27,19 +27,25 @@ const updateCart = async (req, res) => {
     }
 
     const normalizedCart = cartItems.map((item) => ({
-      product: item.product?._id,
+      product: {
+        _id: item.product?._id,
+        name: item.product?.name,
+        price: item.product?.price,
+        image: item.product?.image,
+        type: item.product?.type,
+        discount: item.product?.discount || 0, // Giữ lại discount
+      },
       quantity: item.quantity,
       ...(item.size && { size: item.size }),
       ...(item.color && { color: item.color }),
       ...(item.diameter && { diameter: item.diameter }),
+      ...(item.discount !== undefined && { discount: item.discount }),
     }));
-
-    // console.log("📌 Giỏ hàng chuẩn hóa:", normalizedCart);
 
     const user = await User.findByIdAndUpdate(
       userId,
       { cart: normalizedCart },
-      { new: true } // Trả về dữ liệu mới sau update
+      { new: true }
     );
 
     if (!user) {

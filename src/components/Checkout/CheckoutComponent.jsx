@@ -9,6 +9,8 @@ import {
   TagOutlined,
   RightOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
+import { message } from "antd";
 
 import cash from "../../assets/cash.png";
 import momo from "../../assets/momoicon.jpg";
@@ -23,6 +25,8 @@ const CheckoutComponent = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [globalPromoCode, setGlobalPromoCode] = useState("");
+  const [globalPromo, setGlobalPromo] = useState(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const user = useSelector((state) => state.user);
   const { selectedItems = [], total = 0, discount = 0 } = state || {};
@@ -57,6 +61,53 @@ const CheckoutComponent = () => {
     savings: 0,
     address: null,
   });
+
+  const [productPromotions, setProductPromotions] = useState({});
+
+  const applyProductPromotion = async (productId, promotionCode) => {
+    const result = await checkPromotionCode(productId, promotionCode);
+
+    if (result.error) {
+      message.error(result.error);
+      return;
+    }
+
+    setProductPromotions((prev) => ({
+      ...prev,
+      [productId]: {
+        code: promotionCode,
+        discount: result.discount,
+        couponId: result.couponId,
+      },
+    }));
+
+    // Cập nhật tổng tiền
+    setOrderData((prev) => ({
+      ...prev,
+      discount: prev.discount + result.discount,
+      total: prev.total - result.discount,
+    }));
+
+    message.success(result.message || "Áp dụng mã thành công");
+  };
+
+  const removeProductPromotion = (productId) => {
+    const promotion = productPromotions[productId];
+    if (!promotion) return;
+
+    setProductPromotions((prev) => {
+      const newPromotions = { ...prev };
+      delete newPromotions[productId];
+      return newPromotions;
+    });
+
+    // Cập nhật lại tổng tiền
+    setOrderData((prev) => ({
+      ...prev,
+      discount: prev.discount - promotion.discount,
+      total: prev.total + promotion.discount,
+    }));
+  };
 
   useEffect(() => {
     const address = getInitialAddress();
@@ -193,30 +244,42 @@ const CheckoutComponent = () => {
 
   console.log("orderData ", orderData);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!paymentMethod) {
       message.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
 
-    // Gọi API đặt hàng ở đây
-    console.log("Đặt hàng với thông tin:", {
-      products: orderData.products,
-      paymentMethod,
-      address: orderData.address,
-      total: orderData.total,
-    });
+    try {
+      const orderItems = orderData.products.map((item) => ({
+        productId: item.product._id,
+        quantity: item.quantity,
+        color: item.color,
+        size: item.size,
+        price: item.product.price,
+        promotion: productPromotions[item.id]?.couponId,
+      }));
 
-    // Sau khi đặt hàng thành công
-    navigate("/order-success", {
-      state: {
-        orderId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      const response = await axios.post("http://localhost:3002/api/orders", {
+        items: orderItems,
+        paymentMethod,
+        address: orderData.address,
         total: orderData.total,
-      },
-    });
+        discount: orderData.discount,
+        couponIds: Object.values(productPromotions).map((p) => p.couponId),
+      });
 
-    // Xóa dữ liệu checkout
-    localStorage.removeItem("checkoutData");
+      navigate("/order-success", {
+        state: {
+          orderId: response.data.orderId,
+          total: orderData.total,
+        },
+      });
+
+      localStorage.removeItem("checkoutData");
+    } catch (error) {
+      message.error(error.response?.data?.message || "Đặt hàng thất bại");
+    }
   };
 
   if (orderData.products.length === 0) {
@@ -229,6 +292,144 @@ const CheckoutComponent = () => {
       </div>
     );
   }
+
+  const checkPromotionCode = async (productId, code) => {
+    try {
+      const product = orderData.products.find((item) => item.id === productId);
+      if (!product) return { error: "Sản phẩm không tồn tại" };
+
+      const response = await axios.post(
+        "http://localhost:3002/api/product/check-coupon",
+        {
+          code,
+          items: [
+            {
+              productId: product.product._id,
+              price: product.product.price,
+              quantity: product.quantity,
+              type: product.product.type, // Giả sử product có trường type
+            },
+          ],
+          totalAmount: product.product.price * product.quantity,
+          userId: user._id, // Giả sử user có _id
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      return {
+        error:
+          error.response?.data?.message || "Lỗi khi kiểm tra mã khuyến mãi",
+      };
+    }
+  };
+
+  const applyGlobalPromotion = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3002/api/product/check-coupon",
+        {
+          code: globalPromoCode,
+          items: orderData.products.map((item) => ({
+            productId: item.product._id,
+            price: item.product.price,
+            quantity: item.quantity,
+            type: item.product.type,
+          })),
+          totalAmount: orderData.subtotal,
+          userId: user._id,
+        }
+      );
+
+      setGlobalPromo({
+        code: globalPromoCode,
+        discount: response.data.discount,
+        couponId: response.data.couponId,
+      });
+
+      setOrderData((prev) => ({
+        ...prev,
+        discount: prev.discount + response.data.discount,
+        total: prev.total - response.data.discount,
+      }));
+
+      message.success(response.data.message);
+    } catch (error) {
+      message.error(error.response?.data?.message || "Lỗi khi áp dụng mã");
+    }
+  };
+
+  const removeGlobalPromotion = () => {
+    if (!globalPromo) return;
+
+    setOrderData((prev) => ({
+      ...prev,
+      discount: prev.discount - globalPromo.discount,
+      total: prev.total + globalPromo.discount,
+    }));
+
+    setGlobalPromo(null);
+    setGlobalPromoCode("");
+  };
+
+  const renderProductPromotion = (productId) => {
+    const currentPromo = productPromotions[productId];
+    const product = orderData.products.find((item) => item.id === productId);
+
+    return (
+      <div style={{ marginTop: "10px" }}>
+        {currentPromo ? (
+          <div>
+            <Tag color="green">
+              {currentPromo.code}: Giảm {currentPromo.discount.toLocaleString()}
+              ₫
+            </Tag>
+            <Button
+              size="small"
+              onClick={() => removeProductPromotion(productId)}
+              style={{ marginLeft: "5px" }}
+            >
+              Xóa
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div>
+              <ArrowLink>
+                <span>
+                  <TagOutlined /> Thêm mã khuyến mãi
+                </span>
+              </ArrowLink>
+            </div>
+            <div>
+              <Input
+                placeholder="Nhập mã khuyến mãi"
+                size="small"
+                style={{ width: "150px" }}
+                id={`promo-input-${productId}`}
+              />
+              <Button
+                type="primary"
+                size="small"
+                style={{ marginLeft: "5px" }}
+                onClick={async () => {
+                  const input = document.getElementById(
+                    `promo-input-${productId}`
+                  );
+                  if (input?.value) {
+                    await applyProductPromotion(productId, input.value);
+                    input.value = ""; // Clear input after applying
+                  }
+                }}
+              >
+                Áp dụng
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <CheckoutContainer>
@@ -261,30 +462,33 @@ const CheckoutComponent = () => {
                       ₫
                     </Text>
                   </PriceText>
+
+                  {/* Thêm phần mã khuyến mãi cho từng sản phẩm */}
+                  {renderProductPromotion(item.id)}
                 </ProductInfo>
               </ProductItem>
               {index < orderData.products.length - 1 && <Divider />}
             </React.Fragment>
           ))}
 
-          {/* Promotion Section */}
+          {/* Có thể giữ lại phần mã khuyến mãi chung nếu cần */}
           <Divider style={{ margin: "12px 0" }} />
           <div>
-            <ArrowLink>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
               <span>
-                <TagOutlined /> Thêm mã khuyến mãi của Shop
+                <TagOutlined /> Thêm mã khuyến mãi chung
               </span>
-              <RightOutlined />
-            </ArrowLink>
-            <PromotionButtons>
-              <PromotionButton type="primary" icon={<GiftOutlined />}>
-                Giảm 3% tối đa
-              </PromotionButton>
-              <PromotionButton icon={<GiftOutlined />}>
-                Giảm 50K
-              </PromotionButton>
-            </PromotionButtons>
-            <Input placeholder="Nhập mã khuyến mãi khác" />
+              <ArrowLink style={{ marginTop: 3 }}>
+                <RightOutlined />
+              </ArrowLink>
+            </div>
+            <Input placeholder="Nhập mã khuyến mãi áp dụng cho toàn đơn" />
           </div>
         </Section>
 
@@ -513,7 +717,7 @@ const ArrowLink = styled.div`
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  //justify-content: space-between;
   padding: 8px 0;
 
   &:hover {

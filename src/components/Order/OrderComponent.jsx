@@ -22,8 +22,29 @@ import { hover } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
+const UnauthenticatedCart = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div style={{ textAlign: "center", padding: "40px" }}>
+      <ShoppingCartOutlined style={{ fontSize: "48px", color: "#ccc" }} />
+      <p>Vui lòng đăng nhập để xem giỏ hàng</p>
+      <Button
+        style={{ marginLeft: 10 }}
+        onClick={() => navigate("/sign-in", { state: { from: "/order" } })}
+      >
+        Đăng nhập
+      </Button>
+    </div>
+  );
+};
+
 const OrderComponent = () => {
   //const [quantities, setQuantities] = useState({});
+  const { isAuthenticated, address, _id } = useSelector((state) => state.user);
+
+  const isUnauthenticated = !isAuthenticated;
+
   const [quantityPay, setQuantityPay] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -34,7 +55,7 @@ const OrderComponent = () => {
     if (!user.address || user.address.length === 0) return null;
     return user.address.find((addr) => addr.isDefault) || user.address[0];
   });
-  const { isAuthenticated, address, _id } = useSelector((state) => state.user);
+
   const { cartItems, cartCount } = useSelector((state) => state.cart);
 
   const dispatch = useDispatch();
@@ -134,18 +155,6 @@ const OrderComponent = () => {
 
   // const getQuantity = (id) => quantities[id] || 1;
 
-  if (!isAuthenticated) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <ShoppingCartOutlined style={{ fontSize: "48px", color: "#ccc" }} />
-        <p>Vui lòng đăng nhập để xem giỏ hàng</p>
-        <Button type="primary" onClick={() => navigate("/sign-in")}>
-          Đăng nhập
-        </Button>
-      </div>
-    );
-  }
-
   //Hàm tính tổng tiền sản phẩm
   const calculateSelectedTotal = () => {
     return cartItems
@@ -211,6 +220,10 @@ const OrderComponent = () => {
       logSelectedItems();
     }
   }, [selectedProducts]);
+
+  if (!isAuthenticated) {
+    return <UnauthenticatedCart />;
+  }
 
   return (
     <OrderContainer>

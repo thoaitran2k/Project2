@@ -1,6 +1,8 @@
 const ProductService = require("../services/ProductService");
 const uploadImageProductService = require("../services/uploadImageProductService");
 const Product = require("../models/ProductModel");
+const PromotionCode = require("../models/PromotionCode");
+const PromotionService = require("../services/promotionService");
 
 const createProduct = async (req, res) => {
   try {
@@ -255,6 +257,139 @@ const getProductType = async (req, res) => {
   }
 };
 
+const applyCode = async (req, res) => {
+  try {
+    const { code, cartItems } = req.body;
+    const userId = req.user?.id;
+
+    const promo = await PromotionCode.findOne({ code });
+    if (!promo || !promo.isActive) {
+      return res.status(400).json({ message: "Mã khuyến mãi không hợp lệ" });
+    }
+
+    const totalAmount = cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const validation = await PromotionService.validatePromotion(
+      promo,
+      userId,
+      cartItems,
+      totalAmount
+    );
+
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const discount = await PromotionService.calculateDiscount(
+      promo,
+      validation.applicableItems,
+      totalAmount
+    );
+
+    return res.status(200).json({
+      success: true,
+      discount,
+      couponId: promo._id,
+      message: `Áp dụng thành công mã giảm ${
+        promo.discountType === "percent"
+          ? `${promo.discountValue}%`
+          : `${promo.discountValue.toLocaleString()}₫`
+      }`,
+    });
+  } catch (err) {
+    console.error("Error applying promo code:", err);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};
+
+const createPromotionCode = async (req, res) => {
+  try {
+    const {
+      code,
+      discountType,
+      discountValue,
+      minOrderValue = 0,
+      appliesTo = "all",
+      targetIds = [],
+      maxUsage,
+      startAt,
+      expiredAt,
+      maxDiscount,
+      isActive = true,
+    } = req.body;
+
+    // Validation
+    if (!code || !discountType || !discountValue || !expiredAt) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    }
+
+    if (
+      discountType === "percent" &&
+      (discountValue < 1 || discountValue > 100)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Phần trăm giảm giá không hợp lệ" });
+    }
+
+    if (await PromotionCode.exists({ code: code.toUpperCase() })) {
+      return res.status(400).json({ message: "Mã khuyến mãi đã tồn tại" });
+    }
+
+    const newPromo = new PromotionCode({
+      code: code.toUpperCase(),
+      discountType,
+      discountValue,
+      minOrderValue,
+      appliesTo,
+      targetIds,
+      maxUsage,
+      startAt,
+      expiredAt,
+      maxDiscount,
+      usedCount: 0,
+      isActive,
+    });
+
+    await newPromo.save();
+    return res.status(201).json({
+      message: "Tạo mã khuyến mãi thành công",
+      promo: newPromo,
+    });
+  } catch (err) {
+    console.error("Lỗi tạo mã khuyến mãi:", err);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};
+
+const getPromotionList = async (req, res) => {
+  try {
+    // Truy vấn tất cả mã giảm giá
+    const promotions = await PromotionCode.find().sort({ createdAt: -1 });
+
+    // Kiểm tra nếu không có mã giảm giá nào
+    if (promotions.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy mã giảm giá nào" });
+    }
+
+    return res.status(200).json(promotions);
+  } catch (error) {
+    console.error("Lỗi lấy danh sách mã giảm giá:", error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi server", error: error.message });
+  }
+};
+
+module.exports = {
+  getPromotionList,
+};
+
 //________________________________________________________________________________
 module.exports = {
   createProduct,
@@ -268,4 +403,7 @@ module.exports = {
   getAllType,
   getProductsByType,
   getProductType,
+  applyCode,
+  createPromotionCode,
+  getPromotionList,
 };

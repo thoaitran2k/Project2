@@ -5,6 +5,9 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 const uploadExcel = require("../middleware/ImportExcelMiddleware");
 const Product = require("../models/ProductModel"); // Đường dẫn đến file model Product
+const PromotionCode = require("../models/PromotionCode");
+const PromotionService = require("../services/promotionService");
+const promotionController = require("../controllers/promotionController");
 
 const xlsx = require("xlsx");
 
@@ -183,5 +186,49 @@ router.put("/update-discount-by-type", async (req, res) => {
     });
   }
 });
+
+//MÃ GIẢM GIÁ
+router.post("/promotion/apply", ProductController.applyCode);
+router.post("/create-promotion", ProductController.createPromotionCode);
+router.get("/promotion/list", ProductController.getPromotionList);
+router.post("/check-coupon", async (req, res) => {
+  try {
+    const { code, items: cartItems, totalAmount, userId } = req.body;
+
+    const promo = await PromotionCode.findOne({ code: code.toUpperCase() });
+    if (!promo || !promo.isActive) {
+      return res
+        .status(404)
+        .json({ message: "Mã không hợp lệ hoặc đã hết hạn" });
+    }
+
+    const validation = await PromotionService.validatePromotion(
+      promo,
+      userId,
+      cartItems,
+      totalAmount
+    );
+
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const discount = await PromotionService.calculateDiscount(
+      promo,
+      validation.applicableItems,
+      totalAmount
+    );
+
+    return res.json({
+      message: "Áp dụng mã thành công",
+      discount,
+      couponId: promo._id,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+});
+
+router.post("/send-promo-email", promotionController.sendPromoCodeToUser);
 
 module.exports = router;

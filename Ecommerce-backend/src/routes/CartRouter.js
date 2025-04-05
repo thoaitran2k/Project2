@@ -23,8 +23,8 @@ router.get("/:userId", async (req, res) => {
           name: item.product.name,
           price: item.product.price,
           image: item.product.image,
-          type: item.product.type, // Đảm bảo type luôn tồn tại
-          // Thêm các trường bắt buộc khác
+          type: item.product.type,
+          discount: item.product.discount,
         },
         quantity: item.quantity || 1,
         ...(item.size && { size: item.size }),

@@ -201,7 +201,7 @@ export default function SignInPage() {
           navigate("/home");
           const redirectPath = location.state?.from || "/home";
           navigate(redirectPath);
-        }, 1500); // Chờ 500ms rồi chuyển trang
+        }, 500); // Chờ 500ms rồi chuyển trang
       }
     } catch (errorMsg) {
       message.error(errorMsg);

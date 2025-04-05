@@ -80,8 +80,6 @@ const CardComponent = ({ products, totalProducts }) => {
     }
   };
 
-  console.log("product.discount", products.name);
-
   return (
     <>
       <WrapperCardProduct onClick={handleClick}>
