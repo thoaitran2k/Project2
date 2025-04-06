@@ -26,6 +26,8 @@ const CheckoutComponent = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [globalPromoCode, setGlobalPromoCode] = useState("");
+  const [statusOrder, setStatusOrder] = useState("pending");
+  const [shippingMethod, setShippingMethod] = useState("express");
   const [globalPromo, setGlobalPromo] = useState(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const user = useSelector((state) => state.user);
@@ -60,9 +62,93 @@ const CheckoutComponent = () => {
     total: 0,
     savings: 0,
     address: null,
+    paymentMethod: "", // Thêm phương thức thanh toán
+    customer: {
+      // Thêm thông tin khách hàng
+      username: user?.username || "",
+      phone: user?.phone || "",
+      email: user?.email || "",
+    },
   });
 
   const [productPromotions, setProductPromotions] = useState({});
+
+  const updateOrderData = (updates) => {
+    setOrderData((prev) => {
+      const newData = {
+        ...prev,
+        ...updates,
+        status: updates.status || prev.status,
+        createdAt:
+          updates.createdAt || prev.createdAt || new Date().toISOString(),
+      };
+
+      // Tính toán lại tổng tiền (total)
+      const subtotal = updates.subtotal ?? prev.subtotal;
+      const discount = updates.discount ?? prev.discount;
+      const shippingFee = updates.shippingFee ?? prev.shippingFee;
+
+      newData.total = subtotal - discount + shippingFee;
+
+      if (updates.discount !== undefined) {
+        newData.savings = updates.discount;
+      }
+
+      // Cập nhật chi tiết sản phẩm với discount gốc
+      newData.products = newData.products.map((item) => {
+        const { product } = item;
+        const {
+          type,
+          name,
+          image,
+          price,
+          discount: productDiscount = 0,
+        } = product; // Lấy discount từ product (8%)
+
+        // Tính giá sau khi áp dụng discount gốc của sản phẩm
+        const discountAmount = price * (productDiscount / 100) * item.quantity;
+        const productSubtotal = price * item.quantity - discountAmount;
+
+        const productDetails = {
+          productName: name,
+          productImage: image,
+          quantity: item.quantity,
+          originalPrice: price * item.quantity, // Giá gốc chưa giảm
+          productDiscount: productDiscount, // Phần trăm giảm giá gốc (8%)
+          discountAmount: discountAmount, // Số tiền được giảm từ discount gốc
+          productSubtotal: productSubtotal, // Giá sau khi áp dụng discount gốc
+          subtotal: productSubtotal, // Tổng = giá sau discount
+        };
+
+        // ... (phần xử lý thuộc tính động giữ nguyên)
+
+        return { ...item, ...productDetails };
+      });
+
+      // Lưu trữ thông tin vào localStorage
+      localStorage.setItem(
+        "checkoutData",
+        JSON.stringify({
+          selectedItems: newData.products,
+          selectedAddress: newData.address,
+          subtotal: newData.products.reduce(
+            (sum, item) => sum + item.productSubtotal,
+            0
+          ),
+          discount,
+          shippingFee,
+          total: newData.total,
+          status: newData.status,
+          createdAt: newData.createdAt,
+          paymentMethod: newData.paymentMethod,
+          shippingMethod: newData.shippingMethod,
+          customer: newData.customer,
+        })
+      );
+
+      return newData;
+    });
+  };
 
   const applyProductPromotion = async (productId, promotionCode) => {
     const result = await checkPromotionCode(productId, promotionCode);
@@ -72,6 +158,7 @@ const CheckoutComponent = () => {
       return;
     }
 
+    // Cập nhật mã giảm giá cho sản phẩm
     setProductPromotions((prev) => ({
       ...prev,
       [productId]: {
@@ -81,14 +168,43 @@ const CheckoutComponent = () => {
       },
     }));
 
-    // Cập nhật tổng tiền
-    setOrderData((prev) => ({
-      ...prev,
-      discount: prev.discount + result.discount,
-      total: prev.total - result.discount,
-    }));
+    // Tính toán lại tổng số tiền sau khi áp dụng giảm giá sản phẩm
+    const updatedSubtotal = orderData.products.reduce((sum, item) => {
+      const productPromotion = productPromotions[item.product._id] || {};
+      const productDiscount = productPromotion.discount || 0;
+      const priceAfterDiscount =
+        item.product.price * item.quantity - productDiscount;
+
+      return sum + priceAfterDiscount;
+    }, 0);
+
+    // Cập nhật lại orderData với giá trị mới của subtotal
+    updateOrderData({
+      discount: orderData.discount + result.discount,
+      subtotal: updatedSubtotal,
+    });
 
     message.success(result.message || "Áp dụng mã thành công");
+  };
+
+  const handlePaymentMethodChange = (method) => {
+    setPaymentMethod(method);
+    updateOrderData({ paymentMethod: method });
+
+    if (method === "cash") {
+      setStatusOrder("pending"); // Trạng thái đơn hàng cho thanh toán tiền mặt
+    } else if (method === "momo" || method === "viettel") {
+      setStatusOrder("pending"); // Trạng thái đơn hàng cho thanh toán momo hoặc viettel
+    }
+    handlePlaceOrder;
+  };
+
+  const handleShippingMethodChange = (method) => {
+    setShippingMethod(method);
+    updateOrderData({
+      shippingMethod: method,
+      shippingFee: method === "standard" ? 30000 : 15000,
+    });
   };
 
   const removeProductPromotion = (productId) => {
@@ -101,12 +217,9 @@ const CheckoutComponent = () => {
       return newPromotions;
     });
 
-    // Cập nhật lại tổng tiền
-    setOrderData((prev) => ({
-      ...prev,
-      discount: prev.discount - promotion.discount,
-      total: prev.total + promotion.discount,
-    }));
+    updateOrderData({
+      discount: orderData.discount - promotion.discount,
+    });
   };
 
   useEffect(() => {
@@ -118,15 +231,29 @@ const CheckoutComponent = () => {
 
     if (items.length === 0) return;
 
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
+    // Tính toán subtotal cho từng sản phẩm và thêm trường itemsSubtotal
+    const updatedItems = items.map((item) => {
+      const productSubtotal = item.product.price * item.quantity; // Giá gốc của từng sản phẩm
+      return {
+        ...item,
+        itemsSubtotal: productSubtotal, // Thêm trường itemsSubtotal
+        originalPrice: productSubtotal, // Giá gốc
+        productSubtotal: productSubtotal, // Giá sau giảm (khởi tạo bằng giá gốc)
+        appliedPromotions: [], // Danh sách mã giảm giá áp dụng
+      };
+    });
+
+    // Tính tổng của tất cả các subtotal
+    const subtotal = updatedItems.reduce(
+      (sum, item) => sum + item.productSubtotal,
       0
     );
+
     const discount = state?.discount || savedData.discount || 0;
     const shippingFee = subtotal > 100000 ? 0 : 15000;
 
     setOrderData({
-      products: items,
+      products: updatedItems, // Cập nhật sản phẩm đã tính toán subtotal
       subtotal,
       discount,
       shippingFee,
@@ -144,34 +271,18 @@ const CheckoutComponent = () => {
 
   useEffect(() => {
     if (selectedAddressOrder) {
-      setOrderData((prev) => ({
-        ...prev,
+      updateOrderData({
         address: {
           name: selectedAddressOrder.name,
           phone:
             selectedAddressOrder.phoneDelivery || selectedAddressOrder.phone,
           address: selectedAddressOrder.address,
         },
-      }));
-
-      // Cập nhật localStorage
-      const currentData =
-        JSON.parse(localStorage.getItem("checkoutData")) || {};
-      localStorage.setItem(
-        "checkoutData",
-        JSON.stringify({
-          ...currentData,
-          selectedAddress: selectedAddressOrder,
-        })
-      );
+      });
     }
   }, [selectedAddressOrder]);
 
-  const handleChangeAddress = () => {
-    console.log("Thay đổi địa chỉ");
-    setIsOpenModal(true);
-  };
-
+  const handleChangeAddress = () => setIsOpenModal(true);
   const handleSelectAddress = (address) => {
     setSelectedAddressOrder(address);
     setIsOpenModal(false);
@@ -179,74 +290,80 @@ const CheckoutComponent = () => {
 
   useEffect(() => {
     const initData = () => {
+      const savedData = JSON.parse(localStorage.getItem("checkoutData")) || {};
+      const items = state?.selectedItems || savedData.selectedItems || [];
+
+      if (items.length === 0) return;
+
+      const subtotal = items.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0
+      );
+      const discount = state?.discount || savedData.discount || 0;
+      const shippingFee =
+        savedData.shippingMethod === "standard" ? 30000 : 15000;
+
+      const newOrderData = {
+        products: items,
+        subtotal,
+        discount,
+        shippingFee,
+        total: savedData.total || subtotal - discount + shippingFee,
+        savings: discount,
+        status: savedData.status || "pending",
+        createdAt: savedData.createdAt || new Date().toISOString(),
+        address: selectedAddressOrder
+          ? {
+              name: selectedAddressOrder.name,
+              phone:
+                selectedAddressOrder.phoneDelivery ||
+                selectedAddressOrder.phone,
+              address: selectedAddressOrder.address,
+            }
+          : null,
+        paymentMethod: savedData.paymentMethod || "",
+        shippingMethod: savedData.shippingMethod || "standard",
+        customer: {
+          userId: user?._id || "",
+          username: user?.username || savedData.customer?.username || "",
+          phone: user?.phone || savedData.customer?.phone || "",
+          email: user?.email || savedData.customer?.email || "",
+        },
+      };
+
+      setOrderData(newOrderData);
+      setPaymentMethod(savedData.paymentMethod || "");
+      setShippingMethod(savedData.shippingMethod || "standard");
+
       if (state?.selectedItems) {
-        const subtotal = state.selectedItems.reduce(
-          (sum, item) => sum + item.product.price * item.quantity,
-          0
-        );
-        const discount = state.discount || 0;
-        const shippingFee = subtotal > 100000 ? 0 : 15000;
-
-        setOrderData({
-          products: state.selectedItems,
-          subtotal,
-          discount,
-          shippingFee,
-          total: subtotal - discount + shippingFee,
-          savings: discount,
-          address: state.selectedAddress || {
-            name: "Nguyễn Văn A",
-            phone: "0987654321",
-            address: "123 Đường ABC, Phường XYZ, Quận 1, TP.HCM",
-          },
-        });
-
-        // Lưu vào localStorage để tránh mất dữ liệu khi refresh
         localStorage.setItem(
           "checkoutData",
           JSON.stringify({
             selectedItems: state.selectedItems,
             selectedAddress: state.selectedAddress,
             subtotal,
-            discount,
+            discount: state.discount || 0,
+            total: newOrderData.total,
+            status: newOrderData.status,
+            createdAt: newOrderData.createdAt,
+            customer: newOrderData.customer,
           })
         );
-      } else {
-        // Fallback khi truy cập trực tiếp URL
-        const savedData = JSON.parse(localStorage.getItem("checkoutData"));
-        console.log("savedData", savedData);
-        if (savedData) {
-          const subtotal = savedData.selectedItems.reduce(
-            (sum, item) => sum + item.product.price * item.quantity,
-            0
-          );
-          const shippingFee = subtotal > 100000 ? 0 : 15000;
-
-          setOrderData({
-            products: savedData.selectedItems,
-            subtotal,
-            discount: savedData.discount || 0,
-            shippingFee,
-            total: subtotal - (savedData.discount || 0) + shippingFee,
-            savings: savedData.discount || 0,
-            address: savedData.selectedAddress || {
-              name: addressOrder.name,
-              phone: addressOrder.phone,
-              address: addressOrder.address,
-            },
-          });
-        }
       }
     };
-
     initData();
-  }, [state]);
+  }, [state, user]);
 
-  console.log("orderData ", orderData);
+  //console.log("orderData ", orderData);
 
   const handlePlaceOrder = async () => {
     if (!paymentMethod) {
       message.error("Vui lòng chọn phương thức thanh toán");
+      return;
+    }
+
+    if (!orderData.address) {
+      message.error("Vui lòng chọn địa chỉ giao hàng");
       return;
     }
 
@@ -260,14 +377,26 @@ const CheckoutComponent = () => {
         promotion: productPromotions[item.id]?.couponId,
       }));
 
-      const response = await axios.post("http://localhost:3002/api/orders", {
+      const orderPayload = {
+        customer: orderData.customer,
         items: orderItems,
-        paymentMethod,
+        paymentMethod: orderData.paymentMethod,
+        shippingMethod: orderData.shippingMethod,
         address: orderData.address,
         total: orderData.total,
         discount: orderData.discount,
-        couponIds: Object.values(productPromotions).map((p) => p.couponId),
-      });
+        shippingFee: orderData.shippingFee,
+        couponIds: [
+          ...Object.values(productPromotions).map((p) => p.couponId),
+          ...(globalPromo ? [globalPromo.couponId] : []),
+        ],
+        status: statusOrder,
+      };
+
+      const response = await axios.post(
+        "http://localhost:3002/api/orders",
+        orderPayload
+      );
 
       navigate("/order-success", {
         state: {
@@ -347,11 +476,26 @@ const CheckoutComponent = () => {
         couponId: response.data.couponId,
       });
 
-      setOrderData((prev) => ({
-        ...prev,
-        discount: prev.discount + response.data.discount,
-        total: prev.total - response.data.discount,
-      }));
+      setOrderData((prev) => {
+        const newData = {
+          ...prev,
+          discount: prev.discount + response.data.discount,
+          total: prev.total - response.data.discount,
+        };
+
+        // Cập nhật localStorage
+        const currentData =
+          JSON.parse(localStorage.getItem("checkoutData")) || {};
+        localStorage.setItem(
+          "checkoutData",
+          JSON.stringify({
+            ...currentData,
+            discount: newData.discount,
+          })
+        );
+
+        return newData;
+      });
 
       message.success(response.data.message);
     } catch (error) {
@@ -362,11 +506,26 @@ const CheckoutComponent = () => {
   const removeGlobalPromotion = () => {
     if (!globalPromo) return;
 
-    setOrderData((prev) => ({
-      ...prev,
-      discount: prev.discount - globalPromo.discount,
-      total: prev.total + globalPromo.discount,
-    }));
+    setOrderData((prev) => {
+      const newData = {
+        ...prev,
+        discount: prev.discount - globalPromo.discount,
+        total: prev.total + globalPromo.discount,
+      };
+
+      // Cập nhật localStorage
+      const currentData =
+        JSON.parse(localStorage.getItem("checkoutData")) || {};
+      localStorage.setItem(
+        "checkoutData",
+        JSON.stringify({
+          ...currentData,
+          discount: newData.discount,
+        })
+      );
+
+      return newData;
+    });
 
     setGlobalPromo(null);
     setGlobalPromoCode("");
@@ -431,9 +590,93 @@ const CheckoutComponent = () => {
     );
   };
 
+  console.log("orderData.products", orderData.products);
+
   return (
     <CheckoutContainer>
       <LeftColumn>
+        <Section>
+          <SectionTitle>Phương thức vận chuyển</SectionTitle>
+          <Radio.Group
+            onChange={(e) => handleShippingMethodChange(e.target.value)}
+            value={shippingMethod}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flexDirection: "row",
+            }}
+          >
+            <Radio
+              value="standard"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "50%",
+                backgroundColor: "#F0F8FF",
+                borderRadius: "8px",
+                border: "solid 1px #0B74E5",
+                padding: "0 20px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px",
+                  transition: "background-color 0.3s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  maxWidth: "100%",
+                  width: "100%",
+                }}
+              >
+                {/* Thêm khoảng cách giữa checkbox và văn bản */}
+                <div style={{ width: "100%" }}>
+                  <strong
+                    style={{ fontSize: "16px", color: "#444", fontWeight: 100 }}
+                  >
+                    Giao tiết kiệm
+                  </strong>
+                  <div style={{ fontSize: "14px", color: "#777" }}>
+                    4-5 ngày - 15,000₫
+                  </div>
+                </div>
+              </div>
+            </Radio>
+            <Radio
+              value="express"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "50%",
+                backgroundColor: "#F0F8FF",
+                borderRadius: "8px",
+                border: "solid 1px #0B74E5",
+                padding: "0 20px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px",
+                  transition: "background-color 0.3s ease",
+                  display: "flex",
+                  alignItems: "center", // Căn chỉnh checkbox và văn bản ngang
+                  width: "100%", // Đảm bảo phần này chiếm 100% chiều rộng
+                }}
+              >
+                <div>
+                  <strong
+                    style={{ fontSize: "16px", color: "#444", fontWeight: 100 }}
+                  >
+                    Giao nhanh
+                  </strong>
+                  <div style={{ fontSize: "14px", color: "#777" }}>
+                    1-2 ngày - 30,000₫
+                  </div>
+                </div>
+              </div>
+            </Radio>
+          </Radio.Group>
+        </Section>
+
         {/* Product Section - Hiển thị tất cả sản phẩm đã chọn */}
         <Section>
           {orderData.products.map((item, index) => (
@@ -502,7 +745,7 @@ const CheckoutComponent = () => {
               gap: "20px",
             }}
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => handlePaymentMethodChange(e.target.value)}
           >
             <PaymentOption
               value="cash"

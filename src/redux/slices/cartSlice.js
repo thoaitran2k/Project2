@@ -40,7 +40,7 @@ const cartSlice = createSlice({
 
       const { cartItems = [], cartCount = 0 } = action.payload;
 
-      console.log("🔹 Dữ liệu cartItems trước khi vào reducer:", cartItems);
+      // console.log("🔹 Dữ liệu cartItems trước khi vào reducer:", cartItems);
 
       if (!Array.isArray(cartItems)) {
         console.error("❌ cartItems không phải là mảng!", cartItems);
@@ -71,11 +71,6 @@ const cartSlice = createSlice({
           };
         })
         .filter(Boolean);
-
-      console.log(
-        "✅ Số lượng item hợp lệ sau khi filter:",
-        validatedItems.length
-      );
 
       state.cartItems = validatedItems;
       state.cartCount = validatedItems.reduce(

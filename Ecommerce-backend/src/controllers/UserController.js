@@ -1,6 +1,7 @@
 const UserService = require("../services/UserService");
 const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
+const { sendPromoCodeToUser } = require("../controllers/promotionController");
 const {
   changePasswordUser,
   updateUserService,
@@ -183,6 +184,24 @@ const createUser = async (req, res) => {
       address: userAddress,
       avatar,
     });
+
+    try {
+      await sendPromoCodeToUser(
+        {
+          body: {
+            email: newUser.email,
+            userName: newUser.username,
+            userId: newUser._id,
+            type: "welcome", // hoặc bạn có thể để trống, mặc định là welcome
+          },
+        },
+        {
+          status: () => ({ json: () => {} }), // fake res cho service
+        }
+      );
+    } catch (err) {
+      console.error("Lỗi gửi mã khuyến mãi khi đăng ký:", err.message);
+    }
 
     return res.status(201).json({
       status: "OK",

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("./src/models/UserModel"); // Đường dẫn đến file UserModel.js của bạn
+const User = require("./src/models/UserModel"); // Đường dẫn đúng đến model User
 
 const updateUsers = async () => {
   try {
@@ -11,9 +11,10 @@ const updateUsers = async () => {
       }
     );
 
+    // Chỉ cập nhật những user chưa có trường orderHistory
     const result = await User.updateMany(
-      { cart: { $exists: false } }, // Chỉ cập nhật những user chưa có trường cart
-      { $set: { cart: [] } } // Thêm trường cart với giá trị mặc định là mảng rỗng
+      { orderHistory: { $exists: true } },
+      { $set: { orderHistory: [] } }
     );
 
     console.log(`✅ Đã cập nhật ${result.modifiedCount} user!`);

@@ -22,7 +22,7 @@ const sendPromoCodeToUser = async (req, res) => {
       appliesTo: "user",
       targetIds: [userId], // Áp dụng riêng cho user
       startAt: new Date(),
-      expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Hết hạn sau 7 ngày
+      expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Hết hạn sau 30 ngày
       isActive: true,
       issuedFor: type,
       issuedTo: userId,

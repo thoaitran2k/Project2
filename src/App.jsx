@@ -21,6 +21,8 @@ import { SearchProvider, useSearch } from "./components/Layout/SearchContext";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import SearchOverlay from "./components/SearchComponent/SearchOverlay";
 import SearchComponent from "./components/SearchComponent/SearchComponent";
+import useAutoLogoutWhenTokenMissing from "./hooks/useAutoLogoutWhenTokenMissing";
+import FooterComponent from "./components/FooterComponent/FooterComponent";
 // import { SearchProvider } from "./components/Layout/SearchContext";
 
 function App() {
@@ -30,6 +32,7 @@ function App() {
   const [isNavigatingFromApp, setIsNavigatingFromApp] = useState(false); // Để theo dõi điều hướng từ trong ứng dụng
   const [targetPath, setTargetPath] = useState(null);
   const user = useSelector((state) => state.user);
+  const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
   const [isUserLoaded, setIsUserLoaded] = useState(false);
   const [applySlideDownEffect, setApplySlideDownEffect] = useState(false);
   const { isSearchOpen } = useSearch();
@@ -54,13 +57,13 @@ function App() {
     setIsNavigatingFromApp(true); // Đánh dấu là đang điều hướng từ ứng dụng
   };
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      dispatch(setUser(JSON.parse(storedUser)));
-    }
-    setIsUserLoaded(true);
-  }, [dispatch]);
+  // useEffect(() => {
+  //   const storedUser = localStorage.getItem("user");
+  //   if (storedUser) {
+  //     dispatch(setUser(JSON.parse(storedUser)));
+  //   }
+  //   setIsUserLoaded(true);
+  // }, [dispatch]);
 
   useEffect(() => {
     if (user.isAuthenticated) {
@@ -147,6 +150,7 @@ function App() {
           )}
         </AnimatePresence>
       </MainContent>
+      {/* <FooterComponent /> */}
     </AppContainer>
   );
 }
@@ -179,6 +183,6 @@ const AppContainer = styled.div`
 `;
 
 const MainContent = styled.main`
-  // flex: 1;
+  flex: 1;
   // padding-top: 20px;
 `;

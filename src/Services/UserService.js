@@ -59,6 +59,7 @@ export const getUserDetails = async (userId, accessToken) => {
         },
       }
     );
+
     return response.data.data;
   } catch (error) {
     throw (

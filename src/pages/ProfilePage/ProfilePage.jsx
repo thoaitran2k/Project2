@@ -10,11 +10,13 @@ import styled from "styled-components";
 
 import AddressList from "../../components/ProfileComponent/AddressComponent/AddressList";
 
+import Orders from "../../components/ProfileComponent/Orders";
+
 const { Title } = Typography;
 
 const pageTitles = {
   "customer-info": "Thông tin tài khoản",
-  orders: "Quản lý đơn hàng",
+  orders: "Đơn hàng của tôi",
   address: "Chỉnh sửa địa chỉ",
   "change-password": "Đổi mật khẩu",
 };
@@ -39,7 +41,11 @@ const ProfilePage = () => {
       case "customer-info":
         return <ProfileForm />;
       case "orders":
-        return <h2>Quản lý đơn hàng</h2>;
+        return (
+          <>
+            <Orders />
+          </>
+        );
       case "address":
         return (
           <div style={{ width: "100%" }}>
@@ -58,15 +64,15 @@ const ProfilePage = () => {
   };
 
   return (
-    <ContainerProfile>
+    <ContainerProfile style={{ flex: 1 }}>
       <Row
         gutter={[16, 16]}
         style={{
           padding: "20px",
-          // border: "solid 2px red",
+
           marginTop: "4vh",
           minHeight: "calc(100vh - 8vh - 60px)",
-          height: "20vh", // Trừ phần Header và Footer
+
           display: "flex",
           flexGrow: 1,
         }}
@@ -110,7 +116,7 @@ const ProfilePage = () => {
         </Col>
 
         {/* Nội dung chính */}
-        <Col xs={24} sm={18} md={19}>
+        <Col xs={24} sm={18} md={19} style={{ width: "100%" }}>
           <Card
             style={{
               borderRadius: "12px",
@@ -146,4 +152,5 @@ export const ContainerProfile = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  flex-grow: 1;
 `;

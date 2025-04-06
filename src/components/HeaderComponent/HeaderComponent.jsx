@@ -38,6 +38,7 @@ import { persistor } from "../../redux/store";
 import styled from "styled-components";
 import { color } from "framer-motion";
 import { useSearch } from "../Layout/SearchContext";
+import useAutoLogoutWhenTokenMissing from "../../hooks/useAutoLogoutWhenTokenMissing";
 
 const { useBreakpoint } = Grid;
 
@@ -76,10 +77,12 @@ const Sidebar = () => {
           }}
           open={open}
           width={drawerWidth}
-          bodyStyle={{ padding: 0, display: "flex" }} // Thêm display flex
-          headerStyle={{
-            padding: "16px 24px",
-            borderBottom: "1px solid #f0f0f0",
+          styles={{
+            body: { padding: 0, display: "flex" }, // Thêm display flex
+            header: {
+              padding: "16px 24px",
+              borderBottom: "1px solid #f0f0f0",
+            }, // Thay headerStyle thành styles.header
           }}
         >
           <NavbarComponent
@@ -268,6 +271,8 @@ const HeaderComponent = ({
         address,
         avatar,
         isAdmin,
+        orderHistory,
+        orders,
       } = response.data.data;
 
       const newUserData = {
@@ -283,6 +288,8 @@ const HeaderComponent = ({
         address,
         avatar,
         isAdmin,
+        orderHistory,
+        orders,
       };
 
       // Lưu thông tin người dùng vào Redux & localStorage
@@ -318,8 +325,12 @@ const HeaderComponent = ({
         localStorage.removeItem("refreshToken");
 
         await dispatch(logoutUser()).unwrap();
+
         await persistor.purge();
-        //navigate("/sign-in", { replace: true });
+
+        if (location.pathname !== "/home") {
+          navigate("/home", { replace: true });
+        }
       } catch (error) {
         console.error("Lỗi khi đăng xuất:", error);
       }
@@ -444,14 +455,29 @@ const HeaderComponent = ({
           {/* User/Auth section */}
           <Col span={screens.xs ? 0 : 2}>
             {isAuthenticated ? (
-              <Dropdown menu={{ items }} trigger={["click"]}>
+              <Dropdown
+                menu={{ items }}
+                trigger={["click"]}
+                dropdownRender={(menu) => (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginLeft: "-50px",
+                      width: "200px",
+                    }}
+                  >
+                    {menu}
+                  </div>
+                )}
+              >
                 <UserAvatar style={{ display: "flex" }}>
                   <img
                     src={avatar || getDefaultAvatar(gender)}
                     alt={username || "User"}
                     style={{
-                      width: "45px",
-                      height: "45px",
+                      width: "35px",
+                      height: "35px",
                       borderRadius: "50%",
                       objectFit: "cover",
                     }}

@@ -1,7 +1,7 @@
 const express = require("express");
 const userController = require("../controllers/UserController");
 const router = express.Router();
-const User = require("../models/UserModel"); // Import đúng
+const User = require("../models/UserModel");
 
 router.put("/update", userController.updateCart);
 

@@ -36,7 +36,7 @@ const FooterComponent = () => {
   };
 
   return (
-    <FooterWrapper>
+    <FooterWrapper style={{ marginBottom: "-100px" }}>
       <FooterContent>
         <Row gutter={[16, 16]} justify="space-between">
           <Col xs={24} sm={12} md={6} lg={6} xl={6}>
@@ -119,6 +119,7 @@ const FooterWrapper = styled.div`
   padding: 20px 10px;
   font-family: "Arial";
   position: relative;
+  margin-bottom: -100px;
 `;
 
 const FooterContent = styled.div`

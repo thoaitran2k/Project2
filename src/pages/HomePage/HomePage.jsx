@@ -299,17 +299,6 @@ const HeroTitle = styled.h1`
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 `;
 
-const HeroSubtitle = styled.h2`
-  font-size: 1.8rem;
-  margin-bottom: 5px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-`;
-
-const PromoCode = styled.p`
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-`;
-
 const ShopButton = styled.button`
   padding: 12px 30px;
   background-color: #ff4d4f;
@@ -435,27 +424,6 @@ const BannerSubtitle = styled.h3`
   font-size: 1.2rem;
   margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-`;
-
-const StatsBanner = styled.div`
-  height: 200px;
-  background: #1890ff;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  margin-bottom: 40px;
-`;
-
-const StatsTitle = styled.h1`
-  font-size: 3rem;
-  margin-bottom: 10px;
-`;
-
-const StatsSubtitle = styled.h2`
-  font-size: 1.5rem;
 `;
 
 const SectionContainer = styled.section`

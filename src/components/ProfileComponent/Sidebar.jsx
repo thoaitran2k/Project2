@@ -50,7 +50,7 @@ const Sidebar = () => {
             padding: "16px",
             fontSize: "16px",
             height: "50px",
-            width: "100%",
+            width: "97%",
             gap: "10px",
             borderRadius: "8px",
             cursor: "pointer",

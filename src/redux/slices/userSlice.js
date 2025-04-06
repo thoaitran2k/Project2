@@ -38,7 +38,7 @@ export const fetchCart = createAsyncThunk(
         `http://localhost:3002/api/cart/${userId}`
       );
 
-      console.log("response", response);
+      // console.log("response", response);
       // Đảm bảo trả về đúng định dạng mà cartSlice mong đợi
       return {
         cartItems:
@@ -136,7 +136,30 @@ const initialState = getUserFromLocalStorage() || {
   isLoggingOut: false,
   isAdmin: false,
   isBlocked: false,
+  orderHistory: [],
+  orders: [],
 };
+
+const getInitialState = () => ({
+  isAuthenticated: false,
+  _id: null,
+  accessToken: null,
+  refreshToken: null,
+  username: null,
+  email: null,
+  phone: null,
+  address: [],
+  avatar: null,
+  dob: null,
+  gender: null,
+  isLoggingOut: false,
+  isAdmin: false,
+  isBlocked: false,
+  orderHistory: [],
+  orders: [],
+});
+
+console.log("initialState", initialState);
 
 const userSlice = createSlice({
   name: "user",
@@ -146,6 +169,9 @@ const userSlice = createSlice({
       const userData = action.payload;
 
       if (!action.payload) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         // Khi logout (payload = null)
         return initialState; // Reset user state nhưng không ảnh hưởng cart
       }
@@ -155,6 +181,14 @@ const userSlice = createSlice({
         localStorage.removeItem("user");
 
         return;
+      }
+
+      if (userData.orderHistory) {
+        state.orderHistory = userData.orderHistory;
+      }
+
+      if (userData.orders) {
+        state.orders = userData.orders;
       }
 
       state.address = Array.isArray(userData.address)
@@ -294,6 +328,9 @@ const userSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchCart.fulfilled, (state, action) => {})
+      .addCase(logoutUser.fulfilled, (state) => {
+        return getInitialState();
+      })
 
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         const {

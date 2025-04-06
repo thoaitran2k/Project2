@@ -62,6 +62,37 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    orderHistory: [
+      {
+        orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+        orderDate: { type: Date, default: Date.now },
+        totalAmount: { type: Number, required: true },
+        products: [
+          {
+            productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+            name: { type: String },
+            image: { type: String },
+            price: { type: Number },
+            quantity: { type: Number },
+            size: { type: String },
+            color: { type: String },
+            diameter: { type: String },
+            subtotal: { type: Number }, // Tổng của từng sản phẩm
+          },
+        ],
+        status: {
+          type: String,
+          enum: ["pending", "completed", "shipped", "cancelled"],
+          default: "pending",
+        },
+        address: {
+          name: { type: String },
+          phone: { type: String },
+          address: { type: String },
+        },
+        paymentMethod: { type: String },
+      },
+    ],
   },
   {
     timestamps: true,

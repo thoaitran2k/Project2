@@ -133,7 +133,6 @@ export default function SignInPage() {
     }
 
     dispatch(setLoading(true));
-    // Bật trạng thái loading
 
     try {
       const response = await loginUser(formData.email, formData.password);
@@ -148,8 +147,11 @@ export default function SignInPage() {
         const userId = decodedToken.id;
 
         const userDetails = await getUserDetails(userId, accessToken);
+
         console.log("Thông tin người dùng:", userDetails);
         message.success("Đăng nhập thành công!");
+
+        // Dispatch setUser với toàn bộ thông tin userDetails và orderHistory
 
         setIsLogin(true);
         setIsAuthenticated(true);
@@ -160,7 +162,6 @@ export default function SignInPage() {
               fetchCart(userDetails._id)
             ).unwrap();
 
-            // Thêm validate trước khi dispatch
             if (!cartResponse || !Array.isArray(cartResponse.cartItems)) {
               throw new Error("Dữ liệu giỏ hàng không hợp lệ");
             }
@@ -168,18 +169,9 @@ export default function SignInPage() {
             console.log("cartResponse", cartResponse);
 
             cartResponse.cartItems.forEach((item) => {
-              console.log("Item:", item);
               if (!item.product) {
                 console.error("Lỗi: item.product bị undefined", item);
-              } else {
-                console.log("Product type:", item.product.type); // Kiểm tra giá trị type
               }
-            });
-
-            console.log("🔹 Trước khi dispatch setCartFromServer:", {
-              cartItems: cartResponse.cartItems,
-              cartCount:
-                cartResponse.cartCount || cartResponse.cartItems.length,
             });
 
             dispatch(
@@ -191,25 +183,22 @@ export default function SignInPage() {
             );
           } catch (error) {
             console.error("Lỗi khi xử lý giỏ hàng:", error);
-            // Fallback: set giỏ hàng trống
             dispatch(setCartFromServer({ cartItems: [], cartCount: 0 }));
           }
         }
-        //dispatch(fetchCart(userDetails._id));
+
         setTimeout(() => {
           dispatch(setLoading(false));
-          navigate("/home");
           const redirectPath = location.state?.from || "/home";
           navigate(redirectPath);
-        }, 500); // Chờ 500ms rồi chuyển trang
+        }, 500);
       }
     } catch (errorMsg) {
       message.error(errorMsg);
     } finally {
       setTimeout(() => {
-        dispatch(setLoading(false)); // Tắt trạng thái loading
+        dispatch(setLoading(false));
       }, 1500);
-      // Đảm bảo loading luôn được tắt, kể cả khi lỗi
     }
   };
 
@@ -716,7 +705,7 @@ const SubmitButton = styled.button`
   width: 100%;
 `;
 
-const ToggleText = styled.p`
+const ToggleText = styled.div`
   text-align: center;
   margin-top: 15px;
   font-size: 16px;

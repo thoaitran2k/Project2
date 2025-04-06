@@ -47,7 +47,8 @@ const LayoutContainer = styled.div`
   width: ${({ $isHomePage }) => ($isHomePage ? "100%" : "auto")};
   min-height: 100vh;
   padding-top: 4vh;
-
-  ${({ $isWidePage, $isHomePage }) =>
-    $isWidePage && !$isHomePage && "margin: 0 100px;"}
+  margin-bottom: 10px;
+  flex: 1
+    ${({ $isWidePage, $isHomePage }) =>
+      $isWidePage && !$isHomePage && "margin: 0 100px;"};
 `;

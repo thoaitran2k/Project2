@@ -61,7 +61,7 @@ router.post(
   "/upload-avatar",
   upload.single("avatar"),
   (req, res, next) => {
-    console.log("Multer đã xử lý file:", req.file); // 🔍 Kiểm tra multer
+    //console.log("Multer đã xử lý file:", req.file); // 🔍 Kiểm tra multer
     next();
   },
   userController.uploadAvatar
