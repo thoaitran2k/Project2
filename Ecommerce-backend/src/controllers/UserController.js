@@ -2,6 +2,7 @@ const UserService = require("../services/UserService");
 const JwtService = require("../services/JwtService");
 const MailService = require("../services/MailService");
 const { sendPromoCodeToUser } = require("../controllers/promotionController");
+const mongoose = require("mongoose");
 const {
   changePasswordUser,
   updateUserService,
@@ -27,27 +28,23 @@ const updateCart = async (req, res) => {
       return res.status(400).json({ message: "Dữ liệu không hợp lệ" });
     }
 
+    // Chuẩn hóa dữ liệu giỏ hàng theo schema
     const normalizedCart = cartItems.map((item) => ({
-      product: {
-        _id: item.product?._id,
-        name: item.product?.name,
-        price: item.product?.price,
-        image: item.product?.image,
-        type: item.product?.type,
-        discount: item.product?.discount || 0, // Giữ lại discount
-      },
+      id: item.id,
+      product: item.product._id,
       quantity: item.quantity,
-      ...(item.size && { size: item.size }),
-      ...(item.color && { color: item.color }),
-      ...(item.diameter && { diameter: item.diameter }),
-      ...(item.discount !== undefined && { discount: item.discount }),
+      size: item.size,
+      color: item.color,
+      diameter: item.diameter,
+      discount: item.discount || 0,
+      selected: item.selected || false,
     }));
 
     const user = await User.findByIdAndUpdate(
       userId,
       { cart: normalizedCart },
       { new: true }
-    );
+    ).populate("cart.product"); // Populate để lấy thông tin đầy đủ khi trả về
 
     if (!user) {
       return res.status(404).json({ message: "User không tồn tại" });

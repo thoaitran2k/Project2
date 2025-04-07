@@ -13,7 +13,29 @@ export const logoutUser = createAsyncThunk(
   "user/logout",
   async (_, { dispatch }) => {
     try {
-      const savedCart = localStorage.getItem("cart"); // 🔹 Lưu giỏ hàng trước khi reset
+      const persistedRoot = localStorage.getItem("persist:root");
+
+      let savedCart = null;
+      if (persistedRoot) {
+        try {
+          const parsedRoot = JSON.parse(persistedRoot);
+          if (parsedRoot.cart) {
+            savedCart = parsedRoot.cart; // 🔹 Vẫn là string JSON, cần parse thêm
+          }
+        } catch (err) {
+          console.error("❌ Lỗi khi đọc persist:root:", err);
+        }
+      }
+
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          localStorage.setItem("savedCart", JSON.stringify(parsedCart)); // ✅ Lưu lại
+        } catch (err) {
+          console.error("❌ Lỗi khi parse cart từ persist:", err);
+        }
+      }
+
       localStorage.removeItem("user");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
@@ -21,7 +43,7 @@ export const logoutUser = createAsyncThunk(
       dispatch(setUser(null));
       dispatch(resetCart()); // 🔹 Không dùng clearCart() để giữ localStorage
 
-      if (savedCart) localStorage.setItem("savedCart", savedCart); // 🔹 Lưu lại giỏ hàng
+      // 🔹 Lưu lại giỏ hàng
 
       return true;
     } catch (error) {
@@ -38,7 +60,7 @@ export const fetchCart = createAsyncThunk(
         `http://localhost:3002/api/cart/${userId}`
       );
 
-      // console.log("response", response);
+      console.log("response", response);
       // Đảm bảo trả về đúng định dạng mà cartSlice mong đợi
       return {
         cartItems:
@@ -46,7 +68,8 @@ export const fetchCart = createAsyncThunk(
             ...item,
             product: {
               ...item.product,
-              discount: item.product.discount || 0, // Chỉ set default khi không có
+              discount: item.product.discount || 0,
+              selected: item.selected || false, // Chỉ set default khi không có
             },
           })) || [],
         cartCount: response.data?.cartItems?.length || 0,
@@ -370,7 +393,6 @@ const userSlice = createSlice({
         const flattenedAddresses = Array.isArray(action.payload.data[0])
           ? action.payload.data.flat()
           : action.payload.data;
-        console.log("📌 Sau khi làm phẳng:", flattenedAddresses);
 
         // Loại bỏ địa chỉ trùng lặp dựa trên `_id`
         const uniqueAddresses = Array.from(

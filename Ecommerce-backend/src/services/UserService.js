@@ -546,7 +546,7 @@ const updateAddress = async (userId, addressId, newAddress) => {
       throw new Error("Không có trường hợp lệ để cập nhật");
     }
 
-    console.log("Updating fields:", updateFields);
+    //console.log("Updating fields:", updateFields);
 
     // Cập nhật vào database
     const updatedUser = await User.findOneAndUpdate(

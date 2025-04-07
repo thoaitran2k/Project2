@@ -106,8 +106,6 @@ const ProfileForm = () => {
 
   useEffect(() => {
     if (user) {
-      console.log("DOB từ API:", user.dob);
-
       let formattedDob = null;
 
       if (typeof user.dob === "string") {

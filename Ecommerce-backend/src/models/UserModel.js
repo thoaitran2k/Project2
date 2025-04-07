@@ -1,4 +1,3 @@
-// UserModel.js
 const mongoose = require("mongoose");
 
 const AddressSchema = new mongoose.Schema({
@@ -41,6 +40,7 @@ const userSchema = new mongoose.Schema(
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
     cart: [
       {
+        id: { type: String, required: true },
         product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Product",
@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema(
           default: 0,
           min: 0,
           max: 100,
+        },
+        selected: {
+          type: Boolean,
+          default: false,
         },
       },
     ],

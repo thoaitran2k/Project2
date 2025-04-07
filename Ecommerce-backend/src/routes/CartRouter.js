@@ -16,21 +16,40 @@ router.get("/:userId", async (req, res) => {
     // Validate và xử lý từng item trong giỏ hàng
     const validCartItems = user.cart
       .filter((item) => item.product)
-      .map((item) => ({
-        id: item._id.toString(),
-        product: {
-          _id: item.product._id.toString(),
-          name: item.product.name,
-          price: item.product.price,
-          image: item.product.image,
-          type: item.product.type,
-          discount: item.product.discount,
-        },
-        quantity: item.quantity || 1,
-        ...(item.size && { size: item.size }),
-        ...(item.color && { color: item.color }),
-        ...(item.diameter && { diameter: item.diameter }),
-      }));
+      .map((item) => {
+        const { product, size, color, diameter } = item;
+        const productType = product.type?.toLowerCase();
+
+        // Tạo itemId duy nhất dựa trên loại sản phẩm
+        let itemId;
+        if (["áo nam", "áo nữ", "quần nam", "quần nữ"].includes(productType)) {
+          // Nếu là áo, quần, sử dụng size và color để tạo itemId duy nhất
+          itemId = `${product._id.toString()}-${size}-${color}`;
+        } else if (productType === "đồng hồ") {
+          // Nếu là đồng hồ, sử dụng color và diameter để tạo itemId duy nhất
+          itemId = `${product._id.toString()}-${color}-${diameter}`;
+        } else {
+          // Đối với các loại sản phẩm khác, chỉ sử dụng product._id làm itemId duy nhất
+          itemId = product._id.toString();
+        }
+
+        return {
+          id: itemId, // Kết hợp _id, size, và color thành id tương ứng với addToCart
+          product: {
+            _id: product._id.toString(),
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            type: product.type,
+            discount: product.discount,
+          },
+          quantity: item.quantity || 1,
+          ...(size && { size }),
+          ...(color && { color }),
+          ...(diameter && { diameter }),
+          selected: item.selected,
+        };
+      });
 
     res.json({
       cartItems: validCartItems,
@@ -47,4 +66,5 @@ router.get("/:userId", async (req, res) => {
     });
   }
 });
+
 module.exports = router;

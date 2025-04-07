@@ -166,8 +166,6 @@ export default function SignInPage() {
               throw new Error("Dữ liệu giỏ hàng không hợp lệ");
             }
 
-            console.log("cartResponse", cartResponse);
-
             cartResponse.cartItems.forEach((item) => {
               if (!item.product) {
                 console.error("Lỗi: item.product bị undefined", item);

@@ -6,6 +6,8 @@ import AddressModal from "./AddressModal";
 import {
   clearCart,
   removeFromCart,
+  toggleAllCartItemsSelected,
+  toggleCartItemSelected,
   updateCartItemAmount,
   updateCartOnServer,
 } from "../../redux/slices/cartSlice";
@@ -46,7 +48,7 @@ const OrderComponent = () => {
   const isUnauthenticated = !isAuthenticated;
 
   const [quantityPay, setQuantityPay] = useState(1);
-  const [selectedProducts, setSelectedProducts] = useState([]);
+
   const [isOpenModal, setIsOpenModal] = useState(false);
 
   const user = useSelector((state) => state.user);
@@ -57,11 +59,15 @@ const OrderComponent = () => {
   });
 
   const { cartItems, cartCount } = useSelector((state) => state.cart);
+  const selectedProducts = cartItems
+    .filter((item) => item.selected)
+    .map((item) => item.id);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const isAllChecked = selectedProducts.length === cartItems.length;
+  const isAllChecked =
+    cartItems.length > 0 && cartItems.every((item) => item.selected);
 
   console.log("cartItems", cartItems);
 
@@ -102,13 +108,15 @@ const OrderComponent = () => {
     }
 
     if (isAllChecked) {
-      dispatch(clearCart()); // Xóa toàn bộ giỏ hàng nếu đã chọn tất cả
+      dispatch(clearCart());
+      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true })); // Xóa toàn bộ giỏ hàng nếu đã chọn tất cả
     } else {
       selectedProducts.forEach((itemId) => {
-        dispatch(removeFromCart(itemId)); // Xóa từng sản phẩm đã tích
+        dispatch(removeFromCart(itemId));
+        dispatch(updateCartOnServer({ forceUpdateEmptyCart: true })); // Xóa từng sản phẩm đã tích
       });
 
-      setSelectedProducts([]); // Reset danh sách chọn
+      // Reset danh sách chọn
     }
   };
 
@@ -122,17 +130,24 @@ const OrderComponent = () => {
   };
 
   const handleCheckAll = (e) => {
-    setSelectedProducts(
-      e.target.checked ? cartItems.map((item) => item.id) : []
-    );
+    const shouldSelectAll = e.target.checked;
+    dispatch(toggleAllCartItemsSelected(shouldSelectAll));
   };
 
   const handleProductCheck = (checkedValues) => {
-    setSelectedProducts(checkedValues);
+    // Tìm sự khác biệt giữa giá trị mới và cũ
+    const allIds = cartItems.map((item) => item.id);
+
+    // Cập nhật từng item được thay đổi
+    allIds.forEach((id) => {
+      const shouldBeSelected = checkedValues.includes(id);
+      const item = cartItems.find((item) => item.id === id);
+
+      if (item && item.selected !== shouldBeSelected) {
+        dispatch(toggleCartItemSelected(id));
+      }
+    });
   };
-
-  console.log("selectedAddress", selectedAddress);
-
   const handleCheckout = () => {
     const selectedItems = cartItems.filter((item) =>
       selectedProducts.includes(item.id)
@@ -256,7 +271,10 @@ const OrderComponent = () => {
               return (
                 <GridRow key={item.id}>
                   <ProductCell>
-                    <Checkbox value={item.id} />
+                    <Checkbox
+                      value={item.id}
+                      checked={item.selected || false}
+                    />
                     <ProductImage
                       src={
                         typeof item.product.image === "string"

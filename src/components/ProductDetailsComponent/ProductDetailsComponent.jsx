@@ -94,6 +94,12 @@ const ProductDetailsComponent = ({ product }) => {
           (v) => v.color === selectedColor && v.diameter === selectedDiameter
         );
       }
+      if (isPants) {
+        // Với Quần nam và Quần nữ, xét size và color trong variants
+        return productDetail.variants?.find(
+          (v) => v.color === selectedColor && v.size === selectedSize
+        );
+      }
       return productDetail.variants?.find(
         (v) => v.color === selectedColor && v.size === selectedSize
       );
@@ -103,13 +109,6 @@ const ProductDetailsComponent = ({ product }) => {
 
     if (!user.isAuthenticated) {
       // Lưu thông tin giỏ hàng tạm thời vào localStorage
-      const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
-      const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
-      const isWatch = productDetail.type === "Đồng hồ";
-      const isAccessory = ["Trang sức", "Ví", "Túi xách"].includes(
-        productDetail.type
-      );
-
       if (!productDetail || !productDetail._id) {
         console.error("❌ Lỗi: Không có sản phẩm hợp lệ", productDetail);
         return;
@@ -140,10 +139,14 @@ const ProductDetailsComponent = ({ product }) => {
       }
 
       // Tìm đúng biến thể của sản phẩm (đối với quần áo & đồng hồ)
-      let selectedVariant = null;
       if (isWatch) {
         selectedVariant = productDetail.variants?.find(
           (v) => v.color === selectedColor && v.diameter === selectedDiameter
+        );
+      } else if (isPants) {
+        // Kiểm tra biến thể cho Quần nam hoặc Quần nữ
+        selectedVariant = productDetail.variants?.find(
+          (v) => v.color === selectedColor && v.size === selectedSize
         );
       } else {
         selectedVariant = productDetail.variants?.find(
@@ -152,7 +155,7 @@ const ProductDetailsComponent = ({ product }) => {
       }
 
       if (isWatch && !selectedVariant) {
-        alert("Không tìm thấy biến thể phù hợp!");
+        alert("Vui lòng chọn màu sắc và mặt đồng hồ!");
         return;
       }
 
@@ -172,7 +175,7 @@ const ProductDetailsComponent = ({ product }) => {
           size: selectedSize,
           color: selectedColor,
           diameter: isWatch ? selectedDiameter : undefined, // Lưu diameter cho đồng hồ
-          variant: selectedVariant, // Đây là biến thể đã chọn
+          variant: selectedVariant, // Lưu biến thể đã chọn
         })
       );
 
@@ -187,8 +190,6 @@ const ProductDetailsComponent = ({ product }) => {
     }
 
     // Xác định loại sản phẩm
-
-    // Kiểm tra điều kiện bắt buộc theo loại sản phẩm
     if (
       (isClothing || isPants) &&
       productDetail.sizes?.length > 0 &&
@@ -214,7 +215,6 @@ const ProductDetailsComponent = ({ product }) => {
     }
 
     // Tìm đúng biến thể của sản phẩm (đối với quần áo, quần nữ & đồng hồ)
-
     if (isWatch) {
       selectedVariant = productDetail.variants?.find(
         (v) => v.color === selectedColor && v.diameter === selectedDiameter
@@ -234,6 +234,7 @@ const ProductDetailsComponent = ({ product }) => {
       alert("Không tìm thấy biến thể phù hợp!");
       return;
     }
+
     // Tạo item giỏ hàng với số lượng mặc định là 1
     const itemToAdd = {
       product: {

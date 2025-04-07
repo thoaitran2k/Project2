@@ -4,14 +4,20 @@ import axios from "axios";
 
 export const updateCartOnServer = createAsyncThunk(
   "cart/updateCartOnServer",
-  async (_, { getState, rejectWithValue }) => {
+  async (
+    { forceUpdateEmptyCart = false } = {},
+    { getState, rejectWithValue }
+  ) => {
     try {
       const user = getState().user;
       if (!user) throw new Error("User chưa đăng nhập");
 
       const { cartItems } = getState().cart;
 
-      // console.log("Dữ liệu trả về", cartItems);
+      if (!forceUpdateEmptyCart && !cartItems.length) {
+        return; // Không gửi nếu giỏ hàng trống và không ép cập nhật
+      }
+
       const response = await axios.put(
         "http://localhost:3002/api/cart/update",
         {
@@ -40,8 +46,6 @@ const cartSlice = createSlice({
 
       const { cartItems = [], cartCount = 0 } = action.payload;
 
-      // console.log("🔹 Dữ liệu cartItems trước khi vào reducer:", cartItems);
-
       if (!Array.isArray(cartItems)) {
         console.error("❌ cartItems không phải là mảng!", cartItems);
         state.cartItems = [];
@@ -66,7 +70,7 @@ const cartSlice = createSlice({
               discount:
                 item.product.discount !== undefined ? item.product.discount : 0,
             },
-            id: item.id || `${item.product._id}-${Date.now()}`,
+            id: item.id || item.product._id,
             quantity: item.quantity || 1,
           };
         })
@@ -95,22 +99,26 @@ const cartSlice = createSlice({
         discount,
       } = action.payload;
 
-      // Kiểm tra product có tồn tại và có thuộc tính type không
       if (!product || !product.type) {
         console.error("❌ Lỗi: Product không hợp lệ", product);
         return;
       }
 
-      // Tạo ID duy nhất theo loại sản phẩm
       let itemId;
-      const productType = product.type?.toLowerCase(); // Thêm ?. để phòng trường hợp type undefined
+      const productType = product.type?.toLowerCase();
 
+      console.log("productType", productType);
+
+      // Tạo itemId duy nhất dựa trên các thuộc tính của sản phẩm
       if (["áo nam", "áo nữ", "quần nam", "quần nữ"].includes(productType)) {
-        itemId = variant?._id || `${product._id}-${size}-${color}`;
+        // Nếu là áo, quần, sử dụng size và color để tạo itemId duy nhất
+        itemId = `${product._id}-${size}-${color}`;
       } else if (productType === "đồng hồ") {
-        itemId = variant?._id || `${product._id}-${color}-${diameter}`;
+        // Nếu là đồng hồ, sử dụng color và diameter để tạo itemId duy nhất
+        itemId = `${product._id}-${color}-${diameter}`;
       } else {
-        itemId = product._id; // Cho phụ kiện
+        // Đối với các loại sản phẩm khác, chỉ sử dụng product._id làm itemId duy nhất
+        itemId = product._id;
       }
 
       const existingItem = state.cartItems.find((item) => item.id === itemId);
@@ -119,7 +127,7 @@ const cartSlice = createSlice({
         existingItem.quantity += quantity;
       } else {
         state.cartItems.push({
-          id: itemId,
+          id: itemId, // Giữ nguyên ID duy nhất
           product,
           quantity,
           ...(size && { size }),
@@ -135,7 +143,6 @@ const cartSlice = createSlice({
         0
       );
     },
-
     removeFromCart: (state, action) => {
       const itemId = action.payload;
       const item = state.cartItems.find((item) => item.id === itemId);
@@ -165,6 +172,21 @@ const cartSlice = createSlice({
       state.cartItems = [];
       state.cartCount = 0;
     },
+    toggleCartItemSelected: (state, action) => {
+      const itemId = action.payload;
+      const item = state.cartItems.find((item) => item.id === itemId);
+
+      if (item) {
+        item.selected = !item.selected; // Chỉ thay đổi trạng thái selected
+      }
+    },
+
+    toggleAllCartItemsSelected: (state, action) => {
+      const shouldSelect = action.payload; // true/false
+      state.cartItems.forEach((item) => {
+        item.selected = shouldSelect; // Chỉ thay đổi trạng thái selected
+      });
+    },
   },
 
   extraReducers: (builder) => {
@@ -172,6 +194,9 @@ const cartSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.cartItems = [];
         state.cartCount = 0;
+        if (!state.cartItems.length) {
+          return;
+        }
       })
       .addCase(updateCartOnServer.fulfilled, () => {
         //console.log("✅ Giỏ hàng đã được cập nhật lên server");
@@ -180,6 +205,8 @@ const cartSlice = createSlice({
 });
 
 export const {
+  toggleCartItemSelected,
+  toggleAllCartItemsSelected,
   addToCart,
   removeFromCart,
   updateCartItemAmount,
