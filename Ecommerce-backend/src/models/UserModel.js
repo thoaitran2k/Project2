@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema(
       {
         orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
         orderDate: { type: Date, default: Date.now },
-        totalAmount: { type: Number, required: true },
+        total: { type: Number, required: true },
         products: [
           {
             productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
@@ -82,6 +82,7 @@ const userSchema = new mongoose.Schema(
             color: { type: String },
             diameter: { type: String },
             subtotal: { type: Number }, // Tổng của từng sản phẩm
+            discount: { type: Number },
           },
         ],
         status: {
@@ -95,6 +96,8 @@ const userSchema = new mongoose.Schema(
           address: { type: String },
         },
         paymentMethod: { type: String },
+        ShippingFee: { type: Number },
+        totalDiscount: { type: Number },
       },
     ],
   },

@@ -73,7 +73,7 @@ const CheckoutComponent = () => {
 
   const [productPromotions, setProductPromotions] = useState({});
 
-  const updateOrderData = (updates) => {
+  const updateOrderData = (updates, updatedPromotions = productPromotions) => {
     setOrderData((prev) => {
       const newData = {
         ...prev,
@@ -83,66 +83,91 @@ const CheckoutComponent = () => {
           updates.createdAt || prev.createdAt || new Date().toISOString(),
       };
 
-      // Tính toán lại tổng tiền (total)
-      const subtotal = updates.subtotal ?? prev.subtotal;
-      const discount = updates.discount ?? prev.discount;
-      const shippingFee = updates.shippingFee ?? prev.shippingFee;
+      // Cập nhật sản phẩm chi tiết
+      newData.products = newData.products.map((item) => {
+        const { product } = item;
+        const { price, discount: productDiscount = 0 } = product;
 
-      newData.total = subtotal - discount + shippingFee;
+        const baseDiscountAmount =
+          price * (productDiscount / 100) * item.quantity;
+
+        const productPromo = updatedPromotions[item.id] || {};
+        const promoDiscount = productPromo.discount || 0;
+
+        const totalDiscount = baseDiscountAmount + promoDiscount;
+
+        const productSubtotal = price * item.quantity - totalDiscount;
+        const originalPrice = price * item.quantity;
+
+        return {
+          ...item,
+          productName: product.name,
+          productImage: product.image,
+          quantity: item.quantity,
+          originalPrice: price * item.quantity,
+          productDiscount,
+          baseDiscountAmount,
+          promoDiscount,
+          totalDiscount,
+          productSubtotal,
+          subtotal: originalPrice, // dùng đồng nhất
+        };
+      });
+
+      const totalPromoDiscount = newData.products.reduce(
+        (sum, item) => sum + item.promoDiscount,
+        0
+      );
+
+      // Tổng giá gốc chưa giảm
+      const originalTotal = newData.products.reduce(
+        (sum, item) => sum + item.originalPrice,
+        0
+      );
+
+      // Tổng đã giảm sau khuyến mãi sản phẩm
+      const subtotal = newData.products.reduce(
+        (sum, item) => sum + item.productSubtotal,
+        0
+      );
+
+      const extraDiscount = updates.discount ?? 0;
+      const discount = totalPromoDiscount + extraDiscount;
+      const shippingFee = updates.shippingFee ?? prev.shippingFee ?? 0;
+
+      const totalDiscountAmount = originalTotal - subtotal;
+
+      const total = subtotal + shippingFee;
+
+      newData.originalTotal = originalTotal;
+      newData.subtotal = subtotal;
+      newData.totalDiscountAmount = totalDiscountAmount;
+      newData.discount = discount;
+      newData.shippingFee = shippingFee;
+      newData.total = total;
+      newData.savings = extraDiscount;
 
       if (updates.discount !== undefined) {
         newData.savings = updates.discount;
       }
 
-      // Cập nhật chi tiết sản phẩm với discount gốc
-      newData.products = newData.products.map((item) => {
-        const { product } = item;
-        const {
-          type,
-          name,
-          image,
-          price,
-          discount: productDiscount = 0,
-        } = product; // Lấy discount từ product (8%)
-
-        // Tính giá sau khi áp dụng discount gốc của sản phẩm
-        const discountAmount = price * (productDiscount / 100) * item.quantity;
-        const productSubtotal = price * item.quantity - discountAmount;
-
-        const productDetails = {
-          productName: name,
-          productImage: image,
-          quantity: item.quantity,
-          originalPrice: price * item.quantity, // Giá gốc chưa giảm
-          productDiscount: productDiscount, // Phần trăm giảm giá gốc (8%)
-          discountAmount: discountAmount, // Số tiền được giảm từ discount gốc
-          productSubtotal: productSubtotal, // Giá sau khi áp dụng discount gốc
-          subtotal: productSubtotal, // Tổng = giá sau discount
-        };
-
-        // ... (phần xử lý thuộc tính động giữ nguyên)
-
-        return { ...item, ...productDetails };
-      });
-
-      // Lưu trữ thông tin vào localStorage
+      // Lưu localStorage
       localStorage.setItem(
         "checkoutData",
         JSON.stringify({
           selectedItems: newData.products,
           selectedAddress: newData.address,
-          subtotal: newData.products.reduce(
-            (sum, item) => sum + item.productSubtotal,
-            0
-          ),
+          subtotal,
           discount,
           shippingFee,
-          total: newData.total,
+          total,
           status: newData.status,
           createdAt: newData.createdAt,
           paymentMethod: newData.paymentMethod,
           shippingMethod: newData.shippingMethod,
           customer: newData.customer,
+          originalTotal,
+          totalDiscountAmount,
         })
       );
 
@@ -158,31 +183,20 @@ const CheckoutComponent = () => {
       return;
     }
 
-    // Cập nhật mã giảm giá cho sản phẩm
-    setProductPromotions((prev) => ({
-      ...prev,
+    const updatedPromotions = {
+      ...productPromotions,
       [productId]: {
         code: promotionCode,
         discount: result.discount,
         couponId: result.couponId,
       },
-    }));
+    };
 
-    // Tính toán lại tổng số tiền sau khi áp dụng giảm giá sản phẩm
-    const updatedSubtotal = orderData.products.reduce((sum, item) => {
-      const productPromotion = productPromotions[item.product._id] || {};
-      const productDiscount = productPromotion.discount || 0;
-      const priceAfterDiscount =
-        item.product.price * item.quantity - productDiscount;
+    // Cập nhật mã giảm giá
+    setProductPromotions(updatedPromotions);
 
-      return sum + priceAfterDiscount;
-    }, 0);
-
-    // Cập nhật lại orderData với giá trị mới của subtotal
-    updateOrderData({
-      discount: orderData.discount + result.discount,
-      subtotal: updatedSubtotal,
-    });
+    // Kích hoạt tính toán lại và truyền promotions vào
+    updateOrderData({}, updatedPromotions);
 
     message.success(result.message || "Áp dụng mã thành công");
   };
@@ -203,7 +217,7 @@ const CheckoutComponent = () => {
     setShippingMethod(method);
     updateOrderData({
       shippingMethod: method,
-      shippingFee: method === "standard" ? 30000 : 15000,
+      shippingFee: method === "standard" ? 15000 : 30000,
     });
   };
 
@@ -211,15 +225,13 @@ const CheckoutComponent = () => {
     const promotion = productPromotions[productId];
     if (!promotion) return;
 
-    setProductPromotions((prev) => {
-      const newPromotions = { ...prev };
-      delete newPromotions[productId];
-      return newPromotions;
-    });
+    const updatedPromotions = { ...productPromotions };
+    delete updatedPromotions[productId];
 
-    updateOrderData({
-      discount: orderData.discount - promotion.discount,
-    });
+    setProductPromotions(updatedPromotions);
+
+    // Gọi updateOrderData với updatedPromotions mới
+    updateOrderData({}, updatedPromotions);
   };
 
   useEffect(() => {
@@ -250,7 +262,8 @@ const CheckoutComponent = () => {
     );
 
     const discount = state?.discount || savedData.discount || 0;
-    const shippingFee = subtotal > 100000 ? 0 : 15000;
+    let shippingFee = 0;
+    if (subtotal > 100000) shippingFee = 0;
 
     setOrderData({
       products: updatedItems, // Cập nhật sản phẩm đã tính toán subtotal
@@ -291,7 +304,8 @@ const CheckoutComponent = () => {
   useEffect(() => {
     const initData = () => {
       const savedData = JSON.parse(localStorage.getItem("checkoutData")) || {};
-      const items = state?.selectedItems || savedData.selectedItems || [];
+
+      const items = savedData.selectedItems || state?.selectedItems || [];
 
       if (items.length === 0) return;
 
@@ -301,7 +315,7 @@ const CheckoutComponent = () => {
       );
       const discount = state?.discount || savedData.discount || 0;
       const shippingFee =
-        savedData.shippingMethod === "standard" ? 30000 : 15000;
+        savedData.shippingMethod === "standard" ? 15000 : 30000;
 
       const newOrderData = {
         products: items,
@@ -322,7 +336,7 @@ const CheckoutComponent = () => {
             }
           : null,
         paymentMethod: savedData.paymentMethod || "",
-        shippingMethod: savedData.shippingMethod || "standard",
+        shippingMethod: savedData.shippingMethod || "express",
         customer: {
           userId: user?._id || "",
           username: user?.username || savedData.customer?.username || "",
@@ -333,7 +347,7 @@ const CheckoutComponent = () => {
 
       setOrderData(newOrderData);
       setPaymentMethod(savedData.paymentMethod || "");
-      setShippingMethod(savedData.shippingMethod || "standard");
+      setShippingMethod(savedData.shippingMethod || "express");
 
       if (state?.selectedItems) {
         localStorage.setItem(
@@ -367,6 +381,8 @@ const CheckoutComponent = () => {
       return;
     }
 
+    console.log("orderData", orderData);
+
     try {
       const orderItems = orderData.products.map((item) => ({
         productId: item.product._id,
@@ -379,31 +395,43 @@ const CheckoutComponent = () => {
 
       const orderPayload = {
         customer: orderData.customer,
-        items: orderItems,
+        selectedItems: orderData.products.map((item) => ({
+          id: item.id,
+          product: item.product._id,
+          productName: item.product.name,
+          productImage: item.product.image,
+          price: item.product.price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          diameter: item.diameter || "",
+          productSubtotal: item.productSubtotal, // ✅ đúng tên
+          discountAmount: item.totalDiscount || 0, // hoặc đặt tên đúng theo BE
+          type: item.product.type || "",
+        })),
+        selectedAddress: orderData.address,
         paymentMethod: orderData.paymentMethod,
-        shippingMethod: orderData.shippingMethod,
-        address: orderData.address,
+        shippingMethod: orderData.shippingMethod.trim(),
+        discount: orderData.totalDiscountAmount,
+        subtotal: orderData.subtotal,
         total: orderData.total,
-        discount: orderData.discount,
         shippingFee: orderData.shippingFee,
-        couponIds: [
-          ...Object.values(productPromotions).map((p) => p.couponId),
-          ...(globalPromo ? [globalPromo.couponId] : []),
-        ],
-        status: statusOrder,
+        status: "pending",
       };
 
+      console.log("orderPayload", orderPayload);
+
       const response = await axios.post(
-        "http://localhost:3002/api/orders",
+        "http://localhost:3002/api/order/create",
         orderPayload
       );
 
-      navigate("/order-success", {
-        state: {
-          orderId: response.data.orderId,
-          total: orderData.total,
-        },
-      });
+      // navigate("/order-success", {
+      //   state: {
+      //     orderId: response.data.orderId,
+      //     total: orderData.total,
+      //   },
+      // });
 
       localStorage.removeItem("checkoutData");
     } catch (error) {
@@ -589,8 +617,6 @@ const CheckoutComponent = () => {
       </div>
     );
   };
-
-  console.log("orderData.products", orderData.products);
 
   return (
     <CheckoutContainer>

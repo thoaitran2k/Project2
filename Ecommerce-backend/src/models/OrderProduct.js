@@ -16,6 +16,7 @@ const OrderSchema = new Schema({
   },
   selectedItems: [
     {
+      id: { type: String, required: true },
       product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
       productName: { type: String }, // Tên sản phẩm
       productImage: { type: String }, // Hình ảnh sản phẩm
@@ -24,18 +25,19 @@ const OrderSchema = new Schema({
       size: { type: String }, // Kích thước
       color: { type: String }, // Màu sắc
       diameter: { type: String }, // Đường kính (nếu có)
-      shippingFee: { type: Number, required: true },
-      shippingMethod: {
-        type: String,
-        enum: ["standard", "express"],
-        required: true,
-      },
-      subtotal: { type: Number, required: true }, // Subtotal cho mỗi mặt hàng
+      productSubtotal: { type: Number, required: true },
+      discountAmount: { type: Number }, // Subtotal cho mỗi mặt hàng
     },
   ],
   paymentMethod: {
     type: String,
     enum: ["cash", "momo", "viettelpay"],
+    required: true,
+  },
+  shippingFee: { type: Number, required: true },
+  shippingMethod: {
+    type: String,
+    enum: ["standard", "express"],
     required: true,
   },
   discount: { type: Number, default: 0 },

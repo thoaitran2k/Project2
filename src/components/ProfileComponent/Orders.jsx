@@ -8,6 +8,8 @@ const Orders = () => {
 
   const orderHistory = useSelector((state) => state.user.orderHistory);
 
+  console.log("orderHistory", orderHistory);
+
   const getDisplayStatus = (status) => {
     switch (status) {
       case "pending":
@@ -50,7 +52,9 @@ const Orders = () => {
       address: order.address,
       orderDate: order.orderDate,
       paymentMethod: order.paymentMethod,
-      totalAmount: order.totalAmount,
+      ShippingFee: order.ShippingFee,
+      totalDiscount: order.totalDiscount,
+      total: order.total,
       quantity: `x${totalQuantity}`,
       status: statusInfo.display,
       type: statusInfo.type,
@@ -147,21 +151,42 @@ const Orders = () => {
                       alignItems: "center",
                     }}
                   >
-                    <img
-                      src={product.image}
-                      alt={product.name}
+                    <div
                       style={{
+                        position: "relative",
                         width: "80px",
                         height: "80px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
                       }}
-                    />
+                    >
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+
+                          border: "solid 1px #ccc",
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: "0px",
+                          right: "0px",
+                          background: "#ccc",
+                          color: "white",
+                          padding: "2px 6px",
+                          borderTopLeftRadius: "10px",
+
+                          fontSize: "12px",
+                        }}
+                      >
+                        x{product.quantity}
+                      </span>
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 500 }}>{product.name}</div>
-                      <div style={{ color: "#666" }}>
-                        Số lượng: x{product.quantity}
-                      </div>
                     </div>
                     <div style={{ fontWeight: "bold", color: "#ff4d4f" }}>
                       {product.subtotal.toLocaleString()} đ
@@ -180,24 +205,18 @@ const Orders = () => {
                   }}
                 >
                   <div>
-                    <div style={{ color: "#666" }}>
-                      Thanh toán:{" "}
-                      <strong>
-                        {order.paymentMethod === "cash"
-                          ? "Tiền mặt"
-                          : order.paymentMethod}
-                      </strong>
-                    </div>
-                    <div style={{ color: "#666" }}>
-                      Giao đến:{" "}
-                      <strong>
-                        {order.address?.name} - {order.address?.phone}
-                      </strong>
-                      <br />
-                      {order.address?.address}
-                    </div>
+                    <br />
                   </div>
-                  <div style={{ textAlign: "right" }}>
+                  <div
+                    style={{
+                      textAlign: "right",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+
+                      padding: 5,
+                    }}
+                  >
                     <div
                       style={{
                         fontSize: "16px",
@@ -205,11 +224,22 @@ const Orders = () => {
                         color: "#ff4d4f",
                       }}
                     >
-                      Tổng cộng: {order.totalAmount.toLocaleString()} đ
+                      <span style={{ marginRight: "30px" }}>Tổng cộng: </span>
+                      <span>{order.total.toLocaleString()} đ</span>
                     </div>
-                    <Space>
+                    <Space
+                      style={{
+                        textAlign: "right",
+
+                        marginLeft: "320px",
+                      }}
+                    >
                       {order.actions.map((action) => (
-                        <Button key={action} type="text">
+                        <Button
+                          style={{ border: "solid 2px black" }}
+                          key={action}
+                          type="text"
+                        >
                           {action}
                         </Button>
                       ))}

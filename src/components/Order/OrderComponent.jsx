@@ -405,15 +405,10 @@ const OrderComponent = () => {
             <span>-{calculateDiscounts().toLocaleString()}₫</span>
           </PriceRow>
 
-          <PriceRow>
-            <span>Phí giao hàng</span>
-            <span>₫</span>
-          </PriceRow>
-
           <Divider style={{ margin: "16px 0" }} />
 
           <PriceRow>
-            <TotalPrice>Tổng tiền thanh toán</TotalPrice>
+            <TotalPrice>Tổng tiền tạm tính</TotalPrice>
             <TotalPrice>{calculateTotal().toLocaleString()}₫</TotalPrice>
           </PriceRow>
 

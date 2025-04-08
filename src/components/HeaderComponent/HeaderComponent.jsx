@@ -228,8 +228,11 @@ const HeaderComponent = ({
       ? "https://res.cloudinary.com/dxwqi77i8/image/upload/v1741365430/avatars/kdnh7mfqp91kqc6zjef8.jpg"
       : "https://res.cloudinary.com/dxwqi77i8/image/upload/v1743435676/avatars/pt0w7sb1lyvzyivnci8r.jpg";
 
+  let hasRun = false;
   // Hàm tự động logout khi token hết hạn
   const AutoLogoutTokenExpired = () => {
+    if (hasRun) return;
+    hasRun = true;
     alert("Bạn đã hết phiên đăng nhập");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
