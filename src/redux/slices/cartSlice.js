@@ -187,6 +187,16 @@ const cartSlice = createSlice({
         item.selected = shouldSelect; // Chỉ thay đổi trạng thái selected
       });
     },
+    removeMultipleFromCart: (state, action) => {
+      const itemIdsToRemove = action.payload;
+      state.cartItems = state.cartItems.filter(
+        (item) => !itemIdsToRemove.includes(item.id)
+      );
+      state.cartCount = state.cartItems.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+    },
   },
 
   extraReducers: (builder) => {
@@ -209,6 +219,7 @@ export const {
   toggleAllCartItemsSelected,
   addToCart,
   removeFromCart,
+  removeMultipleFromCart,
   updateCartItemAmount,
   setCartFromServer,
   clearCart,

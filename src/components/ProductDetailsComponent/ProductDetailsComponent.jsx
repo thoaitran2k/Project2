@@ -78,6 +78,86 @@ const ProductDetailsComponent = ({ product }) => {
     ...new Set(product.variants?.map((variant) => variant.color)),
   ];
 
+  const handleCheckout = async () => {
+    if (!user.isAuthenticated) {
+      localStorage.setItem(
+        "tempCheckoutItem",
+        JSON.stringify({
+          product: productDetail,
+          quantity: quantityPay,
+          selectedColor,
+          selectedSize,
+          selectedDiameter,
+        })
+      );
+
+      message.warning("Vui lòng đăng nhập để thanh toán");
+      navigate("/sign-in", { state: { from: "/checkout" } });
+      return;
+    }
+
+    const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
+    const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
+    const isWatch = productDetail.type === "Đồng hồ";
+
+    if ((isClothing || isPants) && !selectedSize) {
+      message.error("Vui lòng chọn kích thước trước khi thanh toán");
+      return;
+    }
+
+    if ((isClothing || isPants || isWatch) && !selectedColor) {
+      message.error("Vui lòng chọn màu sắc trước khi thanh toán");
+      return;
+    }
+
+    if (isWatch && !selectedDiameter) {
+      message.error("Vui lòng chọn đường kính trước khi thanh toán");
+      return;
+    }
+
+    // Tạo id dựa trên biến thể
+    const id = [
+      productDetail._id,
+      selectedSize,
+      selectedColor,
+      selectedDiameter,
+    ]
+      .filter(Boolean)
+      .join("-");
+
+    // Giữ nguyên cấu trúc, chỉ thêm id
+    const checkoutItem = {
+      id,
+      product: {
+        _id: productDetail._id,
+        name: productDetail.name,
+        image: productDetail.image,
+        price: productDetail.price,
+        type: productDetail.type,
+        discount: productDetail.discount,
+      },
+      quantity: quantityPay,
+      ...(selectedSize && { size: selectedSize }),
+      ...(selectedColor && { color: selectedColor }),
+      ...(selectedDiameter && { diameter: selectedDiameter }),
+    };
+
+    console.log("checkoutItem", checkoutItem);
+
+    navigate("/checkout", {
+      state: {
+        selectedItems: [checkoutItem],
+        total: productDetail.price * quantityPay,
+        discount:
+          (productDetail.price * (productDetail.discount || 0) * quantityPay) /
+          100,
+        selectedAddress:
+          user.address?.find((addr) => addr.isDefault) || user.address?.[0],
+        directCheckout: true,
+      },
+    });
+  };
+
   const handleAddToCart = async () => {
     const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
     const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
@@ -673,7 +753,7 @@ const ProductDetailsComponent = ({ product }) => {
             margin: "30px 0",
           }}
         >
-          <StyledButton primary textButton="Chọn mua" />
+          <StyledButton textButton="Chọn mua" onClick={handleCheckout} />
           <StyledButton
             textButton="Thêm vào giỏ hàng"
             onClick={() => handleAddToCart(productDetail)}

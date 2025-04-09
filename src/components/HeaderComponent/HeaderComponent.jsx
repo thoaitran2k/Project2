@@ -7,6 +7,7 @@ import {
   LogoutOutlined,
   ShoppingCartOutlined,
   SettingOutlined,
+  OrderedListOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -112,6 +113,7 @@ const HeaderComponent = ({
   const isLoading = useSelector((state) => state.loading.isLoading);
   const cartCount = useSelector((state) => state.cart.cartCount);
   const cartItems = useSelector((state) => state.cart.cartItems);
+
   const [showMessage, setShowMessage] = useState(false);
   const [showMessageCart, setShowMessageCart] = useState(false);
   const {
@@ -144,6 +146,7 @@ const HeaderComponent = ({
     // Đảo trạng thái tìm kiếm ngay lập tức
   };
   // Hàm kiểm tra token hết hạn
+  const currentUser = useSelector((state) => state.user);
   const checkTokenExpiration = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -157,10 +160,10 @@ const HeaderComponent = ({
       const newToken = await refreshTokenApi(); // Thử refresh token
       console.log("Đang cố găng refresh token");
       if (!newToken) {
-        AutoLogoutTokenExpired(); // Nếu không refresh được, logout
         console.log("Refresh Token thất bại");
+        AutoLogoutTokenExpired(); // Nếu không refresh được, logout
       } else {
-        dispatch(setUser({ ...user, accessToken: newToken }));
+        dispatch(setUser({ ...currentUser, accessToken: newToken }));
         console.log("Refresh thành công và đang lưu Token", newToken);
 
         await fetchUserDetails();
@@ -351,7 +354,7 @@ const HeaderComponent = ({
     // Kiểm tra lại token mỗi phút
     const intervalId = setInterval(() => {
       checkTokenExpiration();
-    }, 1000 * 60);
+    }, 1000 * 2);
 
     return () => clearInterval(intervalId);
   }, [dispatch, isAuthenticated, isUserDetailsFetched]);
@@ -372,6 +375,12 @@ const HeaderComponent = ({
     },
     {
       key: "2",
+      label: "Đơn hàng của tôi",
+      icon: <OrderedListOutlined />,
+      onClick: () => navigate("/profile/orders"),
+    },
+    {
+      key: "3",
       label: "Đăng xuất",
       icon: <LogoutOutlined />,
       onClick: handleLogout,
@@ -379,7 +388,7 @@ const HeaderComponent = ({
   ];
   if (isAdmin) {
     items.push({
-      key: "3",
+      key: "4",
       label: "Quản lý hệ thống",
       icon: <SettingOutlined />,
       onClick: () => navigate("/system/admin"),
@@ -460,7 +469,7 @@ const HeaderComponent = ({
             {isAuthenticated ? (
               <Dropdown
                 menu={{ items }}
-                trigger={["click"]}
+                trigger={["hover"]}
                 dropdownRender={(menu) => (
                   <div
                     style={{

@@ -46,6 +46,13 @@ const Orders = () => {
     );
     const statusInfo = getDisplayStatus(order.status);
 
+    let actions = ["Xem chi tiết"];
+    if (["pending", "processing"].includes(order.status)) {
+      actions.unshift("Huỷ");
+    } else if (order.status === "cancelled") {
+      actions.unshift("Mua lại");
+    }
+
     return {
       key: order._id,
       products: order.products,
@@ -59,7 +66,7 @@ const Orders = () => {
       status: statusInfo.display,
       type: statusInfo.type,
       tagColor: statusInfo.tagColor,
-      actions: ["Mua lại", "Xem chi tiết"],
+      actions,
     };
   });
 

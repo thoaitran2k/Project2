@@ -5,4 +5,10 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 
 router.post("/create", OrderController.createOrder);
 
+router.put(
+  "/update-status/:orderId",
+  authMiddleware,
+  OrderController.updateOrderStatus
+);
+
 module.exports = router;

@@ -42,6 +42,9 @@ const createOrder = async (req, res) => {
         productName: item.productName,
         productImage: item.productImage,
         price: item.price,
+        color: item.color,
+        diameter: item.diameter,
+        size: item.size,
         quantity: item.quantity,
         productSubtotal: item.productSubtotal,
         discountAmount: item.discountAmount || 0,
@@ -112,6 +115,53 @@ const createOrder = async (req, res) => {
   }
 };
 
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    // Kiểm tra trạng thái hợp lệ
+    const allowedStatuses = [
+      "pending",
+      "processing",
+      "shipping",
+      "delivered",
+      "paid",
+      "cancelled",
+    ];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order)
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+
+    order.status = status;
+    order.updatedAt = new Date();
+    await order.save();
+
+    // Cập nhật trạng thái trong userModel -> orderHistory
+    await User.updateOne(
+      {
+        _id: order.customer.userId,
+        "orderHistory.orderId": order._id,
+      },
+      {
+        $set: {
+          "orderHistory.$.status": status,
+        },
+      }
+    );
+
+    res.status(200).json({ message: "Cập nhật trạng thái thành công", order });
+  } catch (err) {
+    console.error("Lỗi cập nhật trạng thái:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 module.exports = {
   createOrder,
+  updateOrderStatus,
 };

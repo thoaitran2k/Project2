@@ -38,11 +38,11 @@ const generateToken = (user) => {
 };
 
 const generateAccessToken = (payload) => {
-  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "90m" });
+  return jwt.sign(payload, process.env.ACCESS_TOKEN, { expiresIn: "60m" });
 };
 
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "2d" });
+  return jwt.sign(payload, process.env.REFRESH_TOKEN, { expiresIn: "1d" });
 };
 
 const refreshTokenJwtService = async (token) => {

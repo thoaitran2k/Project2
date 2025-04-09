@@ -9,6 +9,7 @@ import ProfilePage from "../pages/ProfilePage/ProfilePage";
 import AdminPage from "../pages/AdminPage/AdminPage";
 import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
 import CheckoutPage from "../pages/CheckoutPage/CheckoutPage";
+import CheckoutSuccesPage from "../pages/CheckoutPage/CheckoutSuccesPage";
 
 export const routes = [
   //PAGE
@@ -78,6 +79,12 @@ export const routes = [
   {
     path: "/checkout",
     page: CheckoutPage,
+    isShowHeader: false,
+    isShowFooter: true,
+  },
+  {
+    path: "/checkout/success",
+    page: CheckoutSuccesPage,
     isShowHeader: false,
     isShowFooter: true,
   },

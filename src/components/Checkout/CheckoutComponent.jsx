@@ -16,20 +16,26 @@ import cash from "../../assets/cash.png";
 import momo from "../../assets/momoicon.jpg";
 import zalopay from "../../assets/zalopayicon.png";
 import { useLocation, useNavigate } from "react-router";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import AddressModal from "../Order/AddressModal";
+import { removeMultipleFromCart } from "../../redux/slices/cartSlice";
+import { setLoading } from "../../redux/slices/loadingSlice";
+import Loading from "../LoadingComponent/Loading";
 
 const { Title, Text } = Typography;
 
 const CheckoutComponent = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const [paymentMethod, setPaymentMethod] = useState("");
   const [globalPromoCode, setGlobalPromoCode] = useState("");
   const [statusOrder, setStatusOrder] = useState("pending");
   const [shippingMethod, setShippingMethod] = useState("express");
   const [globalPromo, setGlobalPromo] = useState(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
+  const [directCheckoutItems, setDirectCheckoutItems] = useState([]);
   const user = useSelector((state) => state.user);
   const { selectedItems = [], total = 0, discount = 0 } = state || {};
   const getInitialAddress = () => {
@@ -174,6 +180,17 @@ const CheckoutComponent = () => {
       return newData;
     });
   };
+
+  useEffect(() => {
+    if (state?.directCheckout) {
+      // Nếu là thanh toán trực tiếp từ trang sản phẩm
+      setDirectCheckoutItems(state.selectedItems);
+    }
+  }, [state]);
+
+  const itemsToCheckout = state?.directCheckout
+    ? directCheckoutItems
+    : state?.selectedItems || [];
 
   const applyProductPromotion = async (productId, promotionCode) => {
     const result = await checkPromotionCode(productId, promotionCode);
@@ -421,19 +438,43 @@ const CheckoutComponent = () => {
 
       console.log("orderPayload", orderPayload);
 
+      // console.log("orderPayload", orderPayload);
+      dispatch(setLoading(true));
+
       const response = await axios.post(
         "http://localhost:3002/api/order/create",
         orderPayload
       );
 
-      // navigate("/order-success", {
-      //   state: {
-      //     orderId: response.data.orderId,
-      //     total: orderData.total,
-      //   },
-      // });
+      console.log("response", response);
 
-      localStorage.removeItem("checkoutData");
+      if (response.data.success) {
+        const orderedProductIds = orderData.products.map((item) => item.id);
+        dispatch(removeMultipleFromCart(orderedProductIds));
+
+        message.success("Đặt hàng thành công!");
+
+        // Xóa localStorage TRƯỚC KHI chuyển trang
+        localStorage.removeItem("checkoutData");
+
+        setTimeout(() => {
+          dispatch(setLoading(false));
+
+          // Di chuyển sau khi đã xoá
+          navigate("/checkout/success", {
+            replace: true,
+            state: {
+              total: orderData.total,
+              paymentMethod: orderData.paymentMethod,
+              createdAt: new Date().toLocaleString("vi-VN", {
+                hour12: false,
+                dateStyle: "short",
+                timeStyle: "short",
+              }),
+            },
+          });
+        }, 1000);
+      }
     } catch (error) {
       message.error(error.response?.data?.message || "Đặt hàng thất bại");
     }
@@ -619,315 +660,325 @@ const CheckoutComponent = () => {
   };
 
   return (
-    <CheckoutContainer>
-      <LeftColumn>
-        <Section>
-          <SectionTitle>Phương thức vận chuyển</SectionTitle>
-          <Radio.Group
-            onChange={(e) => handleShippingMethodChange(e.target.value)}
-            value={shippingMethod}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              flexDirection: "row",
-            }}
-          >
-            <Radio
-              value="standard"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "50%",
-                backgroundColor: "#F0F8FF",
-                borderRadius: "8px",
-                border: "solid 1px #0B74E5",
-                padding: "0 20px",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px",
-                  transition: "background-color 0.3s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  maxWidth: "100%",
-                  width: "100%",
-                }}
-              >
-                {/* Thêm khoảng cách giữa checkbox và văn bản */}
-                <div style={{ width: "100%" }}>
-                  <strong
-                    style={{ fontSize: "16px", color: "#444", fontWeight: 100 }}
-                  >
-                    Giao tiết kiệm
-                  </strong>
-                  <div style={{ fontSize: "14px", color: "#777" }}>
-                    4-5 ngày - 15,000₫
-                  </div>
-                </div>
-              </div>
-            </Radio>
-            <Radio
-              value="express"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "50%",
-                backgroundColor: "#F0F8FF",
-                borderRadius: "8px",
-                border: "solid 1px #0B74E5",
-                padding: "0 20px",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px",
-                  transition: "background-color 0.3s ease",
-                  display: "flex",
-                  alignItems: "center", // Căn chỉnh checkbox và văn bản ngang
-                  width: "100%", // Đảm bảo phần này chiếm 100% chiều rộng
-                }}
-              >
-                <div>
-                  <strong
-                    style={{ fontSize: "16px", color: "#444", fontWeight: 100 }}
-                  >
-                    Giao nhanh
-                  </strong>
-                  <div style={{ fontSize: "14px", color: "#777" }}>
-                    1-2 ngày - 30,000₫
-                  </div>
-                </div>
-              </div>
-            </Radio>
-          </Radio.Group>
-        </Section>
-
-        {/* Product Section - Hiển thị tất cả sản phẩm đã chọn */}
-        <Section>
-          {orderData.products.map((item, index) => (
-            <React.Fragment key={item.id}>
-              <ProductItem>
-                <ProductImage
-                  src={item.product.image || "https://via.placeholder.com/60"}
-                  alt={item.product.name}
-                />
-                <ProductInfo>
-                  <ProductName>{item.product.name}</ProductName>
-                  <div>SL: x{item.quantity}</div>
-                  {item.color && <div>Màu: {item.color}</div>}
-                  {item.size && <div>Size: {item.size}</div>}
-                  <PriceText>
-                    <Text delete>
-                      {(item.product.price * item.quantity).toLocaleString()}₫
-                    </Text>
-                    <br />
-                    <Text type="danger">
-                      {(
-                        item.product.price *
-                        item.quantity *
-                        (1 - (item.product.discount || 0) / 100)
-                      ).toLocaleString()}
-                      ₫
-                    </Text>
-                  </PriceText>
-
-                  {/* Thêm phần mã khuyến mãi cho từng sản phẩm */}
-                  {renderProductPromotion(item.id)}
-                </ProductInfo>
-              </ProductItem>
-              {index < orderData.products.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-
-          {/* Có thể giữ lại phần mã khuyến mãi chung nếu cần */}
-          <Divider style={{ margin: "12px 0" }} />
-          <div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <span>
-                <TagOutlined /> Thêm mã khuyến mãi chung
-              </span>
-              <ArrowLink style={{ marginTop: 3 }}>
-                <RightOutlined />
-              </ArrowLink>
-            </div>
-            <Input placeholder="Nhập mã khuyến mãi áp dụng cho toàn đơn" />
-          </div>
-        </Section>
-
-        {/* Payment Method Section */}
-        <Section>
-          <SectionTitle>Chọn hình thức thanh toán</SectionTitle>
-          <Radio.Group
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-            value={paymentMethod}
-            onChange={(e) => handlePaymentMethodChange(e.target.value)}
-          >
-            <PaymentOption
-              value="cash"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  src={cash}
-                  alt="Cash"
-                  style={{ width: 20, height: 25, marginRight: 8 }}
-                />
-                Thanh toán tiền mặt
-              </div>
-            </PaymentOption>
-            <PaymentOption
-              value="viettel"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  src={zalopay}
-                  alt="ZaloPay"
-                  style={{ width: 20, height: 20, marginRight: 8 }}
-                />
-                ZaloPay
-              </div>
-            </PaymentOption>
-            <PaymentOption
-              value="momo"
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  src={momo}
-                  alt="MoMo"
-                  style={{ width: 20, height: 20, marginRight: 8 }}
-                />
-                Ví MoMo
-              </div>
-            </PaymentOption>
-          </Radio.Group>
-        </Section>
-      </LeftColumn>
-
-      <RightColumn>
-        {/* Shipping Section - Hiển thị địa chỉ giao hàng */}
-        <Section>
-          <SectionTitle>
-            <EnvironmentOutlined />
-            <span style={{ fontSize: 16 }}>Thông tin giao hàng</span>
-          </SectionTitle>
-
-          {selectedAddressOrder ? (
-            <AddressInfo>
-              <div>
-                <strong>{selectedAddressOrder.name}</strong>
-              </div>
-              <div>
-                {selectedAddressOrder.phoneDelivery ||
-                  selectedAddressOrder.phone}
-              </div>
-              <div>{selectedAddressOrder.address}</div>
-            </AddressInfo>
-          ) : (
-            <div style={{ color: "red" }}>Bạn chưa có địa chỉ giao hàng</div>
-          )}
-
-          <Divider style={{ margin: "12px 0" }} />
-          <ArrowLink onClick={handleChangeAddress}>
-            <span>Thay đổi địa chỉ giao hàng</span>
-            <RightOutlined />
-          </ArrowLink>
-        </Section>
-
-        {/* Price Summary - Tính toán động */}
-        <div style={{ backgroundColor: "white" }}>
-          <OrderInfo>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Đơn hàng</span>
-              <span
-                style={{ color: "#1AB2FF", cursor: "pointer" }}
-                onClick={() => navigate(-1)}
-              >
-                Thay đổi
-              </span>
-            </div>
-            <span>Chi tiết: {orderData.products.length} sản phẩm</span>
-          </OrderInfo>
-
+    <Loading>
+      <CheckoutContainer>
+        <LeftColumn>
           <Section>
-            <PriceRow>
-              <span>Tạm tính</span>
-              <span>{orderData.subtotal.toLocaleString()}₫</span>
-            </PriceRow>
-            <PriceRow>
-              <span>Giảm giá</span>
-              <span>-{orderData.discount.toLocaleString()}₫</span>
-            </PriceRow>
-            <PriceRow>
-              <span>Phí giao hàng</span>
-              <span>{orderData.shippingFee.toLocaleString()}₫</span>
-            </PriceRow>
+            <SectionTitle>Phương thức vận chuyển</SectionTitle>
+            <Radio.Group
+              onChange={(e) => handleShippingMethodChange(e.target.value)}
+              value={shippingMethod}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+              }}
+            >
+              <Radio
+                value="standard"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "50%",
+                  backgroundColor: "#F0F8FF",
+                  borderRadius: "8px",
+                  border: "solid 1px #0B74E5",
+                  padding: "0 20px",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "12px",
+                    transition: "background-color 0.3s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    maxWidth: "100%",
+                    width: "100%",
+                  }}
+                >
+                  {/* Thêm khoảng cách giữa checkbox và văn bản */}
+                  <div style={{ width: "100%" }}>
+                    <strong
+                      style={{
+                        fontSize: "16px",
+                        color: "#444",
+                        fontWeight: 100,
+                      }}
+                    >
+                      Giao tiết kiệm
+                    </strong>
+                    <div style={{ fontSize: "14px", color: "#777" }}>
+                      4-5 ngày - 15,000₫
+                    </div>
+                  </div>
+                </div>
+              </Radio>
+              <Radio
+                value="express"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "50%",
+                  backgroundColor: "#F0F8FF",
+                  borderRadius: "8px",
+                  border: "solid 1px #0B74E5",
+                  padding: "0 20px",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "12px",
+                    transition: "background-color 0.3s ease",
+                    display: "flex",
+                    alignItems: "center", // Căn chỉnh checkbox và văn bản ngang
+                    width: "100%", // Đảm bảo phần này chiếm 100% chiều rộng
+                  }}
+                >
+                  <div>
+                    <strong
+                      style={{
+                        fontSize: "16px",
+                        color: "#444",
+                        fontWeight: 100,
+                      }}
+                    >
+                      Giao nhanh
+                    </strong>
+                    <div style={{ fontSize: "14px", color: "#777" }}>
+                      1-2 ngày - 30,000₫
+                    </div>
+                  </div>
+                </div>
+              </Radio>
+            </Radio.Group>
+          </Section>
 
-            <Divider style={{ margin: "16px 0" }} />
+          {/* Product Section - Hiển thị tất cả sản phẩm đã chọn */}
+          <Section>
+            {orderData.products.map((item, index) => (
+              <React.Fragment key={item.id}>
+                <ProductItem>
+                  <ProductImage
+                    src={item.product.image || "https://via.placeholder.com/60"}
+                    alt={item.product.name}
+                  />
+                  <ProductInfo>
+                    <ProductName>{item.product.name}</ProductName>
+                    <div>SL: x{item.quantity}</div>
+                    {item.color && <div>Màu: {item.color}</div>}
+                    {item.size && <div>Size: {item.size}</div>}
+                    <PriceText>
+                      <Text delete>
+                        {(item.product.price * item.quantity).toLocaleString()}₫
+                      </Text>
+                      <br />
+                      <Text type="danger">
+                        {(
+                          item.product.price *
+                          item.quantity *
+                          (1 - (item.product.discount || 0) / 100)
+                        ).toLocaleString()}
+                        ₫
+                      </Text>
+                    </PriceText>
 
-            <PriceRow>
-              <TotalPrice>Tổng tiền thanh toán</TotalPrice>
-              <TotalPrice>{orderData.total.toLocaleString()}₫</TotalPrice>
-            </PriceRow>
+                    {/* Thêm phần mã khuyến mãi cho từng sản phẩm */}
+                    {renderProductPromotion(item.id)}
+                  </ProductInfo>
+                </ProductItem>
+                {index < orderData.products.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
 
-            {orderData.savings > 0 && (
-              <SavingsTag>
-                Tiết kiệm {orderData.savings.toLocaleString()}₫
-              </SavingsTag>
+            {/* Có thể giữ lại phần mã khuyến mãi chung nếu cần */}
+            <Divider style={{ margin: "12px 0" }} />
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <span>
+                  <TagOutlined /> Thêm mã khuyến mãi chung
+                </span>
+                <ArrowLink style={{ marginTop: 3 }}>
+                  <RightOutlined />
+                </ArrowLink>
+              </div>
+              <Input placeholder="Nhập mã khuyến mãi áp dụng cho toàn đơn" />
+            </div>
+          </Section>
+
+          {/* Payment Method Section */}
+          <Section>
+            <SectionTitle>Chọn hình thức thanh toán</SectionTitle>
+            <Radio.Group
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+              value={paymentMethod}
+              onChange={(e) => handlePaymentMethodChange(e.target.value)}
+            >
+              <PaymentOption
+                value="cash"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src={cash}
+                    alt="Cash"
+                    style={{ width: 20, height: 25, marginRight: 8 }}
+                  />
+                  Thanh toán tiền mặt
+                </div>
+              </PaymentOption>
+              <PaymentOption
+                value="viettel"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src={zalopay}
+                    alt="ZaloPay"
+                    style={{ width: 20, height: 20, marginRight: 8 }}
+                  />
+                  ZaloPay
+                </div>
+              </PaymentOption>
+              <PaymentOption
+                value="momo"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src={momo}
+                    alt="MoMo"
+                    style={{ width: 20, height: 20, marginRight: 8 }}
+                  />
+                  Ví MoMo
+                </div>
+              </PaymentOption>
+            </Radio.Group>
+          </Section>
+        </LeftColumn>
+
+        <RightColumn>
+          {/* Shipping Section - Hiển thị địa chỉ giao hàng */}
+          <Section>
+            <SectionTitle>
+              <EnvironmentOutlined />
+              <span style={{ fontSize: 16 }}>Thông tin giao hàng</span>
+            </SectionTitle>
+
+            {selectedAddressOrder ? (
+              <AddressInfo>
+                <div>
+                  <strong>{selectedAddressOrder.name}</strong>
+                </div>
+                <div>
+                  {selectedAddressOrder.phoneDelivery ||
+                    selectedAddressOrder.phone}
+                </div>
+                <div>{selectedAddressOrder.address}</div>
+              </AddressInfo>
+            ) : (
+              <div style={{ color: "red" }}>Bạn chưa có địa chỉ giao hàng</div>
             )}
 
-            <VATText>(Bao gồm VAT nếu có)</VATText>
+            <Divider style={{ margin: "12px 0" }} />
+            <ArrowLink onClick={handleChangeAddress}>
+              <span>Thay đổi địa chỉ giao hàng</span>
+              <RightOutlined />
+            </ArrowLink>
           </Section>
-        </div>
 
-        <CheckoutButton
-          type="primary"
-          block
-          onClick={handlePlaceOrder}
-          disabled={!paymentMethod}
-        >
-          Đặt hàng
-        </CheckoutButton>
-      </RightColumn>
+          {/* Price Summary - Tính toán động */}
+          <div style={{ backgroundColor: "white" }}>
+            <OrderInfo>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Đơn hàng</span>
+                <span
+                  style={{ color: "#1AB2FF", cursor: "pointer" }}
+                  onClick={() => navigate(-1)}
+                >
+                  Thay đổi
+                </span>
+              </div>
+              <span>Chi tiết: {orderData.products.length} sản phẩm</span>
+            </OrderInfo>
 
-      {/*  Modal đổi địa chỉ giao hàng */}
-      <AddressModal
-        isOpen={isOpenModal}
-        onClose={() => setIsOpenModal(false)}
-        onSelect={handleSelectAddress}
-        // currentAddress={selectedAddressOrder}
-      />
-    </CheckoutContainer>
+            <Section>
+              <PriceRow>
+                <span>Tạm tính</span>
+                <span>{orderData.subtotal.toLocaleString()}₫</span>
+              </PriceRow>
+              <PriceRow>
+                <span>Giảm giá</span>
+                <span>-{orderData.discount.toLocaleString()}₫</span>
+              </PriceRow>
+              <PriceRow>
+                <span>Phí giao hàng</span>
+                <span>{orderData.shippingFee.toLocaleString()}₫</span>
+              </PriceRow>
+
+              <Divider style={{ margin: "16px 0" }} />
+
+              <PriceRow>
+                <TotalPrice>Tổng tiền thanh toán</TotalPrice>
+                <TotalPrice>{orderData.total.toLocaleString()}₫</TotalPrice>
+              </PriceRow>
+
+              {orderData.savings > 0 && (
+                <SavingsTag>
+                  Tiết kiệm {orderData.savings.toLocaleString()}₫
+                </SavingsTag>
+              )}
+
+              <VATText>(Bao gồm VAT nếu có)</VATText>
+            </Section>
+          </div>
+
+          <CheckoutButton
+            type="primary"
+            block
+            onClick={handlePlaceOrder}
+            disabled={!paymentMethod}
+          >
+            Đặt hàng
+          </CheckoutButton>
+        </RightColumn>
+
+        {/*  Modal đổi địa chỉ giao hàng */}
+        <AddressModal
+          isOpen={isOpenModal}
+          onClose={() => setIsOpenModal(false)}
+          onSelect={handleSelectAddress}
+          // currentAddress={selectedAddressOrder}
+        />
+      </CheckoutContainer>
+    </Loading>
   );
 };
 

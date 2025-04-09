@@ -113,7 +113,7 @@ const OrderComponent = () => {
     } else {
       selectedProducts.forEach((itemId) => {
         dispatch(removeFromCart(itemId));
-        dispatch(updateCartOnServer({ forceUpdateEmptyCart: true })); // Xóa từng sản phẩm đã tích
+        updateCartOnServer({ forceUpdateEmptyCart: true }); // Xóa từng sản phẩm đã tích
       });
 
       // Reset danh sách chọn

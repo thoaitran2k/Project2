@@ -87,7 +87,14 @@ const userSchema = new mongoose.Schema(
         ],
         status: {
           type: String,
-          enum: ["pending", "completed", "shipped", "cancelled"],
+          enum: [
+            "pending",
+            "processing",
+            "shipping",
+            "delivered",
+            "paid",
+            "cancelled",
+          ],
           default: "pending",
         },
         address: {

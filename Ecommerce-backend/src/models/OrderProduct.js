@@ -45,7 +45,14 @@ const OrderSchema = new Schema({
   total: { type: Number, required: true },
   status: {
     type: String,
-    enum: ["pending", "processing", "shipping", "delivered", "paid"],
+    enum: [
+      "pending",
+      "processing",
+      "shipping",
+      "delivered",
+      "paid",
+      "cancelled",
+    ],
     default: "pending",
   },
   createdAt: { type: Date, default: Date.now },
