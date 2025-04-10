@@ -355,7 +355,7 @@ const SearchOverlay = () => {
             <p>Loading...</p>
           ) : filteredProducts.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px" }}>
-              <p>Không tìm thấy sản phẩm phù hợp</p>
+              <p>Đang tải...</p>
             </div>
           ) : (
             <CardComponent products={displayedProducts} />

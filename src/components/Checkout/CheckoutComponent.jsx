@@ -18,7 +18,10 @@ import zalopay from "../../assets/zalopayicon.png";
 import { useLocation, useNavigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import AddressModal from "../Order/AddressModal";
-import { removeMultipleFromCart } from "../../redux/slices/cartSlice";
+import {
+  removeMultipleFromCart,
+  updateCartOnServer,
+} from "../../redux/slices/cartSlice";
 import { setLoading } from "../../redux/slices/loadingSlice";
 import Loading from "../LoadingComponent/Loading";
 
@@ -452,6 +455,7 @@ const CheckoutComponent = () => {
       if (response.data.success) {
         const orderedProductIds = orderData.products.map((item) => item.id);
         dispatch(removeMultipleFromCart(orderedProductIds));
+        dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
 
         message.success("Đặt hàng thành công!");
 
