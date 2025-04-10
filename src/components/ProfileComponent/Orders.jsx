@@ -1,14 +1,108 @@
 import React, { useState } from "react";
-import { Button, Input, Space, Divider, Card, Tag } from "antd";
+import { Button, Input, Space, Divider, Card, Tag, message } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { addToCart, updateCartOnServer } from "../../redux/slices/cartSlice";
+import axios from "axios";
 
 const Orders = () => {
   const [activeTab, setActiveTab] = useState("Tất cả đơn");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const orderHistory = useSelector((state) => state.user.orderHistory);
 
   console.log("orderHistory", orderHistory);
+
+  const handleBuyAgain = async (orderId) => {
+    const order = orderHistory.find((o) => o._id === orderId);
+    if (!order) {
+      console.warn("Không tìm thấy đơn hàng với ID:", orderId);
+      return;
+    }
+
+    for (const item of order.products) {
+      const {
+        productId,
+        name,
+        image,
+        price,
+        type,
+        quantity,
+        size,
+        color,
+        diameter,
+      } = item;
+
+      const isClothing = ["Áo nam", "Áo nữ"].includes(type);
+      const isPants = ["Quần nam", "Quần nữ"].includes(type);
+      const isWatch = type === "Đồng hồ";
+      const isAccessory = ["Trang sức", "Ví", "Túi xách"].includes(type);
+
+      let discount = 0;
+      try {
+        const res = await axios.get(
+          `http://localhost:3002/api/product/${productId}/discount`
+        );
+        discount = res.data.discount || 0;
+      } catch (err) {
+        console.error(
+          `❌ Không lấy được discount cho sản phẩm ${productId}:`,
+          err
+        );
+      }
+
+      const itemToAdd = {
+        product: {
+          _id: productId,
+          name,
+          image,
+          price,
+          type,
+          discount,
+        },
+        quantity,
+        amount: isAccessory ? quantity : 1,
+        ...(isClothing || isPants ? { size, color } : {}),
+        ...(isWatch ? { diameter, color } : {}),
+      };
+
+      try {
+        dispatch(addToCart(itemToAdd));
+      } catch (err) {
+        console.error("❌ Lỗi thêm lại sản phẩm vào giỏ hàng:", err);
+      }
+    }
+
+    dispatch(updateCartOnServer());
+    message.success("🛒 Đã thêm các sản phẩm từ đơn cũ vào giỏ hàng");
+  };
+
+  // const handleBuyAgain = (order) => {
+  //   order.products.forEach((product) => {
+  //     const itemToAdd = {
+  //       product: {
+  //         _id: product.product._id,
+  //         name: product.product.name,
+  //         image: product.product.image,
+  //         price: product.product.price,
+  //         type: product.product.type,
+  //         discount: product.product.discount,
+  //       },
+  //       quantity: product.quantity,
+  //       amount: product.amount,
+  //       size: product.size,
+  //       color: product.color,
+  //       diameter: product.diameter,
+  //       variant: product.variant,
+  //     };
+
+  //     dispatch(addToCart(itemToAdd));
+  //   });
+
+  //   navigate("/order");
+  // };
 
   const getDisplayStatus = (status) => {
     switch (status) {
@@ -246,6 +340,11 @@ const Orders = () => {
                           style={{ border: "solid 2px black" }}
                           key={action}
                           type="text"
+                          onClick={() => {
+                            if (action === "Mua lại") {
+                              handleBuyAgain(order.key);
+                            }
+                          }}
                         >
                           {action}
                         </Button>

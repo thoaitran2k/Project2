@@ -407,6 +407,7 @@ const CheckoutComponent = () => {
         color: item.color,
         size: item.size,
         price: item.product.price,
+        type: item.product.type,
         promotion: productPromotions[item.id]?.couponId,
       }));
 

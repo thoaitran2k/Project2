@@ -231,4 +231,19 @@ router.post("/check-coupon", async (req, res) => {
 
 router.post("/send-promo-email", promotionController.sendPromoCodeToUser);
 
+router.get("/:productId/discount", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.productId).select(
+      "discount"
+    );
+    if (!product) {
+      return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
+    }
+    res.json({ discount: product.discount || 0 });
+  } catch (err) {
+    console.error("Lỗi lấy discount:", err);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+});
+
 module.exports = router;

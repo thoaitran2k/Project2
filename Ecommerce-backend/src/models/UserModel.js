@@ -78,6 +78,7 @@ const userSchema = new mongoose.Schema(
             image: { type: String },
             price: { type: Number },
             quantity: { type: Number },
+            type: { type: String },
             size: { type: String },
             color: { type: String },
             diameter: { type: String },

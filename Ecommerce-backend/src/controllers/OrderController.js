@@ -94,6 +94,7 @@ const createOrder = async (req, res) => {
         diameter: item.diameter || "",
         subtotal: item.productSubtotal,
         discount: item.discountAmount || 0,
+        type: item.type,
       })),
     };
 

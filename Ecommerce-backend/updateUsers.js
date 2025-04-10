@@ -11,13 +11,20 @@ const updateUsers = async () => {
       }
     );
 
-    // Chỉ cập nhật những user chưa có trường orderHistory
-    const result = await User.updateMany(
-      { orderHistory: { $exists: true } },
-      { $set: { orderHistory: [] } }
-    );
+    const users = await User.find({ orderHistory: { $exists: true, $ne: [] } });
 
-    console.log(`✅ Đã cập nhật ${result.modifiedCount} user!`);
+    let updatedCount = 0;
+
+    for (const user of users) {
+      if (Array.isArray(user.orderHistory) && user.orderHistory.length > 0) {
+        // Xoá phần tử từ index 0 đến 3
+        user.orderHistory = user.orderHistory.slice(4); // loại bỏ 4 phần tử đầu
+        await user.save();
+        updatedCount++;
+      }
+    }
+
+    console.log(`✅ Đã cập nhật ${updatedCount} user!`);
     mongoose.connection.close();
   } catch (error) {
     console.error("❌ Lỗi khi cập nhật:", error);

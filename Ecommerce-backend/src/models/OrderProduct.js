@@ -27,6 +27,7 @@ const OrderSchema = new Schema({
       diameter: { type: String }, // Đường kính (nếu có)
       productSubtotal: { type: Number, required: true },
       discountAmount: { type: Number }, // Subtotal cho mỗi mặt hàng
+      type: { type: String },
     },
   ],
   paymentMethod: {
