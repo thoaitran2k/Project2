@@ -450,7 +450,7 @@ const CheckoutComponent = () => {
         orderPayload
       );
 
-      console.log("response", response);
+      //console.log("response", response);
 
       if (response.data.success) {
         const orderedProductIds = orderData.products.map((item) => item.id);

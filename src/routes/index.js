@@ -10,6 +10,7 @@ import AdminPage from "../pages/AdminPage/AdminPage";
 import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
 import CheckoutPage from "../pages/CheckoutPage/CheckoutPage";
 import CheckoutSuccesPage from "../pages/CheckoutPage/CheckoutSuccesPage";
+import OrderDetailsPage from "../pages/OrderDetailsPage/OrderDetailsPage";
 
 export const routes = [
   //PAGE
@@ -86,6 +87,12 @@ export const routes = [
     path: "/checkout/success",
     page: CheckoutSuccesPage,
     isShowHeader: false,
+    isShowFooter: true,
+  },
+  {
+    path: "/order/view/:orderId",
+    page: OrderDetailsPage,
+    isShowHeader: true,
     isShowFooter: true,
   },
 ];
