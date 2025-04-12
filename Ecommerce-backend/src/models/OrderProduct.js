@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 // Định nghĩa OrderSchema
 const OrderSchema = new Schema({
   customer: {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "users", required: true },
     username: { type: String, required: true },
     phone: { type: String, required: true },
     email: { type: String, required: true },
@@ -53,6 +53,7 @@ const OrderSchema = new Schema({
       "delivered",
       "paid",
       "cancelled",
+      "requestedCancel",
     ],
     default: "pending",
   },

@@ -18,7 +18,7 @@ const updateUsers = async () => {
     for (const user of users) {
       if (Array.isArray(user.orderHistory) && user.orderHistory.length > 0) {
         // Xoá phần tử từ index 0 đến 3
-        user.orderHistory = user.orderHistory.slice(4); // loại bỏ 4 phần tử đầu
+        user.orderHistory = user.orderHistory.slice(5); // loại bỏ 4 phần tử đầu
         await user.save();
         updatedCount++;
       }

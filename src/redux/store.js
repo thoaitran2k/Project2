@@ -5,6 +5,7 @@ import loadingReducer from "./slices/loadingSlice";
 import productReducer from "./slices/productSlice";
 import adminUsersReducer from "./reducers/adminUserSlice";
 import cartReducer from "./slices/cartSlice";
+import orderReducer from "./slices/orderSlice";
 import storage from "redux-persist/lib/storage"; // Lưu vào localStorage
 import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers } from "redux";
@@ -22,7 +23,7 @@ import {
 const persistConfig = {
   key: "root", // Key để lưu trữ trong localStorage
   storage, // Sử dụng localStorage
-  whitelist: ["cart", "profile", "product", "adminUsers"], // Chỉ lưu các reducer này
+  whitelist: ["cart", "profile", "product", "adminUsers", "order"], // Chỉ lưu các reducer này
   blacklist: ["user"],
 };
 
@@ -34,6 +35,7 @@ const rootReducer = combineReducers({
   product: productReducer,
   adminUsers: adminUsersReducer,
   cart: cartReducer,
+  order: orderReducer,
 });
 
 // Áp dụng cấu hình persist vào rootReducer

@@ -2,6 +2,60 @@ const Order = require("../models/OrderProduct");
 
 const User = require("../models/UserModel");
 
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customer.userId")
+      .populate("selectedItems.product");
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Lỗi truy vấn đơn hàng:", error); // dòng mới để xem lỗi
+    res.status(500).json({
+      message: "Lỗi khi lấy danh sách đơn hàng",
+      error: error.message || error,
+    });
+  }
+};
+
+const requestCancel = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // Chỉ cho phép yêu cầu hủy khi đơn ở trạng thái pending hoặc processing
+    if (!["pending", "processing"].includes(order.status)) {
+      return res.status(400).json({
+        message:
+          "Chỉ có thể yêu cầu hủy đơn hàng ở trạng thái 'Chờ xử lý' hoặc 'Đang xử lý'",
+      });
+    }
+
+    order.status = "requestedCancel";
+    await order.save();
+
+    // Cập nhật trạng thái trong orderHistory của user
+    await User.updateOne(
+      {
+        _id: order.customer.userId,
+        "orderHistory.orderId": order._id,
+      },
+      {
+        $set: {
+          "orderHistory.$.status": "requestedCancel",
+        },
+      }
+    );
+
+    res.status(200).json({
+      message: "Yêu cầu hủy đã được gửi chờ admin xác nhận",
+      order,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
@@ -119,30 +173,33 @@ const createOrder = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { status } = req.body;
-
-    // Kiểm tra trạng thái hợp lệ
-    const allowedStatuses = [
-      "pending",
-      "processing",
-      "shipping",
-      "delivered",
-      "paid",
-      "cancelled",
-    ];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: "Trạng thái không hợp lệ" });
-    }
+    const { status, confirmCancel } = req.body;
 
     const order = await Order.findById(orderId);
-    if (!order)
+    if (!order) {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    // Kiểm tra logic chuyển trạng thái
+    if (status === "cancelled") {
+      // Chỉ cho phép hủy nếu đơn đang ở trạng thái yêu cầu hủy
+      if (order.status !== "requestedCancel") {
+        return res.status(400).json({
+          message: "Chỉ có thể hủy đơn hàng đang ở trạng thái yêu cầu hủy",
+        });
+      }
+    } else if (order.status === "requestedCancel") {
+      // Không cho phép chuyển từ requestedCancel sang trạng thái khác ngoài cancelled
+      return res.status(400).json({
+        message: "Đơn hàng đang chờ hủy, chỉ có thể chuyển sang trạng thái hủy",
+      });
+    }
 
     order.status = status;
     order.updatedAt = new Date();
     await order.save();
 
-    // Cập nhật trạng thái trong userModel -> orderHistory
+    // Cập nhật trạng thái trong orderHistory của user
     await User.updateOne(
       {
         _id: order.customer.userId,
@@ -165,4 +222,6 @@ const updateOrderStatus = async (req, res) => {
 module.exports = {
   createOrder,
   updateOrderStatus,
+  getAllOrders,
+  requestCancel,
 };

@@ -10,6 +10,7 @@ import AdjustDiscountProducts from "../../components/AdminProduct/AdjustDiscount
 import { getAllProduct } from "../../redux/slices/productSlice";
 import CreatePromotion from "../../components/AdminProduct/CreatePromotion";
 import PromotionTable from "../../components/AdminProduct/PromotionTable";
+import OrderManage from "../../components/AdminUser/OrderManage";
 
 // Menu items
 const items = [
@@ -19,7 +20,7 @@ const items = [
     label: "Người dùng",
     children: [
       { key: "user_list", label: "Danh sách người dùng" },
-      { key: "user_add", label: "Thêm người dùng" },
+      { key: "orders_list", label: "Danh sách đơn hàng" },
     ],
   },
   {
@@ -107,8 +108,8 @@ const AdminPage = () => {
     switch (selectedKey) {
       case "user_list":
         return <AdminUser />;
-      case "user_add":
-        return <h2>Thêm người dùng</h2>;
+      case "orders_list":
+        return <OrderManage />;
       case "product_list":
         return <AdminProduct />;
       case "product_discount":

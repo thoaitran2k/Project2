@@ -11,4 +11,12 @@ router.put(
   OrderController.updateOrderStatus
 );
 
+router.get("/get-all", OrderController.getAllOrders);
+
+router.patch(
+  "/:id/request-cancel",
+  authMiddleware,
+  OrderController.requestCancel
+);
+
 module.exports = router;

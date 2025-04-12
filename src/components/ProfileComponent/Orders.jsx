@@ -9,6 +9,7 @@ import {
   message,
   Empty,
   Typography,
+  Modal,
 } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,6 +34,8 @@ const Orders = () => {
   const [processedOrders, setProcessedOrders] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
 
   const [activeTab, setActiveTab] = useState(filterTabs[0]);
 
@@ -148,6 +151,13 @@ const Orders = () => {
           display: "Đã huỷ",
           priority: 5,
         };
+      case "requestedCancel": // Thêm trạng thái yêu cầu hủy
+        return {
+          type: "Yêu cầu huỷ",
+          tagColor: "gold",
+          display: "Chờ xét duyệt huỷ",
+          priority: 1.5,
+        };
       default:
         return {
           type: "Khác",
@@ -168,10 +178,14 @@ const Orders = () => {
         const statusInfo = getDisplayStatus(order.status);
 
         let actions = ["Xem chi tiết"];
-        if (["pending", "processing"].includes(order.status)) {
-          actions.unshift("Huỷ");
-        } else if (order.status === "cancelled") {
+
+        // Thêm nút "Mua lại" cho đơn đã giao hoặc đã hủy
+        if (["delivered", "cancelled"].includes(order.status)) {
           actions.unshift("Mua lại");
+        }
+        // Thêm nút "Huỷ" cho đơn chờ xử lý hoặc đã tiếp nhận
+        else if (["pending", "processing"].includes(order.status)) {
+          actions.unshift("Huỷ");
         }
 
         return {
@@ -194,11 +208,9 @@ const Orders = () => {
         };
       })
       .sort((a, b) => {
-        // First sort by priority (status)
         if (a.priority !== b.priority) {
           return a.priority - b.priority;
         }
-        // Then sort by date (newest first)
         return new Date(b.orderDate) - new Date(a.orderDate);
       });
   };
@@ -231,6 +243,53 @@ const Orders = () => {
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
+  };
+
+  const handleCancelClick = (orderId) => {
+    setOrderToCancel(orderId);
+    setIsCancelModalOpen(true);
+  };
+
+  const handleRequestCancel = async (orderId) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      // Gửi yêu cầu huỷ
+      await axios.patch(
+        `http://localhost:3002/api/order/${orderId}/request-cancel`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      message.success(
+        "✅ Đã gửi yêu cầu huỷ đơn hàng. Vui lòng chờ xác nhận từ quản trị viên."
+      );
+
+      // Cập nhật trạng thái của đơn hàng
+      setProcessedOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.orderId === orderId
+            ? {
+                ...order,
+                status: "Chờ xét duyệt huỷ",
+                statusType: "Yêu cầu huỷ",
+                tagColor: "gold",
+                originalStatus: "requestedCancel",
+                actions: ["Xem chi tiết"],
+              }
+            : order
+        )
+      );
+    } catch (err) {
+      message.error("❌ Gửi yêu cầu huỷ thất bại");
+      console.error("Cancel request error:", err);
+    } finally {
+      setIsCancelModalOpen(false);
+    }
   };
 
   return (
@@ -387,7 +446,13 @@ const Orders = () => {
                       {order.actions.map((action) => (
                         <Button
                           key={action}
-                          type={action === "Huỷ" ? "default" : "primary"}
+                          type={
+                            action === "Huỷ"
+                              ? "default"
+                              : action === "Mua lại"
+                              ? "primary"
+                              : "default"
+                          }
                           danger={action === "Huỷ"}
                           onClick={() => {
                             if (action === "Mua lại") {
@@ -395,9 +460,7 @@ const Orders = () => {
                             } else if (action === "Xem chi tiết") {
                               navigate(`/order/view/${order.orderId}`);
                             } else if (action === "Huỷ") {
-                              message.info(
-                                "Chức năng huỷ đơn hàng đang phát triển"
-                              );
+                              handleCancelClick(order.orderId);
                             }
                           }}
                         >
@@ -422,6 +485,19 @@ const Orders = () => {
           </Card>
         )}
       </Space>
+      {/* Modal xác nhận Hủy đơn hàng */}
+      <Modal
+        title="Xác nhận hủy đơn hàng"
+        open={isCancelModalOpen}
+        onOk={() => handleRequestCancel(orderToCancel)}
+        onCancel={() => setIsCancelModalOpen(false)}
+        okText="Xác nhận"
+        cancelText="Hủy bỏ"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bạn có thực sự muốn hủy đơn hàng này không?</p>
+        <p>Hãy liên hệ với Nhân viên shop để được hỗ trợ</p>
+      </Modal>
     </div>
   );
 };

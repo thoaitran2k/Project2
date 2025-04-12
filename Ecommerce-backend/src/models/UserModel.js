@@ -95,6 +95,7 @@ const userSchema = new mongoose.Schema(
             "delivered",
             "paid",
             "cancelled",
+            "requestedCancel",
           ],
           default: "pending",
         },
