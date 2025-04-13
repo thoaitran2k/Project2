@@ -98,6 +98,32 @@ const OrderManage = () => {
       align: "center",
     },
     {
+      title: "Email Người Dùng",
+      dataIndex: ["customer", "userId", "email"],
+      key: "email",
+      align: "center",
+      render: (email, record) => {
+        // Kiểm tra nếu có email từ customer.userId
+        if (email) return email;
+
+        // Fallback nếu không có thông tin user
+        return record.customer?.email || "Không có thông tin";
+      },
+    },
+    {
+      title: "SĐT Khách hàng",
+      dataIndex: ["customer", "userId", "phone"],
+      key: "phone",
+      align: "center",
+      render: (phone, record) => {
+        // Kiểm tra nếu có email từ customer.userId
+        if (phone) return phone;
+
+        // Fallback nếu không có thông tin user
+        return record.customer?.phone || "Không có thông tin";
+      },
+    },
+    {
       title: "Ngày Đặt",
       dataIndex: "createdAt",
       key: "createdAt",

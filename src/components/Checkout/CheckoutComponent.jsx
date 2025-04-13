@@ -348,11 +348,12 @@ const CheckoutComponent = () => {
         createdAt: savedData.createdAt || new Date().toISOString(),
         address: selectedAddressOrder
           ? {
-              name: selectedAddressOrder.name,
+              name: selectedAddressOrder.name || "",
               phone:
                 selectedAddressOrder.phoneDelivery ||
-                selectedAddressOrder.phone,
-              address: selectedAddressOrder.address,
+                selectedAddressOrder.phone ||
+                "",
+              address: selectedAddressOrder.address || "",
             }
           : null,
         paymentMethod: savedData.paymentMethod || "",

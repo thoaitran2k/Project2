@@ -10,8 +10,8 @@ const OrderSchema = new Schema({
     email: { type: String, required: true },
   },
   selectedAddress: {
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
+    name: { type: String },
+    phone: { type: String },
     address: { type: String, required: true },
   },
   selectedItems: [
