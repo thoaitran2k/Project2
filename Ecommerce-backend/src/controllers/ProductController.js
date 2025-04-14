@@ -386,8 +386,61 @@ const getPromotionList = async (req, res) => {
   }
 };
 
-module.exports = {
-  getPromotionList,
+const updateSelledCount = async (req, res) => {
+  try {
+    const { products } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Danh sách sản phẩm không hợp lệ" });
+    }
+
+    const updatePromises = products.map(async (item) => {
+      const { productId, quantity = 0, color, size, diameter } = item;
+      const product = await Product.findById(productId);
+
+      if (!product) return;
+
+      // Tăng selled và giảm tồn kho tổng
+      product.selled = (product.selled || 0) + quantity;
+      product.countInStock = Math.max(
+        (product.countInStock || 0) - quantity,
+        0
+      );
+
+      // Tìm variant phù hợp nếu có
+      if (Array.isArray(product.variants) && product.variants.length > 0) {
+        const isWatch = product.type?.toLowerCase() === "đồng hồ";
+
+        const matchedVariant = product.variants.find((v) => {
+          const matchColor = !color || v.color === color;
+          const matchSize = !size || String(v.size) === String(size);
+          const matchDiameter = isWatch
+            ? Number(v.diameter) === Number(diameter)
+            : true;
+
+          return matchColor && matchSize && matchDiameter;
+        });
+
+        if (matchedVariant) {
+          matchedVariant.quantity = Math.max(
+            (matchedVariant.quantity || 0) - quantity,
+            0
+          );
+        }
+      }
+
+      await product.save();
+    });
+
+    await Promise.all(updatePromises);
+
+    res.status(200).json({ message: "Cập nhật selled và tồn kho thành công" });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật selled:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
 };
 
 //________________________________________________________________________________
@@ -406,4 +459,5 @@ module.exports = {
   applyCode,
   createPromotionCode,
   getPromotionList,
+  updateSelledCount,
 };

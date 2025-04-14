@@ -402,7 +402,7 @@ const CheckoutComponent = () => {
       return;
     }
 
-    console.log("orderData", orderData);
+    //console.log("orderData", orderData);
 
     try {
       const orderItems = orderData.products.map((item) => ({
@@ -455,6 +455,17 @@ const CheckoutComponent = () => {
 
       if (response.data.success) {
         const orderedProductIds = orderData.products.map((item) => item.id);
+
+        await axios.post("http://localhost:3002/api/product/update-selled", {
+          products: orderData.products.map((item) => ({
+            productId: item.product._id,
+            quantity: item.quantity,
+            color: item.color || "",
+            size: item.size || "",
+            diameter: item.diameter || "",
+          })),
+        });
+
         dispatch(removeMultipleFromCart(orderedProductIds));
         dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
 

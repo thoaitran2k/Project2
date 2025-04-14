@@ -246,4 +246,6 @@ router.get("/:productId/discount", async (req, res) => {
   }
 });
 
+router.post("/update-selled", ProductController.updateSelledCount);
+
 module.exports = router;
