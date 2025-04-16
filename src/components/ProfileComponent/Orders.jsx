@@ -144,6 +144,13 @@ const Orders = () => {
           display: "Giao hàng thành công",
           priority: 4,
         };
+      case "paid":
+        return {
+          type: "Đã thanh toán",
+          tagColor: "green",
+          display: "Thanh toán thành công - Đang chờ giao hàng",
+          priority: 4,
+        };
       case "cancelled":
         return {
           type: "Đã huỷ",

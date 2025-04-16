@@ -74,7 +74,7 @@ const OrderManage = () => {
     pending: "Chờ xử lý",
     processing: "Đã tiếp nhận",
     shipping: "Đang giao hàng",
-    delivered: "Đã nhận hàng",
+    delivered: "Giao hàng thành công",
     paid: "Đã thanh toán",
     cancelled: "Hủy",
     requestedCancel: "Yêu cầu hủy",
@@ -170,7 +170,7 @@ const OrderManage = () => {
       align: "center",
       render: (text, record) => {
         const isDisabled =
-          record.status === "cancelled" || record.status === "paid";
+          record.status === "cancelled" || record.status === "delivered";
 
         return (
           <select
@@ -179,16 +179,24 @@ const OrderManage = () => {
             disabled={isDisabled}
           >
             {Object.entries(statusLabels).map(([key, label]) => {
-              // Ẩn option "requestedCancel" trong select vì đây là trạng thái hệ thống
               if (key === "requestedCancel") return null;
+
+              const currentStatus = record.status;
+
+              // Loại bỏ "pending" và "processing" nếu trạng thái hiện tại đã vượt qua
+              const shouldHide =
+                (key === "pending" || key === "processing") &&
+                ["paid", "shipping", "delivered"].includes(currentStatus);
+
+              // Không hiển thị option nếu bị loại
+              if (shouldHide) return null;
 
               return (
                 <option
                   key={key}
                   value={key}
-                  // Disable option "Hủy" nếu không phải từ trạng thái yêu cầu hủy
                   disabled={
-                    key === "cancelled" && record.status !== "requestedCancel"
+                    key === "cancelled" && currentStatus !== "requestedCancel"
                   }
                 >
                   {label}
