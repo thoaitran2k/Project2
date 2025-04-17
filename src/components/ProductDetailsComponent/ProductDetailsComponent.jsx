@@ -21,7 +21,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart, updateCartOnServer } from "../../redux/slices/cartSlice";
 import { useLocation, useNavigate } from "react-router";
 
-const ProductDetailsComponent = ({ product }) => {
+const productsComponent = ({ product }) => {
   const colorMap = {
     Hồng: "#FF69B4",
     Nâu: "#8B4513",
@@ -47,17 +47,15 @@ const ProductDetailsComponent = ({ product }) => {
 
   const user = useSelector((state) => state.user);
   const address = useSelector((state) => state.user.address);
-  const productDetail = useSelector(
-    (state) => state.product.productDetail.data
-  );
+
   const defaultAddress = address?.find((addr) => addr.isDefault) || null;
-  const availablePantsSizes = productDetail.variants.map((v) => Number(v.size));
+  const availablePantsSizes = product.variants.map((v) => Number(v.size));
   const availableShirtSizes = Array.isArray(product?.sizes)
     ? product.sizes
     : [];
 
-  const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
-  const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
+  const isClothing = ["Áo nam", "Áo nữ"].includes(product.type);
+  const isPants = ["Quần nam", "Quần nữ"].includes(product.type);
 
   const displaySizes = isPants
     ? pantsSizes
@@ -72,7 +70,7 @@ const ProductDetailsComponent = ({ product }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isWatch = productDetail?.type === "Đồng hồ";
+  const isWatch = product?.type === "Đồng hồ";
 
   const uniqueColors = [
     ...new Set(product.variants?.map((variant) => variant.color)),
@@ -83,7 +81,7 @@ const ProductDetailsComponent = ({ product }) => {
       localStorage.setItem(
         "tempCheckoutItem",
         JSON.stringify({
-          product: productDetail,
+          product: product,
           quantity: quantityPay,
           selectedColor,
           selectedSize,
@@ -96,9 +94,9 @@ const ProductDetailsComponent = ({ product }) => {
       return;
     }
 
-    const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
-    const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
-    const isWatch = productDetail.type === "Đồng hồ";
+    const isClothing = ["Áo nam", "Áo nữ"].includes(product.type);
+    const isPants = ["Quần nam", "Quần nữ"].includes(product.type);
+    const isWatch = product.type === "Đồng hồ";
 
     if ((isClothing || isPants) && !selectedSize) {
       message.error("Vui lòng chọn kích thước trước khi thanh toán");
@@ -116,12 +114,7 @@ const ProductDetailsComponent = ({ product }) => {
     }
 
     // Tạo id dựa trên biến thể
-    const id = [
-      productDetail._id,
-      selectedSize,
-      selectedColor,
-      selectedDiameter,
-    ]
+    const id = [product._id, selectedSize, selectedColor, selectedDiameter]
       .filter(Boolean)
       .join("-");
 
@@ -129,12 +122,12 @@ const ProductDetailsComponent = ({ product }) => {
     const checkoutItem = {
       id,
       product: {
-        _id: productDetail._id,
-        name: productDetail.name,
-        image: productDetail.image,
-        price: productDetail.price,
-        type: productDetail.type,
-        discount: productDetail.discount,
+        _id: product._id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        type: product.type,
+        discount: product.discount,
       },
       quantity: quantityPay,
       ...(selectedSize && { size: selectedSize }),
@@ -147,10 +140,8 @@ const ProductDetailsComponent = ({ product }) => {
     navigate("/checkout", {
       state: {
         selectedItems: [checkoutItem],
-        total: productDetail.price * quantityPay,
-        discount:
-          (productDetail.price * (productDetail.discount || 0) * quantityPay) /
-          100,
+        total: product.price * quantityPay,
+        discount: (product.price * (product.discount || 0) * quantityPay) / 100,
         selectedAddress:
           user.address?.find((addr) => addr.isDefault) || user.address?.[0],
         directCheckout: true,
@@ -159,28 +150,26 @@ const ProductDetailsComponent = ({ product }) => {
   };
 
   const handleAddToCart = async () => {
-    const isClothing = ["Áo nam", "Áo nữ"].includes(productDetail.type);
-    const isPants = ["Quần nam", "Quần nữ"].includes(productDetail.type);
-    const isWatch = productDetail.type === "Đồng hồ";
-    const isAccessory = ["Trang sức", "Ví", "Túi xách"].includes(
-      productDetail.type
-    );
+    const isClothing = ["Áo nam", "Áo nữ"].includes(product.type);
+    const isPants = ["Quần nam", "Quần nữ"].includes(product.type);
+    const isWatch = product.type === "Đồng hồ";
+    const isAccessory = ["Trang sức", "Ví", "Túi xách"].includes(product.type);
 
     const getSelectedVariant = () => {
       if (!selectedColor) return null;
 
       if (isWatch) {
-        return productDetail.variants?.find(
+        return product.variants?.find(
           (v) => v.color === selectedColor && v.diameter === selectedDiameter
         );
       }
       if (isPants) {
         // Với Quần nam và Quần nữ, xét size và color trong variants
-        return productDetail.variants?.find(
+        return product.variants?.find(
           (v) => v.color === selectedColor && v.size === selectedSize
         );
       }
-      return productDetail.variants?.find(
+      return product.variants?.find(
         (v) => v.color === selectedColor && v.size === selectedSize
       );
     };
@@ -189,15 +178,15 @@ const ProductDetailsComponent = ({ product }) => {
 
     if (!user.isAuthenticated) {
       // Lưu thông tin giỏ hàng tạm thời vào localStorage
-      if (!productDetail || !productDetail._id) {
-        console.error("❌ Lỗi: Không có sản phẩm hợp lệ", productDetail);
+      if (!product || !product._id) {
+        console.error("❌ Lỗi: Không có sản phẩm hợp lệ", product);
         return;
       }
 
       // Kiểm tra điều kiện bắt buộc theo loại sản phẩm
       if (
         (isClothing || isPants) &&
-        productDetail.sizes?.length > 0 &&
+        product.sizes?.length > 0 &&
         !selectedSize
       ) {
         alert("Vui lòng chọn kích thước trước khi thêm vào giỏ hàng!");
@@ -206,30 +195,30 @@ const ProductDetailsComponent = ({ product }) => {
 
       if (
         (isClothing || isPants || isWatch) &&
-        productDetail.colors?.length > 0 &&
+        product.colors?.length > 0 &&
         !selectedColor
       ) {
         alert("Vui lòng chọn màu sắc trước khi thêm vào giỏ hàng!");
         return;
       }
 
-      if (isWatch && productDetail.variants?.length > 0 && !selectedDiameter) {
+      if (isWatch && product.variants?.length > 0 && !selectedDiameter) {
         alert("Vui lòng chọn đường kính trước khi thêm vào giỏ hàng!");
         return;
       }
 
       // Tìm đúng biến thể của sản phẩm (đối với quần áo & đồng hồ)
       if (isWatch) {
-        selectedVariant = productDetail.variants?.find(
+        selectedVariant = product.variants?.find(
           (v) => v.color === selectedColor && v.diameter === selectedDiameter
         );
       } else if (isPants) {
         // Kiểm tra biến thể cho Quần nam hoặc Quần nữ
-        selectedVariant = productDetail.variants?.find(
+        selectedVariant = product.variants?.find(
           (v) => v.color === selectedColor && v.size === selectedSize
         );
       } else {
-        selectedVariant = productDetail.variants?.find(
+        selectedVariant = product.variants?.find(
           (v) => v.color === selectedColor && v.size === selectedSize
         );
       }
@@ -244,11 +233,11 @@ const ProductDetailsComponent = ({ product }) => {
         "tempCartItem",
         JSON.stringify({
           product: {
-            _id: productDetail._id,
-            name: productDetail.name,
-            image: productDetail.image,
-            price: productDetail.price,
-            type: productDetail.type,
+            _id: product._id,
+            name: product.name,
+            image: product.image,
+            price: product.price,
+            type: product.type,
           },
           quantity: quantityPay,
           amount: isAccessory ? quantityPay : 1,
@@ -264,15 +253,15 @@ const ProductDetailsComponent = ({ product }) => {
       return;
     }
 
-    if (!productDetail || !productDetail._id) {
-      console.error("❌ Lỗi: Không có sản phẩm hợp lệ", productDetail);
+    if (!product || !product._id) {
+      console.error("❌ Lỗi: Không có sản phẩm hợp lệ", product);
       return;
     }
 
     // Xác định loại sản phẩm
     if (
       (isClothing || isPants) &&
-      productDetail.sizes?.length > 0 &&
+      product.sizes?.length > 0 &&
       !selectedSize &&
       !isPants // Không cần kiểm tra với Quần nữ vì kích thước nằm trong biến thể
     ) {
@@ -282,30 +271,30 @@ const ProductDetailsComponent = ({ product }) => {
 
     if (
       (isClothing || isPants || isWatch) &&
-      productDetail.colors?.length > 0 &&
+      product.colors?.length > 0 &&
       !selectedColor
     ) {
       alert("Vui lòng chọn màu sắc trước khi thêm vào giỏ hàng!");
       return;
     }
 
-    if (isWatch && productDetail.variants?.length > 0 && !selectedDiameter) {
+    if (isWatch && product.variants?.length > 0 && !selectedDiameter) {
       alert("Vui lòng chọn đường kính trước khi thêm vào giỏ hàng!");
       return;
     }
 
     // Tìm đúng biến thể của sản phẩm (đối với quần áo, quần nữ & đồng hồ)
     if (isWatch) {
-      selectedVariant = productDetail.variants?.find(
+      selectedVariant = product.variants?.find(
         (v) => v.color === selectedColor && v.diameter === selectedDiameter
       );
     } else if (isPants) {
       // Kiểm tra biến thể cho Quần nữ
-      selectedVariant = productDetail.variants?.find(
+      selectedVariant = product.variants?.find(
         (v) => v.color === selectedColor && v.size === selectedSize // Kiểm tra từ các biến thể của Quần nữ
       );
     } else {
-      selectedVariant = productDetail.variants?.find(
+      selectedVariant = product.variants?.find(
         (v) => v.color === selectedColor && v.size === selectedSize
       );
     }
@@ -318,12 +307,12 @@ const ProductDetailsComponent = ({ product }) => {
     // Tạo item giỏ hàng với số lượng mặc định là 1
     const itemToAdd = {
       product: {
-        _id: productDetail._id,
-        name: productDetail.name,
-        image: productDetail.image,
-        price: productDetail.price,
-        type: productDetail.type,
-        discount: productDetail.discount,
+        _id: product._id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        type: product.type,
+        discount: product.discount,
       },
       quantity: quantityPay,
       amount: isAccessory ? quantityPay : 1, // Phụ kiện tính toàn bộ vào cartCount, còn lại mặc định 1
@@ -347,9 +336,9 @@ const ProductDetailsComponent = ({ product }) => {
     };
 
     // Kiểm tra tồn kho tổng thể sản phẩm
-    if (productDetail.countInStock < quantityPay) {
+    if (product.countInStock < quantityPay) {
       alert(
-        `Số lượng tồn kho không đủ! Chỉ còn ${productDetail.countInStock} sản phẩm`
+        `Số lượng tồn kho không đủ! Chỉ còn ${product.countInStock} sản phẩm`
       );
       return;
     }
@@ -590,7 +579,7 @@ const ProductDetailsComponent = ({ product }) => {
               ? defaultAddress.address
               : "Chưa có địa chỉ mặc định"}
           </span>{" "}
-          -<span className="change-address"> Đổi địa chỉ</span>
+          -<span className="change-address"> Địa chỉ mặc định</span>
         </WrapperAdressProduct>
 
         <WrapperQualityProduct>
@@ -641,7 +630,7 @@ const ProductDetailsComponent = ({ product }) => {
             {isWatch ? (
               <WrapperSizeOptions>
                 {watchDiameters.map((d, index) => {
-                  const isAvailable = productDetail.diameter?.includes(d);
+                  const isAvailable = product.diameter?.includes(d);
                   return (
                     <WrapperSizeButton
                       key={index}
@@ -756,7 +745,7 @@ const ProductDetailsComponent = ({ product }) => {
           <StyledButton textButton="Chọn mua" onClick={handleCheckout} />
           <StyledButton
             textButton="Thêm vào giỏ hàng"
-            onClick={() => handleAddToCart(productDetail)}
+            onClick={() => handleAddToCart(product)}
           />
         </div>
       </Col>
@@ -764,4 +753,4 @@ const ProductDetailsComponent = ({ product }) => {
   );
 };
 
-export default ProductDetailsComponent;
+export default productsComponent;

@@ -1,52 +1,53 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import ProductDetailsComponent from "../../components/ProductDetailsComponent/ProductDetailsComponent";
 import { MainContent } from "./style";
-import { Breadcrumb } from "antd";
-import { useParams } from "react-router";
+import { useParams, useLocation, useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useDispatch, useSelector } from "react-redux";
-import { getDetailsProductById } from "../../redux/slices/productSlice";
+import { getDetailProduct } from "../../Services/ProductService";
 import ReviewComponent from "../../components/ReviewComponent/ReviewComponent";
-import SimilarProductList from "../../components/SimilarProductComponent/SimilarProduct";
-import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
-import { useLocation, useNavigate } from "react-router";
 import ProductList from "../../components/SimilarProductComponent/SimilarProduct";
-//import slugify from "slugify";
-
+import BreadcrumbWrapper from "../../components/BreadcrumbWrapper/BreadcrumbWrapper";
+import { useDispatch } from "react-redux";
+import { setProductDetail } from "../../redux/slices/productSlice";
 const slugify = (str) =>
   str
     .toLowerCase()
-    .replace(/đ/g, "d") // Đổi 'đ' thành 'd'
-    .normalize("NFD") // Chuyển thành dạng Unicode chuẩn
-    .replace(/[\u0300-\u036f]/g, "") // Loại bỏ dấu
-    .replace(/\s+/g, "-"); // Thay dấu cách bằng '-'
+    .replace(/đ/g, "d")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "-");
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
-  const dispatch = useDispatch();
-  const { productDetail, loading, error } = useSelector(
-    (state) => state.product
-  );
-
-  const productType = productDetail?.data.type || "Không xác định";
-
-  const productId = id.match(/[a-f0-9]{24}$/)?.[0];
-
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const productId = useMemo(() => id.match(/[a-f0-9]{24}$/)?.[0], [id]);
+
+  const {
+    isLoading,
+    data: productDetail,
+    error,
+  } = useQuery({
+    queryKey: ["productDetail", productId],
+    queryFn: () => getDetailProduct(productId),
+    enabled: !!productId,
+  });
+
+  const productType = productDetail?.data?.type || "Không xác định";
 
   useEffect(() => {
     if (!location.state?.breadcrumb && productDetail?.data) {
-      const typeSlug = slugify(productDetail.data.type, { lower: true }); // Chuyển về dạng không dấu
-
+      const typeSlug = slugify(productDetail.data.type);
       navigate(location.pathname, {
         replace: true,
         state: {
           breadcrumb: [
             { path: "/home", name: "Trang chủ" },
             {
-              path: `/product-type/${typeSlug}`, // Slug URL
-              name: productDetail.data.type, // Hiển thị có dấu
+              path: `/product-type/${typeSlug}`,
+              name: productDetail.data.type,
             },
             { path: location.pathname, name: productDetail.data.name },
           ],
@@ -55,39 +56,30 @@ const ProductDetailsPage = () => {
     }
   }, [location, navigate, productDetail]);
 
-  //____________________________________LẤY DỮ LIỆU CHI TIẾT SẢN PHẨM
-
   useEffect(() => {
-    if (productId) {
-      dispatch(getDetailsProductById(productId)); // 🚀 Gọi API lấy sản phẩm chi tiết
+    if (productDetail?.status === "OK") {
+      dispatch(setProductDetail(productDetail.data));
     }
-  }, [dispatch, productId]);
-
-  // const { isLoading, data: product } = useQuery({
-  //   queryKey: ["product", id],
-  //   queryFn: fetchProductDetails,
-  //   retry: 3,
-  //   retryDelay: 1000,
-  // });
+  }, [productDetail, dispatch]);
 
   return (
     <div style={{ margin: "20px 0" }}>
-      <>
-        <BreadcrumbWrapper breadcrumb={location.state?.breadcrumb} />
-        <MainContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : productDetail ? (
+      <BreadcrumbWrapper breadcrumb={location.state?.breadcrumb} />
+      <MainContent>
+        {isLoading ? (
+          <p>Đang tải sản phẩm...</p>
+        ) : error ? (
+          <p>Lỗi khi tải sản phẩm: {error.message}</p>
+        ) : productDetail?.status === "OK" ? (
+          <>
             <ProductDetailsComponent product={productDetail.data} />
-          ) : (
-            <p>Không tìm thấy sản phẩm</p>
-          )}
-
-          <ProductList productType={productType} />
-
-          <ReviewComponent />
-        </MainContent>
-      </>
+            <ProductList productType={productType} />
+            <ReviewComponent />
+          </>
+        ) : (
+          <p>Không tìm thấy sản phẩm</p>
+        )}
+      </MainContent>
     </div>
   );
 };

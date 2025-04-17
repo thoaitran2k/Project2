@@ -17,6 +17,7 @@ import { useNavigate } from "react-router";
 import { addToCart, updateCartOnServer } from "../../redux/slices/cartSlice";
 import axios from "axios";
 import styled from "styled-components";
+import { setLoading } from "../../redux/slices/loadingSlice";
 
 const { Text } = Typography;
 
@@ -372,58 +373,92 @@ const Orders = () => {
                 </div>
 
                 {/* Products list */}
-                {order.products.map((product) => (
-                  <div
-                    key={product._id}
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      marginBottom: "12px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div style={{ position: "relative", minWidth: "80px" }}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
+                {order.products.map((product) => {
+                  const toSlug = (name) =>
+                    name
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .replace(/Đ/g, "D")
+                      .replace(/đ/g, "d")
+                      .replace(/[^a-z0-9 ]/g, "")
+                      .trim()
+                      .replace(/\s+/g, "-");
+
+                  const slug = toSlug(product.name);
+                  const url = `/product-details/${slug}-${product.productId}`;
+
+                  return (
+                    <div
+                      key={product._id}
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        marginBottom: "12px",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
                         style={{
-                          width: "80px",
-                          height: "80px",
-                          objectFit: "cover",
-                          border: "1px solid #f0f0f0",
-                          borderRadius: "4px",
-                        }}
-                      />
-                      <Tag
-                        style={{
-                          position: "absolute",
-                          bottom: 0,
-                          right: 0,
-                          borderTopLeftRadius: "8px",
-                          margin: 0,
+                          position: "relative",
+                          minWidth: "80px",
                         }}
                       >
-                        x{product.quantity}
-                      </Tag>
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            objectFit: "cover",
+                            border: "1px solid #f0f0f0",
+                            borderRadius: "4px",
+                          }}
+                        />
+                        <Tag
+                          style={{
+                            position: "absolute",
+                            bottom: 0,
+                            right: 0,
+                            borderTopLeftRadius: "8px",
+                            margin: 0,
+                          }}
+                        >
+                          x{product.quantity}
+                        </Tag>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <Text
+                          style={{ cursor: "pointer" }}
+                          onClick={() => {
+                            dispatch(setLoading(true));
+                            console.log("product._id", product.productId);
+                            navigate(url);
+                            setTimeout(() => {
+                              dispatch(setLoading(false));
+                            }, 1500);
+                          }}
+                          strong
+                        >
+                          {product.name}
+                        </Text>
+                        {product.color && (
+                          <div>
+                            <Text type="secondary">Màu: {product.color}</Text>
+                          </div>
+                        )}
+                        {product.size && (
+                          <div>
+                            <Text type="secondary">Size: {product.size}</Text>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontWeight: 600, color: "#ff4d4f" }}>
+                        {product.subtotal.toLocaleString()} đ
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <Text strong>{product.name}</Text>
-                      {product.color && (
-                        <div>
-                          <Text type="secondary">Màu: {product.color}</Text>
-                        </div>
-                      )}
-                      {product.size && (
-                        <div>
-                          <Text type="secondary">Size: {product.size}</Text>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ fontWeight: 600, color: "#ff4d4f" }}>
-                      {product.subtotal.toLocaleString()} đ
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <Divider style={{ margin: "12px 0" }} />
 

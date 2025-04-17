@@ -46,6 +46,7 @@ export const getDetailsProductById = createAsyncThunk(
       const response = await axios.get(
         `${import.meta.env.VITE_URL_BACKEND}/product/get-details/${productId}`
       );
+
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Lấy sản phẩm thất bại");
@@ -155,6 +156,9 @@ const productSlice = createSlice({
     setProducts: (state, action) => {
       state.products = action.payload; // Lưu danh sách sản phẩm
     },
+    setProductDetail: (state, action) => {
+      state.productDetail = action.payload;
+    },
   },
 
   extraReducers: (builder) => {
@@ -260,5 +264,6 @@ const productSlice = createSlice({
   },
 });
 
-export const { setSearchTerm, setProducts } = productSlice.actions;
+export const { setSearchTerm, setProducts, setProductDetail } =
+  productSlice.actions;
 export default productSlice.reducer;

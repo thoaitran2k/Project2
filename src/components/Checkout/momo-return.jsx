@@ -46,7 +46,7 @@ const MomoReturn = () => {
           dispatch(removeMultipleFromCart(orderedProductIds));
           dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
 
-          message.success("Thanh toán thành công!");
+          //message.success("Thanh toán thành công!");
           navigate("/checkout/success", {
             state: {
               total: pendingOrder.total,
