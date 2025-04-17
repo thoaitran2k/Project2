@@ -32,13 +32,14 @@ export const fetchAllOrders = createAsyncThunk(
 // Cập nhật trạng thái đơn hàng
 export const updateOrderStatus = createAsyncThunk(
   "order/updateStatus",
-  async ({ orderId, status }, thunkAPI) => {
+  async ({ orderId, status, confirmCancel }, thunkAPI) => {
     try {
       const token = getToken(); // Lấy access token
       const response = await axios.put(
         `http://localhost:3002/api/order/update-status/${orderId}`,
         {
           status,
+          confirmCancel, // Thêm confirmCancel vào body của request
         },
         {
           headers: {

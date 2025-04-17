@@ -11,6 +11,7 @@ import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
 import CheckoutPage from "../pages/CheckoutPage/CheckoutPage";
 import CheckoutSuccesPage from "../pages/CheckoutPage/CheckoutSuccesPage";
 import OrderDetailsPage from "../pages/OrderDetailsPage/OrderDetailsPage";
+import MomoReturn from "../components/Checkout/momo-return";
 
 export const routes = [
   //PAGE
@@ -92,6 +93,12 @@ export const routes = [
   {
     path: "/order/view/:orderId",
     page: OrderDetailsPage,
+    isShowHeader: true,
+    isShowFooter: true,
+  },
+  {
+    path: "/checkout/momo-return",
+    page: MomoReturn,
     isShowHeader: true,
     isShowFooter: true,
   },

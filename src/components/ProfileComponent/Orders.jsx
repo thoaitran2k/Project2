@@ -124,10 +124,14 @@ const Orders = () => {
           priority: 1,
         };
       case "processing":
+      case "paid":
         return {
           type: "Đã tiếp nhận",
-          tagColor: "blue",
-          display: "Đã tiếp nhận",
+          tagColor: status === "paid" ? "green" : "blue",
+          display:
+            status === "paid"
+              ? "Đã thanh toán - Đang chờ giao hàng"
+              : "Đã tiếp nhận",
           priority: 2,
         };
       case "shipping":
@@ -144,13 +148,13 @@ const Orders = () => {
           display: "Giao hàng thành công",
           priority: 4,
         };
-      case "paid":
-        return {
-          type: "Đã thanh toán",
-          tagColor: "green",
-          display: "Thanh toán thành công - Đang chờ giao hàng",
-          priority: 4,
-        };
+      // case "paid":
+      //   return {
+      //     type: "Đã thanh toán",
+      //     tagColor: "green",
+      //     display: "Thanh toán thành công - Đang chờ giao hàng",
+      //     priority: 4,
+      //   };
       case "cancelled":
         return {
           type: "Đã huỷ",
@@ -215,10 +219,12 @@ const Orders = () => {
         };
       })
       .sort((a, b) => {
-        if (a.priority !== b.priority) {
-          return a.priority - b.priority;
-        }
-        return new Date(b.orderDate) - new Date(a.orderDate);
+        // Ưu tiên 1: Sắp xếp theo thời gian đặt hàng (mới nhất trước)
+        const dateCompare = new Date(b.orderDate) - new Date(a.orderDate);
+        if (dateCompare !== 0) return dateCompare;
+
+        // Ưu tiên 2: Nếu cùng thời gian thì sắp xếp theo trạng thái
+        return a.priority - b.priority;
       });
   };
 

@@ -175,47 +175,53 @@ const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status, confirmCancel } = req.body;
 
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    }
+    console.log("body", req.body);
 
-    // Kiểm tra logic chuyển trạng thái
-    if (status === "cancelled") {
-      // Chỉ cho phép hủy nếu đơn đang ở trạng thái yêu cầu hủy
-      if (order.status !== "requestedCancel") {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // Nếu đang ở trạng thái yêu cầu hủy
+    if (order.status === "requestedCancel") {
+      const allowedStatuses = ["pending", "cancelled"];
+      if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
-          message: "Chỉ có thể hủy đơn hàng đang ở trạng thái yêu cầu hủy",
+          success: false,
+          message: `Không thể cập nhật trạng thái từ 'requestedCancel' sang '${status}'.`,
         });
       }
-    } else if (order.status === "requestedCancel") {
-      // Không cho phép chuyển từ requestedCancel sang trạng thái khác ngoài cancelled
-      return res.status(400).json({
-        message: "Đơn hàng đang chờ hủy, chỉ có thể chuyển sang trạng thái hủy",
-      });
+
+      if (status === "cancelled" && confirmCancel !== true) {
+        return res.status(400).json({
+          success: false,
+          message: "Cần xác nhận hủy đơn hàng.",
+        });
+      }
     }
 
+    // ✅ Cập nhật trạng thái trong bảng Order
     order.status = status;
-    order.updatedAt = new Date();
     await order.save();
 
-    // Cập nhật trạng thái trong orderHistory của user
-    await User.updateOne(
-      {
-        _id: order.customer.userId,
-        "orderHistory.orderId": order._id,
-      },
-      {
-        $set: {
-          "orderHistory.$.status": status,
-        },
+    // ✅ Tìm người dùng chứa order này trong orderHistory
+    const user = await User.findOne({ "orderHistory.orderId": orderId });
+    if (user) {
+      const history = user.orderHistory.find(
+        (entry) => entry.orderId.toString() === orderId
+      );
+      if (history) {
+        history.status = status;
+        await user.save();
       }
-    );
+    }
 
-    res.status(200).json({ message: "Cập nhật trạng thái thành công", order });
+    res.status(200).json({ success: true, order });
   } catch (err) {
-    console.error("Lỗi cập nhật trạng thái:", err);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("Error in updateOrderStatus:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 

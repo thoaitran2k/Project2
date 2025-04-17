@@ -402,48 +402,38 @@ const CheckoutComponent = () => {
       return;
     }
 
-    //console.log("orderData", orderData);
+    const roundedTotal = Math.round(orderData.total);
+
+    const orderPayload = {
+      customer: orderData.customer,
+      selectedItems: orderData.products.map((item) => ({
+        id: item.id,
+        product: item.product._id,
+        productName: item.product.name,
+        productImage: item.product.image,
+        price: item.product.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        diameter: item.diameter || "",
+        productSubtotal: item.productSubtotal,
+        discountAmount: item.totalDiscount || 0,
+        type: item.product.type || "",
+        promotion: productPromotions[item.id]?.couponId,
+      })),
+      selectedAddress: orderData.address,
+      paymentMethod: paymentMethod,
+      shippingMethod: orderData.shippingMethod.trim(),
+      discount: orderData.totalDiscountAmount,
+      subtotal: orderData.subtotal,
+      total: roundedTotal,
+      shippingFee: orderData.shippingFee,
+      status: paymentMethod === "momo" ? "pending_payment" : "pending",
+    };
+
+    console.log("orderPayload", orderPayload);
 
     try {
-      const orderItems = orderData.products.map((item) => ({
-        productId: item.product._id,
-        quantity: item.quantity,
-        color: item.color,
-        size: item.size,
-        price: item.product.price,
-        type: item.product.type,
-        promotion: productPromotions[item.id]?.couponId,
-      }));
-
-      const orderPayload = {
-        customer: orderData.customer,
-        selectedItems: orderData.products.map((item) => ({
-          id: item.id,
-          product: item.product._id,
-          productName: item.product.name,
-          productImage: item.product.image,
-          price: item.product.price,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color,
-          diameter: item.diameter || "",
-          productSubtotal: item.productSubtotal, // ✅ đúng tên
-          discountAmount: item.totalDiscount || 0, // hoặc đặt tên đúng theo BE
-          type: item.product.type || "",
-        })),
-        selectedAddress: orderData.address,
-        paymentMethod: orderData.paymentMethod,
-        shippingMethod: orderData.shippingMethod.trim(),
-        discount: orderData.totalDiscountAmount,
-        subtotal: orderData.subtotal,
-        total: orderData.total,
-        shippingFee: orderData.shippingFee,
-        status: "pending",
-      };
-
-      console.log("orderPayload", orderPayload);
-
-      // console.log("orderPayload", orderPayload);
       dispatch(setLoading(true));
 
       const response = await axios.post(
@@ -451,49 +441,79 @@ const CheckoutComponent = () => {
         orderPayload
       );
 
-      //console.log("response", response);
-
-      if (response.data.success) {
-        const orderedProductIds = orderData.products.map((item) => item.id);
-
-        await axios.post("http://localhost:3002/api/product/update-selled", {
-          products: orderData.products.map((item) => ({
-            productId: item.product._id,
-            quantity: item.quantity,
-            color: item.color || "",
-            size: item.size || "",
-            diameter: item.diameter || "",
-          })),
-        });
-
-        dispatch(removeMultipleFromCart(orderedProductIds));
-        dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
-
-        message.success("Đặt hàng thành công!");
-
-        // Xóa localStorage TRƯỚC KHI chuyển trang
-        localStorage.removeItem("checkoutData");
-
-        setTimeout(() => {
-          dispatch(setLoading(false));
-
-          // Di chuyển sau khi đã xoá
-          navigate("/checkout/success", {
-            replace: true,
-            state: {
-              total: orderData.total,
-              paymentMethod: orderData.paymentMethod,
-              createdAt: new Date().toLocaleString("vi-VN", {
-                hour12: false,
-                dateStyle: "short",
-                timeStyle: "short",
-              }),
-            },
-          });
-        }, 1000);
+      if (!response.data.success) {
+        throw new Error("Tạo đơn hàng thất bại");
       }
+
+      const createdOrder = response.data.order;
+      const orderId = createdOrder._id;
+
+      if (paymentMethod === "momo") {
+        // Gọi tới MoMo để lấy payUrl
+        const momoResponse = await axios.post(
+          "http://localhost:3002/api/checkout/momo",
+          {
+            amount: roundedTotal,
+            orderId,
+          }
+        );
+
+        if (!momoResponse.data.payUrl) {
+          throw new Error("Không nhận được link thanh toán từ MoMo");
+        }
+
+        // Lưu đơn hàng tạm thời để xử lý khi redirect về
+        localStorage.setItem(
+          "momoPendingOrder",
+          JSON.stringify({
+            orderId,
+            products: orderData.products,
+            total: orderData.total,
+          })
+        );
+
+        window.location.href = momoResponse.data.payUrl;
+        return;
+      }
+
+      // Nếu không phải MoMo thì tiếp tục hoàn tất đơn hàng
+      const orderedProductIds = orderData.products.map((item) => item.id);
+
+      await axios.post("http://localhost:3002/api/product/update-selled", {
+        products: orderData.products.map((item) => ({
+          productId: item.product._id,
+          quantity: item.quantity,
+          color: item.color || "",
+          size: item.size || "",
+          diameter: item.diameter || "",
+        })),
+      });
+
+      dispatch(removeMultipleFromCart(orderedProductIds));
+      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+
+      message.success("Đặt hàng thành công!");
+      localStorage.removeItem("checkoutData");
+
+      setTimeout(() => {
+        dispatch(setLoading(false));
+        navigate("/checkout/success", {
+          replace: true,
+          state: {
+            total: orderData.total,
+            paymentMethod,
+            createdAt: new Date().toLocaleString("vi-VN", {
+              hour12: false,
+              dateStyle: "short",
+              timeStyle: "short",
+            }),
+          },
+        });
+      }, 1000);
     } catch (error) {
+      dispatch(setLoading(false));
       message.error(error.response?.data?.message || "Đặt hàng thất bại");
+      console.error("Lỗi:", error);
     }
   };
 
@@ -857,25 +877,6 @@ const CheckoutComponent = () => {
                     style={{ width: 20, height: 25, marginRight: 8 }}
                   />
                   Thanh toán tiền mặt
-                </div>
-              </PaymentOption>
-              <PaymentOption
-                value="viettel"
-                style={{ display: "flex", alignItems: "center" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={zalopay}
-                    alt="ZaloPay"
-                    style={{ width: 20, height: 20, marginRight: 8 }}
-                  />
-                  ZaloPay
                 </div>
               </PaymentOption>
               <PaymentOption

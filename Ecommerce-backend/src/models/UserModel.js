@@ -91,6 +91,7 @@ const userSchema = new mongoose.Schema(
           enum: [
             "pending",
             "processing",
+            "pending_payment",
             "shipping",
             "delivered",
             "paid",

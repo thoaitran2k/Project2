@@ -32,8 +32,9 @@ const OrderManage = () => {
                 await dispatch(
                   updateOrderStatus({
                     orderId: selectedOrder._id,
-                    status: "cancelled",
-                    confirmCancel: true,
+                    status: newStatus,
+                    ...(selectedOrder.status === "requestedCancel" &&
+                      newStatus === "cancelled" && { confirmCancel: true }),
                   })
                 );
                 message.success("✅ Đã xác nhận hủy đơn hàng thành công.");
@@ -73,7 +74,7 @@ const OrderManage = () => {
   const statusLabels = {
     pending: "Chờ xử lý",
     processing: "Đã tiếp nhận",
-    shipping: "Đang giao hàng",
+    shipping: "Giao hàng",
     delivered: "Giao hàng thành công",
     paid: "Đã thanh toán",
     cancelled: "Hủy",
@@ -172,6 +173,69 @@ const OrderManage = () => {
         const isDisabled =
           record.status === "cancelled" || record.status === "delivered";
 
+        if (record.status === "requestedCancel") {
+          return (
+            <div
+              style={{ display: "flex", gap: "8px", justifyContent: "center" }}
+            >
+              <button
+                onClick={() => {
+                  Modal.confirm({
+                    title: "Xác nhận hủy đơn hàng",
+                    content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
+                    onOk: async () => {
+                      try {
+                        await dispatch(
+                          updateOrderStatus({
+                            orderId: record._id,
+                            status: "cancelled",
+                            confirmCancel: true,
+                          })
+                        );
+                        message.success(
+                          "✅ Đã xác nhận hủy đơn hàng thành công."
+                        );
+                      } catch (error) {
+                        message.error("❌ Xác nhận hủy đơn hàng thất bại.");
+                      }
+                    },
+                    onCancel() {
+                      message.info("Đã hủy thao tác xác nhận");
+                    },
+                  });
+                }}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: "#ff4d4f",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Xác nhận
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedOrder(record);
+                  setNewStatus("pending");
+                  setIsModalOpen(true);
+                }}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: "#faad14",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Hủy yêu cầu
+              </button>
+            </div>
+          );
+        }
+
         return (
           <select
             value={record.status}
@@ -183,12 +247,10 @@ const OrderManage = () => {
 
               const currentStatus = record.status;
 
-              // Loại bỏ "pending" và "processing" nếu trạng thái hiện tại đã vượt qua
               const shouldHide =
                 (key === "pending" || key === "processing") &&
                 ["paid", "shipping", "delivered"].includes(currentStatus);
 
-              // Không hiển thị option nếu bị loại
               if (shouldHide) return null;
 
               return (
