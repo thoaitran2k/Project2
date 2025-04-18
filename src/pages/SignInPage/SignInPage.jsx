@@ -151,6 +151,8 @@ export default function SignInPage() {
         console.log("Thông tin người dùng:", userDetails);
         message.success("Đăng nhập thành công!");
 
+        setUser(userDetails);
+
         // Dispatch setUser với toàn bộ thông tin userDetails và orderHistory
 
         setIsLogin(true);

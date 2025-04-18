@@ -52,6 +52,23 @@ const sendPromoCodeToUser = async (req, res) => {
   }
 };
 
+const deletePromotionCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await PromotionCode.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Không tìm thấy mã giảm giá" });
+    }
+
+    res.status(200).json({ message: "Xóa mã giảm giá thành công" });
+  } catch (error) {
+    console.error("Lỗi xóa mã:", error);
+    res.status(500).json({ message: "Lỗi server khi xóa mã giảm giá" });
+  }
+};
+
 module.exports = {
   sendPromoCodeToUser,
+  deletePromotionCode,
 };

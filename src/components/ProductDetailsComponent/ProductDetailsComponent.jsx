@@ -90,7 +90,8 @@ const productsComponent = ({ product }) => {
       );
 
       message.warning("Vui lòng đăng nhập để thanh toán");
-      navigate("/sign-in", { state: { from: "/checkout" } });
+
+      navigate("/sign-in", { state: { from: location.pathname } });
       return;
     }
 
@@ -742,7 +743,11 @@ const productsComponent = ({ product }) => {
             margin: "30px 0",
           }}
         >
-          <StyledButton textButton="Chọn mua" onClick={handleCheckout} />
+          <StyledButton
+            textButton="Chọn mua"
+            primary
+            onClick={handleCheckout}
+          />
           <StyledButton
             textButton="Thêm vào giỏ hàng"
             onClick={() => handleAddToCart(product)}

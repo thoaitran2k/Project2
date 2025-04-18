@@ -38,6 +38,7 @@ const OrderManage = () => {
                   })
                 );
                 message.success("✅ Đã xác nhận hủy đơn hàng thành công.");
+                dispatch(fetchAllOrders());
               } catch (error) {
                 message.error("❌ Xác nhận hủy đơn hàng thất bại.");
               }
@@ -55,6 +56,7 @@ const OrderManage = () => {
             })
           );
           message.success("✅ Trạng thái đơn hàng đã được cập nhật.");
+          dispatch(fetchAllOrders());
         }
       } catch (error) {
         message.error("❌ Cập nhật trạng thái thất bại.");
@@ -195,6 +197,7 @@ const OrderManage = () => {
                         message.success(
                           "✅ Đã xác nhận hủy đơn hàng thành công."
                         );
+                        dispatch(fetchAllOrders());
                       } catch (error) {
                         message.error("❌ Xác nhận hủy đơn hàng thất bại.");
                       }

@@ -293,10 +293,8 @@ const OrderDetailsComponent = () => {
                 <Text>{ShippingFee.toLocaleString()} đ</Text>
               </Descriptions.Item>
               {totalDiscount > 0 && (
-                <Descriptions.Item label="Giảm giá">
-                  <Text type="success">
-                    -{totalDiscount.toLocaleString()} đ
-                  </Text>
+                <Descriptions.Item label="Đơn hàng được tổng giảm">
+                  <Text type="warning">{totalDiscount.toLocaleString()} đ</Text>
                 </Descriptions.Item>
               )}
               <Descriptions.Item label="">

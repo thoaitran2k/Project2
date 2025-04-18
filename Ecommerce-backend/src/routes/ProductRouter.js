@@ -231,6 +231,10 @@ router.post("/check-coupon", async (req, res) => {
 
 router.post("/send-promo-email", promotionController.sendPromoCodeToUser);
 
+router.delete("/promotion/:id", promotionController.deletePromotionCode);
+
+//_________________________________________________________________________________
+
 router.get("/:productId/discount", async (req, res) => {
   try {
     const product = await Product.findById(req.params.productId).select(

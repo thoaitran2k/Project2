@@ -63,6 +63,8 @@ const CheckoutComponent = () => {
 
   const addressOrder = useSelector((state) => state.user?.address);
 
+  const { customer } = location.state || {};
+
   const [orderData, setOrderData] = useState({
     products: [],
     subtotal: 0,
@@ -74,6 +76,7 @@ const CheckoutComponent = () => {
     paymentMethod: "", // Thêm phương thức thanh toán
     customer: {
       // Thêm thông tin khách hàng
+
       username: user?.username || "",
       phone: user?.phone || "",
       email: user?.email || "",
