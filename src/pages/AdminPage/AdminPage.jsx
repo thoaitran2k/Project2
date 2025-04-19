@@ -8,9 +8,9 @@ import AdminUser from "../../components/AdminUser/AdminUser";
 import AdminProduct from "../../components/AdminProduct/AdminProduct";
 import AdjustDiscountProducts from "../../components/AdminProduct/AdjustDiscountProducts";
 import { getAllProduct } from "../../redux/slices/productSlice";
-import CreatePromotion from "../../components/AdminProduct/CreatePromotion";
-import PromotionTable from "../../components/AdminProduct/PromotionTable";
+
 import OrderManage from "../../components/AdminUser/OrderManage";
+import PromotionManagement from "../../components/AdminProduct/PromotionManagement";
 
 // Menu items
 const items = [
@@ -120,9 +120,15 @@ const AdminPage = () => {
         );
       case "product_promotion":
         return (
-          <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-            <CreatePromotion />
-            <PromotionTable />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "10px",
+              width: "100%",
+            }}
+          >
+            <PromotionManagement />
           </div>
         );
       default:

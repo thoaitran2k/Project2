@@ -233,7 +233,7 @@ const CheckoutComponent = () => {
     } else if (method === "momo" || method === "viettel") {
       setStatusOrder("pending"); // Trạng thái đơn hàng cho thanh toán momo hoặc viettel
     }
-    handlePlaceOrder;
+    // handlePlaceOrder();
   };
 
   const handleShippingMethodChange = (method) => {
@@ -446,6 +446,20 @@ const CheckoutComponent = () => {
 
       if (!response.data.success) {
         throw new Error("Tạo đơn hàng thất bại");
+      }
+
+      const usedPromoCodes = Object.values(productPromotions).map(
+        (promo) => promo.code
+      );
+
+      if (usedPromoCodes.length > 0) {
+        await Promise.all(
+          usedPromoCodes.map((code) =>
+            axios.put("http://localhost:3002/api/product/promotions/use", {
+              code,
+            })
+          )
+        );
       }
 
       const createdOrder = response.data.order;

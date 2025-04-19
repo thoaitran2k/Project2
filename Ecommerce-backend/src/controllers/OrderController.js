@@ -1,6 +1,9 @@
 const Order = require("../models/OrderProduct");
 
 const User = require("../models/UserModel");
+const mongoose = require("mongoose");
+
+const PromotionCode = require("../models/PromotionCode");
 
 const getAllOrders = async (req, res) => {
   try {
@@ -57,14 +60,19 @@ const requestCancel = async (req, res) => {
 };
 
 const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const orderData = req.body;
 
+    // Validate input
     if (
       !orderData.customer ||
       !orderData.selectedAddress ||
       !orderData.selectedItems
     ) {
+      await session.abortTransaction();
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -72,12 +80,27 @@ const createOrder = async (req, res) => {
       !Array.isArray(orderData.selectedItems) ||
       orderData.selectedItems.length === 0
     ) {
+      await session.abortTransaction();
       return res
         .status(400)
         .json({ message: "Selected items must be a non-empty array" });
     }
 
-    // Tạo đơn hàng mới
+    // Extract promotion codes from items
+    const promotionCodes = orderData.selectedItems
+      .filter((item) => item.promotion)
+      .map((item) => item.promotion);
+
+    // 1. Reserve promotion codes first (increase usedCount)
+    if (promotionCodes.length > 0) {
+      await PromotionCode.updateMany(
+        { code: { $in: promotionCodes } },
+        { $inc: { usedCount: 1 } },
+        { session }
+      );
+    }
+
+    // 2. Create order
     const newOrder = new Order({
       customer: {
         userId: orderData.customer.userId,
@@ -104,33 +127,38 @@ const createOrder = async (req, res) => {
         discountAmount: item.discountAmount || 0,
         shippingFee: orderData.shippingFee / orderData.selectedItems.length,
         type: item.type || "",
+        promotion: item.promotion || null,
       })),
       paymentMethod: orderData.paymentMethod || "cash",
       discount: orderData.discount || 0,
       subtotal: orderData.subtotal,
       total: orderData.total,
-      status: "pending",
+      status:
+        orderData.paymentMethod === "cash" ? "pending" : "pending_payment",
       shippingFee: orderData.shippingFee,
       shippingMethod: orderData.shippingMethod,
     });
 
-    const savedOrder = await newOrder.save();
+    const savedOrder = await newOrder.save({ session });
 
-    // Cập nhật user
-    const userId = orderData.customer.userId;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    // 3. Update user
+    const user = await User.findById(orderData.customer.userId).session(
+      session
+    );
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "User not found" });
+    }
 
     user.orders.push(savedOrder._id);
 
-    // ✅ Tạo orderHistory từ dữ liệu đã lưu trong DB (savedOrder)
     const orderSummary = {
       orderId: savedOrder._id,
       orderDate: savedOrder.createdAt,
       total: savedOrder.total,
       status: savedOrder.status,
       paymentMethod: savedOrder.paymentMethod,
-      ShippingFee: savedOrder.shippingFee,
+      shippingFee: savedOrder.shippingFee,
       totalDiscount: savedOrder.discount || 0,
       address: {
         name: savedOrder.selectedAddress.name,
@@ -153,7 +181,21 @@ const createOrder = async (req, res) => {
     };
 
     user.orderHistory.push(orderSummary);
-    await user.save();
+    await user.save({ session });
+
+    // 4. Update product quantities (optional)
+    if (orderData.updateInventory) {
+      const bulkOps = orderData.selectedItems.map((item) => ({
+        updateOne: {
+          filter: { _id: item.product },
+          update: { $inc: { quantity: -item.quantity } },
+        },
+      }));
+      await Product.bulkWrite(bulkOps, { session });
+    }
+
+    // Commit transaction if everything succeeded
+    await session.commitTransaction();
 
     res.status(201).json({
       success: true,
@@ -161,12 +203,17 @@ const createOrder = async (req, res) => {
       orderHistory: orderSummary,
     });
   } catch (err) {
+    // If error occurs, abort transaction and rollback
+    await session.abortTransaction();
+
     console.error("Error in createOrder:", err);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Failed to create order",
       error: err.message,
     });
+  } finally {
+    session.endSession();
   }
 };
 

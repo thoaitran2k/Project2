@@ -249,7 +249,50 @@ router.get("/:productId/discount", async (req, res) => {
     res.status(500).json({ error: "Lỗi server" });
   }
 });
+router.put("/promotions/use", async (req, res) => {
+  try {
+    const { code } = req.body;
 
+    if (!code) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp mã khuyến mãi." });
+    }
+
+    const promotion = await PromotionCode.findOne({ code: code.toUpperCase() });
+
+    if (!promotion) {
+      return res.status(404).json({ message: "Mã khuyến mãi không tồn tại." });
+    }
+
+    const now = new Date();
+    if (
+      !promotion.isActive ||
+      now < promotion.startAt ||
+      now > promotion.expiredAt ||
+      (promotion.maxUsage !== null && promotion.usedCount >= promotion.maxUsage)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Mã khuyến mãi không còn hiệu lực." });
+    }
+
+    promotion.usedCount += 1;
+    await promotion.save();
+
+    return res.status(200).json({
+      message: "Cập nhật sử dụng mã thành công.",
+      usedCount: promotion.usedCount,
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật mã khuyến mãi:", error);
+    return res.status(500).json({ message: "Lỗi máy chủ." });
+  }
+});
+
+router.put("/update-promotion/:id", promotionController.updatePromotion);
+
+//CẬP NHẬT SỐ LƯỢNG KHI ĐẶT HÀNG
 router.post("/update-selled", ProductController.updateSelledCount);
 
 module.exports = router;

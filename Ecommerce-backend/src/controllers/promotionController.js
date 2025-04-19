@@ -68,7 +68,30 @@ const deletePromotionCode = async (req, res) => {
   }
 };
 
+const updatePromotion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    const promo = await PromotionCode.findById(id);
+    if (!promo) {
+      return res.status(404).json({ message: "Mã giảm giá không tồn tại" });
+    }
+
+    Object.assign(promo, updatedData);
+    await promo.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Cập nhật thành công", promo });
+  } catch (error) {
+    console.error("Lỗi cập nhật mã giảm giá:", error);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};
+
 module.exports = {
   sendPromoCodeToUser,
   deletePromotionCode,
+  updatePromotion,
 };

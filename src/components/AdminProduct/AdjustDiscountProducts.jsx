@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Table, InputNumber, Button, message, Card, Typography } from "antd";
+import {
+  Table,
+  InputNumber,
+  Button,
+  message,
+  Card,
+  Typography,
+  Space,
+} from "antd";
 import { getAllProduct } from "../../redux/slices/productSlice";
 import axios from "axios";
 
@@ -11,6 +19,8 @@ const AdjustDiscountProducts = () => {
   const { products } = useSelector((state) => state.product);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState(null);
+  const [tempDiscount, setTempDiscount] = useState(null);
 
   useEffect(() => {
     dispatch(getAllProduct());
@@ -43,23 +53,20 @@ const AdjustDiscountProducts = () => {
       acc[type].selled += selled || 0;
       acc[type].productCount += 1;
 
-      // Lấy discount từ sản phẩm đầu tiên của loại (nếu chưa có)
-      if (discount !== undefined && acc[type].discount === 0) {
-        acc[type].discount = discount;
-      }
-
       return acc;
     }, {});
 
     setData(Object.values(grouped));
   };
 
-  const handleDiscountChange = (value, recordKey) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.key === recordKey ? { ...item, discount: value } : item
-      )
-    );
+  const handleEdit = (record) => {
+    setEditingKey(record.key);
+    setTempDiscount(record.discount);
+  };
+
+  const handleCancel = () => {
+    setEditingKey(null);
+    setTempDiscount(null);
   };
 
   const handleSave = async (record) => {
@@ -69,14 +76,20 @@ const AdjustDiscountProducts = () => {
         "http://localhost:3002/api/product/update-discount-by-type",
         {
           productType: record.name,
-          discount: record.discount,
+          discount: tempDiscount,
         }
       );
 
       if (response.data.success) {
         message.success(response.data.message);
-        // Refresh data sau khi cập nhật thành công
-        dispatch(getAllProduct());
+
+        setData((prev) =>
+          prev.map((item) =>
+            item.key === record.key ? { ...item, discount: tempDiscount } : item
+          )
+        );
+
+        handleCancel();
       }
     } catch (error) {
       message.error(error.response?.data?.message || "Có lỗi xảy ra");
@@ -117,30 +130,45 @@ const AdjustDiscountProducts = () => {
       title: "Giảm giá (%)",
       dataIndex: "discount",
       key: "discount",
-      render: (_, record) => (
-        <InputNumber
-          min={0}
-          max={100}
-          value={record.discount}
-          onChange={(value) => handleDiscountChange(value, record.key)}
-          formatter={(value) => `${value}%`}
-          parser={(value) => value.replace("%", "")}
-          style={{ width: "100px" }}
-        />
-      ),
+      render: (_, record) => {
+        if (editingKey === record.key) {
+          return (
+            <InputNumber
+              min={0}
+              max={100}
+              value={tempDiscount}
+              onChange={(value) => setTempDiscount(value)}
+              formatter={(value) => `${value}%`}
+              parser={(value) => value.replace("%", "")}
+              style={{ width: "100px" }}
+            />
+          );
+        }
+
+        return <span>{record.discount}%</span>;
+      },
     },
     {
       title: "Thao tác",
       key: "action",
-      render: (_, record) => (
-        <Button
-          type="primary"
-          onClick={() => handleSave(record)}
-          loading={loading}
-        >
-          ÁP DỤNG
-        </Button>
-      ),
+      render: (_, record) => {
+        const isEditing = editingKey === record.key;
+
+        return isEditing ? (
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => handleSave(record)}
+              loading={loading}
+            >
+              Lưu
+            </Button>
+            <Button onClick={handleCancel}>Hủy</Button>
+          </Space>
+        ) : (
+          <Button onClick={() => handleEdit(record)}>Chỉnh sửa</Button>
+        );
+      },
     },
   ];
 
