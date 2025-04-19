@@ -24,6 +24,7 @@ const CreatePromotion = ({ onSuccess }) => {
   const [form] = Form.useForm();
 
   const handleSubmit = async (values) => {
+    console.log("Submitted values:", values);
     try {
       dispatch(setLoading(true));
 
@@ -61,6 +62,9 @@ const CreatePromotion = ({ onSuccess }) => {
         <StyledForm
           form={form}
           onFinish={handleSubmit}
+          onFinishFailed={(errorInfo) => {
+            console.log("Validation Failed:", errorInfo);
+          }}
           layout="vertical"
           initialValues={{
             discountType: "percent",
@@ -146,7 +150,15 @@ const CreatePromotion = ({ onSuccess }) => {
               <FormItem
                 label="Giá trị đơn hàng tối thiểu (₫)"
                 name="minOrderValue"
-                rules={[{ min: 0, message: "Không được nhỏ hơn 0" }]}
+                rules={[
+                  {
+                    required: true,
+                    type: "number",
+                    min: 0,
+                    message: "Không được nhỏ hơn 0",
+                    transform: (value) => Number(value),
+                  },
+                ]}
               >
                 <InputNumberStyled min={0} addonAfter="₫" />
               </FormItem>
@@ -164,9 +176,11 @@ const CreatePromotion = ({ onSuccess }) => {
                       rules={[
                         {
                           required: true,
-                          message: "Vui lòng nhập giới hạn giảm tối đa",
+                          type: "number",
+                          min: 0,
+                          message: "Không được nhỏ hơn 0",
+                          transform: (value) => Number(value),
                         },
-                        { min: 1, message: "Phải lớn hơn 0" },
                       ]}
                     >
                       <InputNumberStyled min={1} addonAfter="₫" />
@@ -194,8 +208,13 @@ const CreatePromotion = ({ onSuccess }) => {
                 label="Số lần sử dụng tối đa"
                 name="maxUsage"
                 rules={[
-                  { required: true, message: "Vui lòng nhập số lần sử dụng" },
-                  { min: 1, message: "Phải lớn hơn 0" },
+                  {
+                    required: true,
+                    type: "number",
+                    min: 0,
+                    message: "Không được nhỏ hơn 0",
+                    transform: (value) => Number(value),
+                  },
                 ]}
               >
                 <InputNumberStyled min={1} />
