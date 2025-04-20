@@ -29,6 +29,7 @@ const ProductDetailsPage = () => {
     isLoading,
     data: productDetail,
     error,
+    refetch: refetchProductDetail,
   } = useQuery({
     queryKey: ["productDetail", productId],
     queryFn: () => getDetailProduct(productId),
@@ -36,6 +37,10 @@ const ProductDetailsPage = () => {
   });
 
   const productType = productDetail?.data?.type || "Không xác định";
+
+  const handleReviewSubmitted = () => {
+    refetchProductDetail();
+  };
 
   useEffect(() => {
     if (!location.state?.breadcrumb && productDetail?.data) {
@@ -74,7 +79,11 @@ const ProductDetailsPage = () => {
           <>
             <ProductDetailsComponent product={productDetail.data} />
             <ProductList productType={productType} />
-            <ReviewComponent />
+            <h2>Comments</h2>
+            <ReviewComponent
+              productId={productId}
+              onReviewSubmitted={handleReviewSubmitted}
+            />
           </>
         ) : (
           <p>Không tìm thấy sản phẩm</p>

@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/UserModel");
 const dotenv = require("dotenv");
 dotenv.config();
 
 // Middleware xác thực token (không cần admin)
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || req.headers.token;
 
@@ -13,9 +14,9 @@ const authMiddleware = (req, res, next) => {
         .json({ message: "No token provided", status: "ERROR" });
     }
 
-    const token = authHeader.split(" ")[1]; // Lấy token sau 'Bearer '
+    const token = authHeader.split(" ")[1];
 
-    jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN, async (err, decoded) => {
       if (err) {
         console.log("🔹 JWT Verify Error:", err);
 
@@ -30,8 +31,14 @@ const authMiddleware = (req, res, next) => {
           .json({ message: "Token is not valid", status: "ERROR" });
       }
 
-      req.user = user; // Gán user vào request
-      next(); // Tiếp tục xử lý
+      // Tải full user từ database
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(404).json({ message: "Người dùng không tồn tại" });
+      }
+
+      req.user = user; // Gán bản ghi user đầy đủ
+      next();
     });
   } catch (error) {
     console.error("🔹 Auth Middleware Error:", error);
@@ -66,7 +73,7 @@ const authUserMiddleware = (req, res, next) => {
           .json({ message: "Token is not valid", status: "ERROR" });
       }
 
-      req.user = user; // Gán thông tin user vào request
+      req.user = user;
 
       // Kiểm tra xem người dùng có quyền thay đổi mật khẩu của chính họ hay không
       const userIdFromParams = req.params.id; // Lấy id từ URL params

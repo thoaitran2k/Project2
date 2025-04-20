@@ -38,5 +38,41 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+productSchema.statics.updateProductRating = async function (productId) {
+  try {
+    const Review = require("./Review");
+    const { Types } = require("mongoose");
+
+    // Lấy tất cả các review của sản phẩm
+    const reviews = await Review.find({ product: productId }).select("rating");
+
+    if (reviews.length > 0) {
+      // Tính tổng rating
+      const totalRating = reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+      // Tính trung bình
+      const averageRating = totalRating / reviews.length;
+      // Làm tròn đến 0.5 gần nhất
+      const roundedRating = Math.round(averageRating * 2) / 2;
+
+      // Cập nhật rating cho sản phẩm
+      await this.findByIdAndUpdate(productId, {
+        rating: roundedRating,
+      });
+
+      return roundedRating;
+    }
+
+    // Nếu không có review nào, đặt rating về 0
+    await this.findByIdAndUpdate(productId, { rating: 0 });
+    return 0;
+  } catch (error) {
+    console.error("Error updating product rating:", error);
+    throw error;
+  }
+};
+
 const Product = mongoose.model("Product", productSchema);
 module.exports = Product;

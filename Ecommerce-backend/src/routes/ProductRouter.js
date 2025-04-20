@@ -295,4 +295,25 @@ router.put("/update-promotion/:id", promotionController.updatePromotion);
 //CẬP NHẬT SỐ LƯỢNG KHI ĐẶT HÀNG
 router.post("/update-selled", ProductController.updateSelledCount);
 
+//CẬP NHẬT LẠI RATING KHI BÌNH LUẬN
+router.put("/:id/update-rating", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const newRating = await Product.updateProductRating(req.params.id);
+
+    res.json({
+      success: true,
+      productId: req.params.id,
+      newRating: newRating,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
 module.exports = router;
