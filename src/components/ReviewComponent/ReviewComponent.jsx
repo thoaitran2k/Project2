@@ -213,7 +213,7 @@ const ReviewComponent = ({ productId, onReviewSubmitted }) => {
         setNewReview({ rating: 0, title: "", comment: "" });
         setSelectedFiles([]);
         setImagePreviews([]);
-        setVisibleReviews(5); // Reset về 5 reviews khi có review mới
+        setVisibleReviews(5);
         dispatch(fetchReviews(productId));
       })
       .catch((err) => {

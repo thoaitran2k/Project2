@@ -55,7 +55,7 @@ productSchema.statics.updateProductRating = async function (productId) {
       // Tính trung bình
       const averageRating = totalRating / reviews.length;
       // Làm tròn đến 0.5 gần nhất
-      const roundedRating = Math.round(averageRating * 2) / 2;
+      const roundedRating = Math.round(averageRating * 10) / 10;
 
       // Cập nhật rating cho sản phẩm
       await this.findByIdAndUpdate(productId, {

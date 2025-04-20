@@ -386,18 +386,17 @@ const AdminProduct = () => {
       );
 
       if (response.data && response.data.imageUrls) {
-        // Ghép ảnh cũ (URL) với ảnh mới đã upload lên
         return [
-          ...currentImages.filter((img) => typeof img === "string"), // Giữ lại URL ảnh cũ
-          ...response.data.imageUrls, // Thêm ảnh mới từ server
-        ].slice(0, 4); // Giới hạn tối đa 4 ảnh
+          ...currentImages.filter((img) => typeof img === "string"),
+          ...response.data.imageUrls,
+        ].slice(0, 4);
       }
     } catch (error) {
       console.error("Lỗi upload ảnh:", error);
       message.error("Lỗi tải ảnh lên!");
     }
 
-    return currentImages; // Nếu lỗi, vẫn trả về danh sách ảnh cũ
+    return currentImages;
   };
 
   const isUploading = useRef(false);
@@ -405,7 +404,7 @@ const AdminProduct = () => {
   const handleAddPreviewImage = async (fileList) => {
     if (!fileList || fileList.length === 0 || isUploading.current) return;
 
-    isUploading.current = true; // Đánh dấu đang upload
+    isUploading.current = true;
 
     const existingImages = stateDetailsProduct?.imagesPreview || [];
     const availableSlots = 4 - existingImages.length;
