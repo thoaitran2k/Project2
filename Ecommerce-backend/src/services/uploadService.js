@@ -1,4 +1,3 @@
-// services/uploadService.js
 const cloudinary = require("../Cloudinary/cloudinaryConfig");
 
 const uploadImageToCloudinary = async (file) => {

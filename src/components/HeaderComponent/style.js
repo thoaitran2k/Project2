@@ -71,7 +71,6 @@ export const UserName = styled.span`
   color: red;
   font-weight: 400;
   //max-width: 40px;
-  padding: 0 5px;
 `;
 
 export const MenuTrigger = styled.div`

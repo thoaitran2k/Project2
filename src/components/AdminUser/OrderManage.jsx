@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Table, Tag, Modal, message } from "antd";
+import { Table, Tag, Modal, message, Button } from "antd";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   fetchAllOrders,
   updateOrderStatus,
@@ -15,9 +17,83 @@ const OrderManage = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState("");
 
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedOrders, setSelectedOrders] = useState([]);
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (selectedKeys, selectedRows) => {
+      setSelectedRowKeys(selectedKeys);
+      setSelectedOrders(selectedRows);
+    },
+  };
+
   useEffect(() => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
+
+  const exportInvoicesToExcel = () => {
+    if (selectedOrders.length === 0) {
+      message.warning("Vui lòng chọn ít nhất 1 đơn hàng để xuất hóa đơn.");
+      return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+
+    selectedOrders.forEach((order, index) => {
+      const data = [
+        ["Mã đơn hàng", order._id],
+        [
+          "Email khách hàng",
+          order.customer?.userId?.email || order.customer?.email || "Không có",
+        ],
+        [
+          "SĐT khách hàng",
+          order.customer?.userId?.phone || order.customer?.phone || "Không có",
+        ],
+        ["Ngày đặt", new Date(order.createdAt).toLocaleDateString("vi-VN")],
+        [
+          "Sản phẩm",
+          (() => {
+            const productMap = {};
+            order.selectedItems.forEach((item) => {
+              const name = item.product.name;
+              const quantity = item.quantity || 1;
+              if (productMap[name]) {
+                productMap[name] += quantity;
+              } else {
+                productMap[name] = quantity;
+              }
+            });
+            return Object.entries(productMap)
+              .map(([name, quantity]) => `${name} x${quantity}`)
+              .join(", ");
+          })(),
+        ],
+        ["Tổng giá trị", order.total.toLocaleString("vi-VN") + " VND"],
+        ["Phương thức thanh toán", order.paymentMethod],
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      worksheet["!cols"] = [{ wch: 25 }, { wch: 50 }]; // Width for 2 columns
+
+      // Thêm tiêu đề chung "Chi tiết hóa đơn" cho mỗi sheet
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        `Chi tiết hóa đơn ${index + 1}`
+      );
+    });
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
+    saveAs(dataBlob, "hoa_don_don_hang.xlsx");
+  };
 
   const handleConfirmChange = async () => {
     if (selectedOrder && newStatus) {
@@ -99,6 +175,7 @@ const OrderManage = () => {
       dataIndex: "_id",
       key: "_id",
       align: "center",
+      render: (id) => id.slice(-8).toUpperCase(),
     },
     {
       title: "Email Người Dùng",
@@ -131,17 +208,40 @@ const OrderManage = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       align: "center",
-      render: (text) => new Date(text).toLocaleDateString(),
+      render: (text) =>
+        new Date(text).toLocaleString("vi-VN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }),
     },
     {
       title: "Danh Sách Sản Phẩm",
       dataIndex: "selectedItems",
       key: "selectedItems",
       align: "center",
-      render: (items) =>
-        items.map((item) => (
-          <Tag key={item.product._id}>{item.product.name}</Tag>
-        )),
+      render: (items) => {
+        const productMap = {};
+
+        items.forEach((item) => {
+          const name = item.product.name;
+          if (productMap[name]) {
+            productMap[name] += item.quantity || 1;
+          } else {
+            productMap[name] = item.quantity || 1;
+          }
+        });
+
+        return Object.entries(productMap).map(([name, quantity]) => (
+          <Tag key={name}>
+            {name} x{quantity}
+          </Tag>
+        ));
+      },
     },
     {
       title: "Tổng Giá Trị",
@@ -279,8 +379,17 @@ const OrderManage = () => {
       <h2>Danh sách đơn hàng</h2>
       {loading && <p>Đang tải...</p>}
 
+      <Button
+        type="primary"
+        onClick={exportInvoicesToExcel}
+        disabled={selectedOrders.length === 0}
+      >
+        Xuất hóa đơn
+      </Button>
+
       <Table
         columns={columns}
+        rowSelection={rowSelection}
         dataSource={orders}
         rowKey="_id"
         loading={loading}

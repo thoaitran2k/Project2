@@ -472,8 +472,6 @@ const AdminUser = () => {
       .sort((a, b) => (b.isAdmin ? 1 : -1)), // Admin lên đầu
     ...emptyRows, // Thêm hàng trống vào cuối
   ];
-  // console.log("USERS", users);
-  //console.log("Product data being passed to TableComponent:", products?.data);
 
   useEffect(() => {
     //console.log("Redux products:", products);

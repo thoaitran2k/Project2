@@ -106,7 +106,7 @@ const userSchema = new mongoose.Schema(
           address: { type: String },
         },
         paymentMethod: { type: String },
-        ShippingFee: { type: Number },
+        shippingFee: { type: Number },
         totalDiscount: { type: Number },
       },
     ],

@@ -31,6 +31,8 @@ const OrderDetailsComponent = () => {
   const navigate = useNavigate();
   const orderHistory = useSelector((state) => state.user.orderHistory);
 
+  console.log("orderHistory", orderHistory);
+
   const order = orderHistory.find((item) => item.orderId === orderId);
   if (!order)
     return (
@@ -45,7 +47,7 @@ const OrderDetailsComponent = () => {
     paymentMethod,
     products,
     total,
-    ShippingFee,
+    shippingFee,
     totalDiscount,
     status,
   } = order;
@@ -53,9 +55,9 @@ const OrderDetailsComponent = () => {
   const { name, phone, address: fullAddress } = userAddress;
 
   const shippingMethod =
-    ShippingFee === 30000
+    shippingFee === 30000
       ? "EXPRESS - Giao hàng nhanh"
-      : ShippingFee === 15000
+      : shippingFee === 15000
       ? "STANDARD - Giao hàng tiêu chuẩn"
       : "Khác";
 
@@ -229,7 +231,7 @@ const OrderDetailsComponent = () => {
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item>
-                <Text>Phí vận chuyển: {ShippingFee.toLocaleString()} đ</Text>
+                <Text>Phí vận chuyển: {shippingFee.toLocaleString()} đ</Text>
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -290,7 +292,7 @@ const OrderDetailsComponent = () => {
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Phí vận chuyển">
-                <Text>{ShippingFee.toLocaleString()} đ</Text>
+                <Text>{shippingFee.toLocaleString()} đ</Text>
               </Descriptions.Item>
               {totalDiscount > 0 && (
                 <Descriptions.Item label="Đơn hàng được tổng giảm">

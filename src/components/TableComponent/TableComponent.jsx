@@ -20,11 +20,21 @@ const TableComponent = ({
   const isLoading = useSelector((state) => state.loading.isLoading);
 
   const newColumnExport = useMemo(() => {
-    const filter = columns?.filter(
-      (col) => col.dataIndex !== "_id" && col.dataIndex !== "isBlocked"
-    );
-    return filter;
+    const flatColumns = columns
+      .filter(
+        (col) =>
+          col.dataIndex &&
+          !["_id", "isBlocked", "action"].includes(col.dataIndex)
+      )
+      .map((col) => ({
+        title: typeof col.title === "string" ? col.title : "",
+        dataIndex: col.dataIndex,
+      }));
+
+    return flatColumns;
   }, [columns]);
+
+  console.log("Data source", dataSource, columns);
 
   // Ẩn hiệu ứng loading khi dữ liệu đã tải xong
   useEffect(() => {
@@ -146,8 +156,6 @@ const TableComponent = ({
             </Dropdown>
           </div>
         )}
-
-        <button onClick={exportExcel}>Export Excel</button>
 
         <Table
           id="table-xls"
