@@ -209,7 +209,9 @@ const HomePage = () => {
               <BannerContent>
                 <BannerTitle>Feel Amazing EVERYDAY</BannerTitle>
                 <BannerSubtitle>Kids Bag</BannerSubtitle>
-                <BannerButton>Shop Now</BannerButton>
+                <BannerButton onClick={() => navigate("/product-type/vi")}>
+                  Shop Now
+                </BannerButton>
               </BannerContent>
             </ImageBanner>
           </Col>

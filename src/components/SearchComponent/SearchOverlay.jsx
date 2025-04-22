@@ -94,7 +94,7 @@ const SearchOverlay = () => {
   const filteredProducts = useMemo(() => {
     if (!products?.data) return [];
 
-    return products.data.filter((product) => {
+    const result = products.data.filter((product) => {
       const matchesSearch = searchTerm
         ? product.name.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
@@ -112,6 +112,21 @@ const SearchOverlay = () => {
 
       return matchesSearch && matchesType && matchesPrice && matchesRating;
     });
+
+    // 🔽 Sắp xếp theo thứ tự xuất hiện của selectedTypes
+    if (selectedTypes.length > 0) {
+      result.sort((a, b) => {
+        const indexA = selectedTypes.indexOf(a.type);
+        const indexB = selectedTypes.indexOf(b.type);
+
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    }
+
+    return result;
   }, [
     products,
     searchTerm,

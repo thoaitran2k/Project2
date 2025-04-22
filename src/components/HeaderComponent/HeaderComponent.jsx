@@ -47,16 +47,31 @@ const Sidebar = () => {
   const [open, setOpen] = useState(false);
   const screens = useBreakpoint();
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [drawerWidth, setDrawerWidth] = useState(300); // State để điều chỉnh width
+  const [drawerWidth, setDrawerWidth] = useState(300);
+  const [topSellByType, setTopSellByType] = useState({});
 
   // Khi category được chọn, mở rộng drawer
   useEffect(() => {
     if (selectedCategory?.items?.length > 0) {
-      setDrawerWidth(600); // Gấp đôi width khi có danh mục con
+      setDrawerWidth(800);
     } else {
       setDrawerWidth(300); // Trở lại width ban đầu
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (open) {
+      console.log("Chạy useEffect...........");
+      axios.get("http://localhost:3002/api/product/top-sell").then((res) => {
+        const grouped = {};
+        res.data.topProducts.forEach((p) => {
+          if (!grouped[p.type]) grouped[p.type] = [];
+          grouped[p.type].push(p);
+        });
+        setTopSellByType(grouped);
+      });
+    }
+  }, [open]);
 
   return (
     <div
@@ -92,7 +107,8 @@ const Sidebar = () => {
             setSelectedCategory={setSelectedCategory}
             selectedCategory={selectedCategory}
             mode="vertical"
-            drawerWidth={drawerWidth} // Truyền width xuống NavbarComponent
+            drawerWidth={drawerWidth}
+            topSellByType={topSellByType}
           />
         </Drawer>
       </div>
@@ -504,11 +520,11 @@ const HeaderComponent = ({
                   fontSize: 17,
                   cursor: "pointer",
                 }}
-                onMouseEnter={() => setShowMessage(true)} // Hiển thị khi di chuột vào
+                onMouseEnter={() => setShowMessage(true)}
                 onMouseLeave={() => setShowMessage(false)}
                 onClick={() => {
                   navigate("/sign-in");
-                }} // Ẩn khi di chuột ra
+                }}
               >
                 <UserOutlined /> Tài khoản
                 {showMessage && (

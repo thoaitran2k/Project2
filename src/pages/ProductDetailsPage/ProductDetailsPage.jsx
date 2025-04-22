@@ -72,7 +72,7 @@ const ProductDetailsPage = () => {
       <BreadcrumbWrapper breadcrumb={location.state?.breadcrumb} />
       <MainContent>
         {isLoading ? (
-          <p>Đang tải sản phẩm...</p>
+          <></>
         ) : error ? (
           <p>Lỗi khi tải sản phẩm: {error.message}</p>
         ) : productDetail?.status === "OK" ? (

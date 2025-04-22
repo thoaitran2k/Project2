@@ -135,6 +135,7 @@ const cartSlice = createSlice({
           ...(variant && { variant }),
           ...(diameter && { diameter }),
           ...(discount !== undefined && { discount }),
+          selected: false,
         });
       }
 

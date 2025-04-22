@@ -2,7 +2,12 @@ import { Row, Col, Image, Breadcrumb, message } from "antd";
 import React, { useEffect, useState } from "react";
 import imageProduct from "../../assets/aonam.jpg";
 import imageSmallProduct from "../../assets/vi.jpg";
-import { PlusOutlined, StarFilled, MinusOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  StarFilled,
+  MinusOutlined,
+  CheckOutlined,
+} from "@ant-design/icons";
 import {
   WrapperStyleImageSmall,
   WrapperStyleImage,
@@ -411,347 +416,413 @@ const productsComponent = ({ product }) => {
   const partialStarWidth = getPartialStarWidth(partialStar);
 
   return (
-    <Row style={{ padding: "16px", background: "rgba(224, 221, 221, 0.27)" }}>
+    <Row
+      style={{
+        padding: "24px",
+        background: "white",
+        borderRadius: "8px",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+        maxWidth: "1250px",
+        width: "1250px",
+        margin: "0 auto",
+      }}
+    >
+      {/* Image Gallery Column */}
       <Col xs={24} sm={24} md={10} lg={10} xl={10}>
-        {/* Ảnh lớn hiển thị theo ảnh nhỏ được chọn */}
-        <StyledImagePreview
-          className="custom-image-preview"
-          style={{
-            width: "100%",
-            maxWidth: "400px",
-            height: "400px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            objectFit: "contain",
-            backgroundColor: "#f5f5f5",
-          }}
-          src={imageList[selectedImageIndex]}
-          alt="image product"
-          preview={true}
-        />
-        <Row
-          style={{
-            border: "3px solid #ccc",
-            width: "100%",
-            maxWidth: "400px",
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: imageList.length < 5 ? "flex-start" : "center", // Thay đổi căn chỉnh tùy số lượng ảnh
-            background: "#fff",
-            marginTop: "16px",
-            gap: imageList.length < 5 ? "0px" : "18px", // Loại bỏ gap nếu có ít hơn 5 ảnh
-            padding: "8px",
-            overflow: "hidden", // Đảm bảo không có tràn khi không có gap
-          }}
-        >
-          {imageList.slice(0, 5).map((image, index) => (
-            <WrapperStyleImage
-              key={index}
-              style={{
-                flex: imageList.length < 5 ? "none" : "1", // Không flex nếu ít hơn 5 ảnh
-                textAlign: "center",
-                marginRight: imageList.length < 5 ? "0px" : "0", // Loại bỏ margin nếu ít hơn 5 ảnh
-              }}
-            >
-              <WrapperStyleImageSmall
-                src={image}
-                alt="image small product"
-                preview={{ mask: false }}
-                onMouseEnter={() => setSelectedImageIndex(index)}
-                onClick={() => setSelectedImageIndex(index)}
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "8px",
-                  border:
-                    selectedImageIndex === index ? "2px solid red" : "none",
-                  cursor: "pointer",
-                }}
-              />
-            </WrapperStyleImage>
-          ))}
-        </Row>
-      </Col>
-
-      <Col xs={24} sm={24} md={14} lg={14} xl={14} style={{ padding: "16px" }}>
-        <WrapperStyleNameProduct>{product?.name}</WrapperStyleNameProduct>
-
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
-            gap: 5,
-            alignItems: "center",
+            flexDirection: "column",
+            gap: "16px",
+            position: "sticky",
+            top: "20px",
           }}
         >
+          {/* Main Image Preview */}
+          <div
+            style={{
+              width: "100%",
+              aspectRatio: "1/1",
+              backgroundColor: "#f8f8f8",
+              borderRadius: "8px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+              border: "1px solid #eee",
+            }}
+          >
+            <img
+              src={imageList[selectedImageIndex]}
+              alt="Product preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                maxHeight: "400px",
+              }}
+            />
+          </div>
+
+          {/* Thumbnail Gallery */}
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              padding: "8px 0",
+              overflowX: "auto",
+              scrollbarWidth: "none", // Hide scrollbar for Firefox
+              "&::-webkit-scrollbar": { display: "none" }, // Hide scrollbar for Chrome
+            }}
+          >
+            {imageList.slice(0, 5).map((image, index) => (
+              <div
+                key={index}
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  minWidth: "60px", // Prevent shrinking
+                  borderRadius: "4px",
+                  border:
+                    selectedImageIndex === index
+                      ? "2px solid #1890ff"
+                      : "1px solid #e8e8e8",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  backgroundColor: "#fff",
+                  transition: "all 0.2s",
+                  ":hover": {
+                    borderColor: "#1890ff",
+                    opacity: 0.9,
+                  },
+                }}
+                onClick={() => setSelectedImageIndex(index)}
+                onMouseEnter={() => setSelectedImageIndex(index)}
+              >
+                <img
+                  src={image}
+                  alt={`Thumbnail ${index + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Col>
+
+      {/* Product Info Column */}
+      <Col xs={24} sm={24} md={14} lg={14} xl={14}>
+        <div style={{ padding: "0 16px" }}>
+          {/* Product Name */}
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 600,
+              marginBottom: "8px",
+              color: "#333",
+            }}
+          >
+            {product?.name}
+          </h1>
+
+          {/* Rating and Sales */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              lineHeight: "16px",
+              gap: "8px",
+              marginBottom: "16px",
             }}
           >
-            {/* Hiển thị các sao đầy */}
-            {[...Array(fullStars)].map((_, index) => (
-              <StarFilled
-                key={index}
-                style={{
-                  fontSize: "16px",
-                  color: "rgb(253,216,54)",
-                  verticalAlign: "middle",
-                }}
-              />
-            ))}
-
-            {/* Hiển thị phần sao chưa đầy */}
-            {partialStar > 0 && (
-              <div
-                style={{
-                  position: "relative",
-                  width: "16px",
-                  height: "16px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  verticalAlign: "middle",
-                }}
-              >
-                {/* Sao nền (màu xám) */}
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {[...Array(5)].map((_, i) => (
                 <StarFilled
+                  key={i}
                   style={{
                     fontSize: "16px",
-                    color: "#ccc",
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
+                    color: i < fullStars ? "#faad14" : "#e8e8e8",
                   }}
                 />
-                {/* Sao vàng (phần được tô) */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: `${partialStarWidth}%`,
-                    overflow: "hidden",
-                  }}
-                >
-                  <StarFilled
+              ))}
+              {partialStar > 0 && (
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <div
                     style={{
-                      fontSize: "16px",
-                      color: "rgb(253,216,54)",
+                      width: `${partialStarWidth}%`,
+                      overflow: "hidden",
+                      position: "absolute",
                     }}
-                  />
+                  >
+                    <StarFilled
+                      style={{
+                        fontSize: "16px",
+                        color: "#faad14",
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Hiển thị các sao trống */}
-            {[...Array(5 - fullStars - (partialStar > 0 ? 1 : 0))].map(
-              (_, index) => (
-                <StarFilled
-                  key={index}
-                  style={{
-                    fontSize: "16px",
-                    color: "#ccc",
-                    verticalAlign: "middle",
-                  }}
-                />
-              )
-            )}
+              )}
+            </div>
+            <span style={{ color: "#666", fontSize: "14px" }}>
+              | Đã bán {product.selled || 0}
+            </span>
           </div>
-          <WrapperStyleTextSell>
-            {" "}
-            | Đã bán {product.selled}
-          </WrapperStyleTextSell>
-        </div>
 
-        <WrapperStylePriceProduct>
-          <WrapperStylePriceTextProduct>
-            {product?.price.toLocaleString("vi-VN")} VNĐ
-          </WrapperStylePriceTextProduct>
-        </WrapperStylePriceProduct>
+          {/* Price */}
+          <div
+            style={{
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "#d32f2f",
+              marginBottom: "24px",
+            }}
+          >
+            {product?.price.toLocaleString("vi-VN")}₫
+          </div>
 
-        <WrapperAdressProduct>
-          <span>Giao đến </span>
-          <span className="address">
-            {defaultAddress
-              ? defaultAddress.address
-              : "Chưa có địa chỉ mặc định"}
-          </span>{" "}
-          -<span className="change-address"> Địa chỉ mặc định</span>
-        </WrapperAdressProduct>
-
-        <WrapperQualityProduct>
-          <div style={{ marginTop: "20px" }}>
-            <div
+          {/* Shipping Info */}
+          <div
+            style={{
+              backgroundColor: "#f5f5f5",
+              padding: "12px",
+              borderRadius: "4px",
+              marginBottom: "24px",
+            }}
+          >
+            <span style={{ color: "#666" }}>Giao đến </span>
+            <span style={{ fontWeight: 500 }}>
+              {defaultAddress
+                ? defaultAddress.address
+                : "Chưa có địa chỉ mặc định"}
+            </span>
+            <span
               style={{
-                fontWeight: "300",
-                fontSize: "20px",
-                marginBottom: "10px",
+                color: "#1890ff",
+                marginLeft: "8px",
+                cursor: "pointer",
+                ":hover": { textDecoration: "underline" },
               }}
             >
-              Chọn màu sắc:
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
+              Đổi địa chỉ
+            </span>
+          </div>
+
+          {/* Color Selection */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "16px",
+                marginBottom: "12px",
+                fontWeight: 500,
+              }}
+            >
+              Màu sắc
+            </h3>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {uniqueColors.map((color, index) => (
                 <div
                   key={index}
                   style={{
-                    width: "30px",
-                    height: "30px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "4px",
                     backgroundColor: colorMap[color],
-                    borderRadius: "50%",
                     cursor: "pointer",
                     border:
                       selectedColor === color
-                        ? "2px solid black"
-                        : "1px solid #ccc",
-                    opacity: selectedColor === color ? 1 : 0.8,
+                        ? "2px solid #1890ff"
+                        : "1px solid #e8e8e8",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
                     transition: "all 0.2s",
+                    ":hover": {
+                      transform: "scale(1.05)",
+                    },
                   }}
                   onClick={() => handleColorSelect(color)}
-                />
+                >
+                  {selectedColor === color && (
+                    <CheckOutlined
+                      style={{ color: "#fff", fontSize: "16px" }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
-          <div style={{ marginTop: "20px" }}>
+          {/* Size Selection */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "16px",
+                marginBottom: "12px",
+                fontWeight: 500,
+              }}
+            >
+              {isWatch ? "Đường kính" : "Kích thước"}
+            </h3>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {(isWatch ? watchDiameters : displaySizes).map((item, index) => {
+                const isAvailable = isWatch
+                  ? product.diameter?.includes(item)
+                  : availableSizeSet.has(item);
+                const isSelected = isWatch
+                  ? selectedDiameter === item
+                  : selectedSize === item;
+
+                return (
+                  <button
+                    key={index}
+                    style={{
+                      minWidth: "50px",
+                      padding: "8px 12px",
+                      borderRadius: "4px",
+                      border: "1px solid",
+                      borderColor: isSelected ? "#1890ff" : "#d9d9d9",
+                      backgroundColor: isSelected ? "#e6f7ff" : "#fff",
+                      color: isSelected ? "#1890ff" : "#333",
+                      cursor: isAvailable ? "pointer" : "not-allowed",
+                      opacity: isAvailable ? 1 : 0.5,
+                      transition: "all 0.2s",
+                      ":hover": {
+                        borderColor: isAvailable ? "#1890ff" : "#d9d9d9",
+                      },
+                    }}
+                    onClick={() =>
+                      isAvailable &&
+                      (isWatch
+                        ? handleDiameterSelect(item)
+                        : handleSizeSelect(item))
+                    }
+                    disabled={!isAvailable}
+                  >
+                    {isWatch ? `${item}mm` : item}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quantity Selector */}
+          <div style={{ marginBottom: "32px" }}>
+            <h3
+              style={{
+                fontSize: "16px",
+                marginBottom: "12px",
+                fontWeight: 500,
+              }}
+            >
+              Số lượng
+            </h3>
             <div
               style={{
-                fontWeight: "300",
-                fontSize: "20px",
-                marginBottom: "10px",
+                display: "inline-flex",
+                border: "1px solid #d9d9d9",
+                borderRadius: "4px",
+                overflow: "hidden",
               }}
             >
-              {isWatch ? "Chọn đường kính:" : "Chọn size:"}
+              <button
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  border: "none",
+                  backgroundColor: "#f5f5f5",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  ":hover": {
+                    backgroundColor: "#e8e8e8",
+                  },
+                }}
+                onClick={decreaseQuantity}
+              >
+                <MinusOutlined />
+              </button>
+              <div
+                style={{
+                  width: "40px",
+                  height: "32px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderLeft: "1px solid #d9d9d9",
+                  borderRight: "1px solid #d9d9d9",
+                }}
+              >
+                {quantityPay}
+              </div>
+              <button
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  border: "none",
+                  backgroundColor: "#f5f5f5",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  ":hover": {
+                    backgroundColor: "#e8e8e8",
+                  },
+                }}
+                onClick={increaseQuantity}
+              >
+                <PlusOutlined />
+              </button>
             </div>
+          </div>
 
-            {isWatch ? (
-              <WrapperSizeOptions>
-                {watchDiameters.map((d, index) => {
-                  const isAvailable = product.diameter?.includes(d);
-                  return (
-                    <WrapperSizeButton
-                      key={index}
-                      className={selectedDiameter === d ? "selected" : ""}
-                      onClick={() => isAvailable && handleDiameterSelect(d)}
-                      disabled={!isAvailable}
-                      style={{
-                        opacity: isAvailable
-                          ? selectedDiameter === d
-                            ? 1
-                            : 0.8
-                          : 0.5,
-                        backgroundColor:
-                          selectedDiameter === d ? "white" : "white",
-                        color: selectedDiameter === d ? "black" : "inherit",
-                      }}
-                    >
-                      {d}mm
-                    </WrapperSizeButton>
-                  );
-                })}
-              </WrapperSizeOptions>
-            ) : (
-              <WrapperSizeOptions>
-                {displaySizes.map((size, index) => {
-                  const isAvailable = availableSizeSet.has(size);
-                  return (
-                    <WrapperSizeButton
-                      key={index}
-                      className={selectedSize === size ? "selected" : ""}
-                      onClick={() => isAvailable && handleSizeSelect(size)}
-                      disabled={!isAvailable}
-                      style={{
-                        opacity: isAvailable
-                          ? selectedSize === size
-                            ? 1
-                            : 0.8
-                          : 0.5,
-                        backgroundColor:
-                          selectedSize === size ? "white" : "white",
-                        color: selectedSize === size ? "black " : "inherit",
-                      }}
-                    >
-                      {size}
-                    </WrapperSizeButton>
-                  );
-                })}
-              </WrapperSizeOptions>
-            )}
-          </div>
-          <div
-            style={{
-              fontWeight: "300",
-              fontSize: "20px",
-              marginBottom: "10px",
-              marginTop: "25px",
-            }}
-          >
-            Số lượng:
-          </div>
-          <div
-            style={{
-              display: "flex",
-              width: "fit-content",
-              flexDirection: "row",
-              border: "1px solid #ccc",
-              alignItems: "center",
-              padding: "5px",
-              borderRadius: "7px",
-            }}
-          >
-            <MinusOutlined
-              onClick={decreaseQuantity}
+          {/* Action Buttons */}
+          <div style={{ display: "flex", gap: "16px", marginTop: "32px" }}>
+            <button
               style={{
-                fontSize: "16px",
-                padding: "5px",
-                cursor: "pointer",
-                userSelect: "none",
-              }}
-            />
-            <span
-              style={{
-                width: "40px",
-                height: "20px",
-                textAlign: "center",
+                flex: 1,
+                height: "48px",
+                backgroundColor: "#1890ff",
+                color: "#fff",
                 border: "none",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              {quantityPay}
-            </span>
-            <PlusOutlined
-              onClick={increaseQuantity}
-              style={{
+                borderRadius: "4px",
                 fontSize: "16px",
-                padding: "5px",
+                fontWeight: 500,
                 cursor: "pointer",
-                userSelect: "none",
+                transition: "all 0.2s",
+                ":hover": {
+                  backgroundColor: "#40a9ff",
+                },
               }}
-            />
+              onClick={handleCheckout}
+            >
+              Mua ngay
+            </button>
+            <button
+              style={{
+                flex: 1,
+                height: "48px",
+                backgroundColor: "#fff",
+                color: "#1890ff",
+                border: "1px solid #1890ff",
+                borderRadius: "4px",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                ":hover": {
+                  backgroundColor: "#e6f7ff",
+                },
+              }}
+              onClick={() => handleAddToCart(product)}
+            >
+              Thêm vào giỏ hàng
+            </button>
           </div>
-        </WrapperQualityProduct>
-        <div
-          style={{
-            display: "flex",
-            gap: "30px",
-            flexWrap: "wrap",
-            margin: "30px 0",
-          }}
-        >
-          <StyledButton
-            textButton="Chọn mua"
-            primary
-            onClick={handleCheckout}
-          />
-          <StyledButton
-            textButton="Thêm vào giỏ hàng"
-            onClick={() => handleAddToCart(product)}
-          />
         </div>
       </Col>
     </Row>

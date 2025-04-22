@@ -316,4 +316,29 @@ router.put("/:id/update-rating", async (req, res) => {
   }
 });
 
+//LẤY SẢN PHẨM ĐƯỢC MUA NHIỀU NHẤT
+router.get("/top-sell", async (req, res) => {
+  try {
+    const topProducts = await Product.find().sort({ selled: -1 }).limit(5);
+
+    const topTypes = await Product.aggregate([
+      {
+        $group: {
+          _id: "$type",
+          totalSelled: { $sum: "$selled" },
+        },
+      },
+      { $sort: { totalSelled: -1 } },
+      { $limit: 1 },
+    ]);
+
+    res.json({
+      topProducts,
+      bestSellingType: topTypes[0]?._id || null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
 module.exports = router;

@@ -251,7 +251,7 @@ const PageLayout = styled.div`
   gap: 100px;
   max-width: 1900px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0 100px;
 `;
 
 const SideBarContainer = styled.div`

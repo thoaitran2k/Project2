@@ -63,7 +63,7 @@ export default BreadcrumbWrapper;
 
 const BreadcrumbContainer = styled.nav`
   font-size: 16px;
-  margin: 0 20px 10px;
+  margin: 40px 100px;
 
   span {
     display: inline;

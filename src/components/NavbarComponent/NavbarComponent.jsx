@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import {
-  DownOutlined,
-  RightOutlined,
-  PhoneOutlined,
-  MenuOutlined,
-  LeftOutlined,
-} from "@ant-design/icons";
+import { PhoneOutlined, MenuOutlined } from "@ant-design/icons";
 import { Drawer, Grid } from "antd";
+import axios from "axios";
 
 const { useBreakpoint } = Grid;
 
@@ -22,6 +17,7 @@ const NavbarComponent = ({
   selectedCategory,
   setSelectedCategory,
   drawerWidth,
+  topSellByType = {},
 }) => {
   const navigate = useNavigate();
 
@@ -37,11 +33,12 @@ const NavbarComponent = ({
     { title: "Dịch vụ", items: ["Chăm sóc khách hàng", "Liên hệ trả hàng"] },
   ];
 
-  const viewedCategories = [
-    { title: "Phụ kiện thời trang", items: ["Trang phục"] },
-    { title: "Túi", items: ["Túi da và Phụ kiện bằng da"] },
-    { title: "Giày", items: ["Phụ kiện", "Du lịch"] },
-  ];
+  const viewedCategories = topSellByType
+    ? Object.keys(topSellByType).map((type) => ({
+        title: type,
+        items: topSellByType[type],
+      }))
+    : [];
 
   const toggleCategory = (category) => {
     setSelectedCategory(
@@ -53,6 +50,8 @@ const NavbarComponent = ({
     navigate(path);
     onClose?.();
   };
+
+  console.log("topSellByType", topSellByType);
 
   return (
     <Wrapper $expanded={!!selectedCategory?.items?.length}>
@@ -85,19 +84,17 @@ const NavbarComponent = ({
 
           <Divider />
 
-          <SectionTitle>Danh mục đã xem</SectionTitle>
+          <SectionTitle>SẢN PHẨM BÁN CHẠY</SectionTitle>
           {viewedCategories.map((category, index) => (
             <div key={`viewed-${index}`}>
               <CategoryHeader
                 onClick={() => toggleCategory(category)}
                 $active={selectedCategory?.title === category.title}
+                data-active={
+                  selectedCategory?.title === category.title ? "true" : "false"
+                }
               >
                 <UnderlineText>{category.title}</UnderlineText>
-                {category.items.length > 0 && (
-                  <ArrowIcon>
-                    {selectedCategory?.title === category.title ? "" : ""}
-                  </ArrowIcon>
-                )}
               </CategoryHeader>
             </div>
           ))}
@@ -105,40 +102,79 @@ const NavbarComponent = ({
 
         {selectedCategory?.items?.length > 0 && (
           <RightNav>
-            {selectedCategory?.items.map((item, idx) => {
-              // Tạo slug từ item, chuyển thành chữ thường, thay khoảng trắng và ký tự đặc biệt
-              const categorySlugMap = {
-                "Áo nam": "ao-nam",
-                "Quần nam": "quan-nam",
-                "Ví da": "vi",
-                "Đồng hồ": "dong-ho",
-                "Túi xách nữ": "tui-xach",
-                "Túi xách": "tui-xach",
-                Ví: "vi",
-                "Trang sức nữ": "trang-suc",
-                "Áo nữ": "ao-nu",
-                "Quần nữ": "quan-nu",
-              };
+            {selectedCategory?.items?.[0]?.image ? (
+              <>
+                <SubCategoryTitle>
+                  Các sản phẩm{" "}
+                  <span style={{ fontWeight: "bold" }}>
+                    {selectedCategory.title.charAt(0).toUpperCase() +
+                      selectedCategory.title.slice(1)}{" "}
+                  </span>
+                  bán chạy
+                </SubCategoryTitle>
+                <ProductGrid>
+                  {selectedCategory.items.map((item, idx) => {
+                    // Tạo slug từ tên sản phẩm
+                    const productSlug = item.name
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .replace(/Đ/g, "D")
+                      .replace(/đ/g, "d")
+                      .toLowerCase()
+                      .replace(/[^a-z0-9 ]/g, "")
+                      .replace(/\s+/g, "-");
 
-              // Lấy slug từ map nếu có
-              const categorySlug =
-                categorySlugMap[item] ||
-                item
-                  .toLowerCase()
-                  .replace(/\s+/g, "-") // Thay khoảng trắng thành dấu gạch ngang
-                  .replace(/[^\w\-]+/g, ""); // Loại bỏ các ký tự đặc biệt
+                    return (
+                      <ProductCard
+                        key={idx}
+                        onClick={() =>
+                          handleNavigate(
+                            `/product-details/${productSlug}-${item._id}`
+                          )
+                        }
+                      >
+                        <ProductImage src={item.image} alt={item.name} />
+                        <ProductName>{item.name}</ProductName>
+                      </ProductCard>
+                    );
+                  })}
+                </ProductGrid>
+              </>
+            ) : (
+              selectedCategory?.items.map((item, idx) => {
+                const rawType = typeof item === "string" ? item : item.type;
+                const categorySlugMap = {
+                  "Áo nam": "ao-nam",
+                  "Quần nam": "quan-nam",
+                  "Ví da": "vi",
+                  "Đồng hồ": "dong-ho",
+                  "Túi xách nữ": "tui-xach",
+                  "Túi xách": "tui-xach",
+                  Ví: "vi",
+                  "Trang sức nữ": "trang-suc",
+                  "Áo nữ": "ao-nu",
+                  "Quần nữ": "quan-nu",
+                };
 
-              return (
-                <SubItem
-                  key={idx}
-                  onClick={() =>
-                    handleNavigate(`/product-type/${categorySlug}`)
-                  }
-                >
-                  {item}
-                </SubItem>
-              );
-            })}
+                const categorySlug =
+                  categorySlugMap[rawType] ||
+                  rawType
+                    ?.toLowerCase()
+                    .replace(/\s+/g, "-")
+                    .replace(/[^\w\-]+/g, "");
+
+                return (
+                  <SubItem
+                    key={idx}
+                    onClick={() =>
+                      handleNavigate(`/product-type/${categorySlug}`)
+                    }
+                  >
+                    {typeof item === "string" ? item : item.name}
+                  </SubItem>
+                );
+              })
+            )}
           </RightNav>
         )}
       </MainContainer>
@@ -174,14 +210,29 @@ export const Sidebar = () => {
   const screens = useBreakpoint();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [drawerWidth, setDrawerWidth] = useState(300);
+  const [topSellByType, setTopSellByType] = useState({});
 
   useEffect(() => {
     if (selectedCategory?.items?.length > 0) {
-      setDrawerWidth(600);
+      setDrawerWidth(800);
     } else {
       setDrawerWidth(300);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (open) {
+      console.log("Chạy useEffect...........");
+      axios.get("http://localhost:3002/api/product/top-sell").then((res) => {
+        const grouped = {};
+        res.data.topProducts.forEach((p) => {
+          if (!grouped[p.type]) grouped[p.type] = [];
+          grouped[p.type].push(p);
+        });
+        setTopSellByType(grouped);
+      });
+    }
+  }, [open]);
 
   return (
     <div
@@ -215,6 +266,7 @@ export const Sidebar = () => {
           selectedCategory={selectedCategory}
           mode="vertical"
           drawerWidth={drawerWidth}
+          topSellByType={topSellByType}
         />
       </Drawer>
     </div>
@@ -238,7 +290,7 @@ const Wrapper = styled.div`
   flex-direction: column;
   height: 100%;
   background-color: #fff;
-  width: ${(props) => (props.$expanded ? "560px" : "280px")};
+  width: ${(props) => (props.$expanded ? "800px" : "280px")};
   transition: width 0.3s ease;
 `;
 
@@ -256,12 +308,12 @@ const LeftNav = styled.div`
 `;
 
 const RightNav = styled.div`
-  width: 400px;
+  width: 520px;
   padding: 16px 0;
   border-left: 1px solid rgb(56, 53, 53);
   flex-shrink: 0;
+  overflow-y: auto;
 `;
-
 const CategoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -388,6 +440,41 @@ const ArrowIcon = styled.span`
   font-size: 12px;
   display: flex;
   align-items: center;
+`;
+
+const ProductGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+`;
+
+const ProductCard = styled.div`
+  cursor: pointer;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: white;
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ProductImage = styled.img`
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 8px;
+`;
+
+const ProductName = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
 `;
 
 export default NavbarComponent;

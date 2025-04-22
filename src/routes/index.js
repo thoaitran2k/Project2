@@ -12,6 +12,7 @@ import CheckoutPage from "../pages/CheckoutPage/CheckoutPage";
 import CheckoutSuccesPage from "../pages/CheckoutPage/CheckoutSuccesPage";
 import OrderDetailsPage from "../pages/OrderDetailsPage/OrderDetailsPage";
 import MomoReturn from "../components/Checkout/momo-return";
+import FemaleCollectionPage from "../pages/CollectionPage/FemaleCollectionPage";
 
 export const routes = [
   //PAGE
@@ -99,6 +100,13 @@ export const routes = [
   {
     path: "/checkout/momo-return",
     page: MomoReturn,
+    isShowHeader: true,
+    isShowFooter: true,
+  },
+  //COLLECTIONPAGE
+  {
+    path: "/nu",
+    page: FemaleCollectionPage,
     isShowHeader: true,
     isShowFooter: true,
   },
