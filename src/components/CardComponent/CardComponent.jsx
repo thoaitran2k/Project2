@@ -15,30 +15,30 @@ import { useSearch } from "../Layout/SearchContext";
 const columns = 4;
 
 const StarRating = ({ rating }) => {
-  const stars = Array(5).fill(0); // Tạo mảng 5 ngôi sao trống
-  const fullStars = Math.floor(rating); // Số sao đầy
-  const decimalPart = rating - fullStars; // Phần lẻ của sao cuối cùng
+  const stars = Array(5).fill(0);
+  const fullStars = Math.floor(rating);
+  const decimalPart = rating - fullStars;
 
   let partialStarWidth = 0;
-  if (decimalPart >= 0.9) partialStarWidth = 80; // 4/5 sao
-  else if (decimalPart >= 0.75) partialStarWidth = 75; // 3/4 sao
-  else if (decimalPart >= 0.5) partialStarWidth = 50; // 1/2 sao
-  else if (decimalPart >= 0.25) partialStarWidth = 25; // 1/4 sao
+  if (decimalPart >= 0.9) partialStarWidth = 80;
+  else if (decimalPart >= 0.75) partialStarWidth = 75;
+  else if (decimalPart >= 0.5) partialStarWidth = 50;
+  else if (decimalPart >= 0.25) partialStarWidth = 25;
 
   return (
     <div style={{ display: "flex", color: "#FFD700" }}>
       {stars.map((_, i) => (
         <span key={i} style={{ position: "relative", display: "inline-block" }}>
-          <StarFilled style={{ color: "#D3D3D3" }} /> {/* Sao trống */}
-          {i < fullStars ? ( // Nếu là sao đầy
+          <StarFilled style={{ color: "#D3D3D3" }} />
+          {i < fullStars ? (
             <StarFilled style={{ position: "absolute", top: 0, left: 0 }} />
-          ) : i === fullStars && decimalPart > 0 ? ( // Nếu là sao lẻ
+          ) : i === fullStars && decimalPart > 0 ? (
             <StarFilled
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
-                width: `${partialStarWidth}%`, // Tô màu theo phần lẻ
+                width: `${partialStarWidth}%`,
                 overflow: "hidden",
               }}
             />
@@ -53,6 +53,7 @@ const { Meta } = Card;
 const CardComponent = ({ products, totalProducts }) => {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
+  const [localLoading, setLocalLoading] = useState(true);
 
   const { isSearchOpen, toggleSearch } = useSearch();
 
@@ -60,9 +61,9 @@ const CardComponent = ({ products, totalProducts }) => {
     return (
       name
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Loại bỏ dấu
-        .replace(/Đ/g, "D") // Chuyển Đ → D
-        .replace(/đ/g, "d") // Chuyển đ → d
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/Đ/g, "D")
+        .replace(/đ/g, "d")
         .toLowerCase()
         .replace(/[^a-z0-9 ]/g, "")
         .replace(/\s+/g, "-") + `-${id}`
@@ -80,10 +81,29 @@ const CardComponent = ({ products, totalProducts }) => {
     }
   };
 
+  useEffect(() => {
+    setLocalLoading(true);
+    const timeout = setTimeout(() => {
+      setLocalLoading(false);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [products]);
+
   return (
     <>
       <WrapperCardProduct onClick={handleClick}>
-        {products.length === 0 ? (
+        {localLoading ? (
+          <div
+            style={{
+              gridColumn: `span ${columns}`,
+              textAlign: "center",
+              padding: "50px 0",
+            }}
+          >
+            <Spin size="large" />
+          </div>
+        ) : products.length === 0 ? (
           <p>Không tìm thấy sản phẩm phù hợp</p>
         ) : (
           products.map((product, index) => (
@@ -93,7 +113,6 @@ const CardComponent = ({ products, totalProducts }) => {
             >
               <ProductCard index={index} columns={columns}>
                 <img src={product.image} alt={product.name} />
-
                 <ProductInfo>
                   <ProductName>{product.name}</ProductName>
                   <RatingRow>
@@ -138,11 +157,17 @@ const ProductCard = styled.div`
       ? "linear-gradient(to bottom, #D0CECE, #EAE9E9)"
       : "linear-gradient(to bottom, #EAE9E9, #D0CECE)"};
   opacity: ${({ $loading }) => ($loading ? 0.5 : 1)};
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
+  transform: scale(1);
+  cursor: pointer;
 
-  // Các style khác giữ nguyên
+  &:hover {
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.03);
+  }
+
   padding: 15px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -155,6 +180,14 @@ const ProductCard = styled.div`
     object-fit: cover;
     border-radius: 5px;
     background: transparent;
+    transition: transform 0.3s ease;
+
+    ${"" /* Optional: Zoom image on hover */}
+    ${
+      "" /* &:hover {
+      transform: scale(1.05);
+    } */
+    }
   }
 `;
 

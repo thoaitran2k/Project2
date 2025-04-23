@@ -9,9 +9,9 @@ import slider2 from "../../assets/slider2.png";
 import slider3 from "../../assets/slider3.png";
 import shop1Banner from "../../assets/thiet-ke-shop-quan-ao-a.jpg";
 import shop2Banner from "../../assets/thiet-ke-shop-quan-ao-dep.jpg";
-import shop3Banner from "../../assets/thiet-ke-shop-quan-ao-nam-4.jpg";
+import shop3Banner from "../../assets/Best_Selling_banner.webp";
 import shop4banner from "../../assets/Cac-san-pham-can-duoc-trung-bay-sao-cho-thu-hut-khach-hang.jpg";
-import shop5banner from "../../assets/mua-vi-da-nam-xin-o-dau-tot-chat-luong-tai-tphcm-news-181.jpg";
+import shop5banner from "../../assets/banner-1-2496631j15489.webp";
 
 import shopwallet from "../../assets/the-gioi-bop-da.jpg";
 import shopwatch from "../../assets/thiet-ke-shop-dong-ho-1.jpg";
@@ -46,37 +46,37 @@ const HomePage = () => {
     {
       title: "30% Off Winter Sale",
       image: shop1Banner,
-      buttonText: "Shop Now",
+      buttonText: "Xem ngay",
     },
     {
       title: "Baby & Kids Clothings",
       image: shop2Banner,
-      buttonText: "Shop Now",
+      buttonText: "Xem ngay",
     },
     {
       title: "#1 eCommerce Platform",
       stats: "25k+ Client Testimonials",
       image: shop5banner,
-      buttonText: "View More",
+      buttonText: "Xem thêm",
     },
     {
       title: "Mid Summer Collection",
       description:
         "Đến với chúng tôi, bạn sẽ được trải nghiệm mua hàng theo cách của riêng bạn!",
       image: shop4banner,
-      buttonText: "Shop Now",
+      buttonText: "Mua ngay",
     },
     {
       title: "Feel Amazing EVERYDAY",
       subtitle: "Kids Bag",
       image: shop5banner,
-      buttonText: "Shop Now",
+      buttonText: "Mua ngay",
     },
     {
       title: "1 Million",
       subtitle: "Real Customer & Buyers",
       image: shop1Banner,
-      buttonText: "Join Now",
+      buttonText: "Truy cập ngay",
     },
   ];
 
@@ -130,9 +130,9 @@ const HomePage = () => {
                   </>
                 ) : (
                   <>
-                    <HeroTitle>Exclusive Collection for Women</HeroTitle>
+                    <HeroTitle>Bộ sưu tập độc đáo dành cho nữ</HeroTitle>
                     <ShopButton onClick={handleToTypePageWomenShirt}>
-                      Shop now
+                      Mua ngay
                     </ShopButton>
                   </>
                 )}
@@ -147,11 +147,9 @@ const HomePage = () => {
               <Col span={24}>
                 <MediumBanner>
                   <BannerContent>
-                    <BannerTitle>For Men</BannerTitle>
-                    <BannerButton
-                      onClick={() => navigate("/product-type/ao-nam")}
-                    >
-                      Shop Now
+                    <BannerTitle></BannerTitle>
+                    <BannerButton onClick={() => navigate("/top-selling")}>
+                      Xem ngay
                     </BannerButton>
                   </BannerContent>
                 </MediumBanner>
@@ -160,25 +158,40 @@ const HomePage = () => {
               {/* Hai banner nhỏ xếp ngang nhau */}
               <Col xs={8}>
                 <SmallBanner>
-                  <BannerContent>
-                    <BannerTitle>#1 eCommerce Platform</BannerTitle>
-                    <BannerText>25k+ Client Testimonials</BannerText>
+                  <BannerContent
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      navigate("/product-type/ao-nam");
+                    }}
+                  >
+                    <BannerTitle>Áo nam</BannerTitle>
+                    <BannerText>Thời trang lịch lãm</BannerText>
                   </BannerContent>
                 </SmallBanner>
               </Col>
               <Col xs={8}>
                 <SmallBanner2>
-                  <BannerContent>
-                    <BannerTitle>#1 eCommerce Platform</BannerTitle>
-                    <BannerText>25k+ Client Testimonials</BannerText>
+                  <BannerContent
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      navigate("/product-type/dong-ho");
+                    }}
+                  >
+                    <BannerTitle>Đồng hồ</BannerTitle>
+                    <BannerText>Sự lựa chọn hoàn hảo</BannerText>
                   </BannerContent>
                 </SmallBanner2>
               </Col>
               <Col xs={8}>
                 <SmallBanner3>
-                  <BannerContent>
-                    <BannerTitle>Mid Summer</BannerTitle>
-                    <BannerText>Instant Outlets</BannerText>
+                  <BannerContent
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      navigate("/product-type/vi");
+                    }}
+                  >
+                    <BannerTitle>Ví da</BannerTitle>
+                    <BannerText>Mảnh ghép còn thiếu</BannerText>
                   </BannerContent>
                 </SmallBanner3>
               </Col>
@@ -207,10 +220,10 @@ const HomePage = () => {
           <Col xs={24} md={12}>
             <ImageBanner>
               <BannerContent>
-                <BannerTitle>Feel Amazing EVERYDAY</BannerTitle>
-                <BannerSubtitle>Kids Bag</BannerSubtitle>
+                <BannerTitle>Tận hưởng trải nghiệm mua sắm tại đây</BannerTitle>
+                <BannerSubtitle>Túi xách</BannerSubtitle>
                 <BannerButton onClick={() => navigate("/product-type/vi")}>
-                  Shop Now
+                  Mua ngay
                 </BannerButton>
               </BannerContent>
             </ImageBanner>
@@ -320,7 +333,7 @@ const ShopButton = styled.button`
 
 const MediumBanner = styled.div`
   height: 240px;
-  background: url(${shop2Banner});
+  background: url(${shop3Banner});
   background-size: cover;
   background-position: center;
   border-radius: 12px;
@@ -333,7 +346,7 @@ const MediumBanner = styled.div`
 const SmallBanner = styled.div`
   height: 240px;
   background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-    url(${shop3Banner});
+    url(${shop2Banner});
   background-size: cover;
   background-position: center;
   border-radius: 12px;
@@ -423,7 +436,7 @@ const ImageBanner = styled.div`
 `;
 
 const BannerSubtitle = styled.h3`
-  font-size: 1.2rem;
+  font-size: 2.5rem;
   margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 `;
@@ -441,21 +454,20 @@ const SectionTitle = styled.h2`
 
 const CategoriesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Mỗi hàng có tối đa 4 cột */
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   margin-top: 20px;
 
-  /* Đảm bảo khi màn hình nhỏ hơn, các sản phẩm vẫn có thể hiển thị đẹp */
   @media (max-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr); /* 3 cột trên màn hình trung bình */
+    grid-template-columns: repeat(3, 1fr);
   }
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr); /* 2 cột trên màn hình nhỏ */
+    grid-template-columns: repeat(2, 1fr);
   }
 
   @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr); /* 1 cột trên màn hình rất nhỏ */
+    grid-template-columns: repeat(2, 1fr);
   }
 `;
 const CategoryCard = styled.div`

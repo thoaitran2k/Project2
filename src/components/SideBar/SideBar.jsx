@@ -204,6 +204,14 @@ const SideBar = ({
     [selectedTypes, searchParams, setSearchParams, isSearchOpen]
   );
 
+  const resetCategories = () => {
+    setSelectedTypes([]);
+
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete("type");
+    setSearchParams(newSearchParams, { replace: true });
+  };
+
   return (
     <SidebarContainer>
       {/* {!isProductPage && ( */}
@@ -233,7 +241,6 @@ const SideBar = ({
               ))}
             </CategoryList>
           ) : (
-            // Nếu không có tìm kiếm, hiển thị checkbox
             <StyledCheckboxGroup
               options={filteredType}
               value={selectedTypes}
@@ -244,6 +251,9 @@ const SideBar = ({
           <p>🔍 Không tìm thấy danh mục phù hợp</p>
         )}
       </>
+      {selectedTypes.length > 0 && (
+        <ResetButton onClick={resetCategories}>Reset danh mục</ResetButton>
+      )}
       {/* )} */}
       <br />
       <br />
@@ -311,6 +321,7 @@ const CategoryList = styled.ul`
 `;
 
 const CategoryItem = styled.li`
+  font-size: 15px;
   padding: 10px;
   cursor: pointer;
   border-radius: 5px;
@@ -395,4 +406,16 @@ const Star = styled.span`
 const RatingLabel = styled.span`
   font-size: 14px;
   color: #666;
+`;
+
+const ResetButton = styled(Button)`
+  margin-top: 10px;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+
+  &:hover {
+    background-color: #d9363e !important;
+    color: white !important;
+  }
 `;

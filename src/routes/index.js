@@ -13,6 +13,7 @@ import CheckoutSuccesPage from "../pages/CheckoutPage/CheckoutSuccesPage";
 import OrderDetailsPage from "../pages/OrderDetailsPage/OrderDetailsPage";
 import MomoReturn from "../components/Checkout/momo-return";
 import FemaleCollectionPage from "../pages/CollectionPage/FemaleCollectionPage";
+import BestSellingProducts from "../pages/BestSellProducts/BestSellingProducts";
 
 export const routes = [
   //PAGE
@@ -107,6 +108,13 @@ export const routes = [
   {
     path: "/nu",
     page: FemaleCollectionPage,
+    isShowHeader: true,
+    isShowFooter: true,
+  },
+  //TOP-SELL
+  {
+    path: "/top-selling",
+    page: BestSellingProducts,
     isShowHeader: true,
     isShowFooter: true,
   },

@@ -389,10 +389,7 @@ const productsComponent = ({ product }) => {
   const partialStar = rating - fullStars;
 
   const getPartialStarWidth = (partialStar) => {
-    if (partialStar >= 0.75) return 100; // >= 75% -> 100%
-    if (partialStar >= 0.5) return 50; // >= 50% -> 50%
-    if (partialStar >= 0.25) return 25; // >= 25% -> 25%
-    return 0; // < 25% -> 0%
+    return Math.round(partialStar * 100);
   };
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -539,33 +536,70 @@ const productsComponent = ({ product }) => {
             }}
           >
             <div style={{ display: "flex", alignItems: "center" }}>
-              {[...Array(5)].map((_, i) => (
-                <StarFilled
-                  key={i}
-                  style={{
-                    fontSize: "16px",
-                    color: i < fullStars ? "#faad14" : "#e8e8e8",
-                  }}
-                />
-              ))}
-              {partialStar > 0 && (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <div
-                    style={{
-                      width: `${partialStarWidth}%`,
-                      overflow: "hidden",
-                      position: "absolute",
-                    }}
-                  >
+              {[...Array(5)].map((_, i) => {
+                if (i < fullStars) {
+                  // Hiển thị sao đầy đủ
+                  return (
                     <StarFilled
+                      key={i}
                       style={{
                         fontSize: "16px",
                         color: "#faad14",
                       }}
                     />
-                  </div>
-                </div>
-              )}
+                  );
+                } else if (i === fullStars && partialStar > 0) {
+                  // Hiển thị sao lẻ
+                  const partialStarWidth = getPartialStarWidth(partialStar);
+                  return (
+                    <div
+                      key={i}
+                      style={{ position: "relative", display: "inline-block" }}
+                    >
+                      {/* Sao nền (màu xám) */}
+                      <StarFilled
+                        style={{
+                          fontSize: "16px",
+                          color: "#e8e8e8",
+                        }}
+                      />
+                      {/* Sao vàng che phủ một phần */}
+                      <div
+                        style={{
+                          width: `${partialStarWidth}%`,
+                          overflow: "hidden",
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                        }}
+                      >
+                        <StarFilled
+                          style={{
+                            fontSize: "16px",
+                            color: "#faad14",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <StarFilled
+                      key={i}
+                      style={{
+                        fontSize: "16px",
+                        color: "#e8e8e8",
+                      }}
+                    />
+                  );
+                }
+              })}
+
+              <span
+                style={{ marginLeft: "8px", color: "#666", fontSize: "14px" }}
+              >
+                ({rating.toFixed(1)})
+              </span>
             </div>
             <span style={{ color: "#666", fontSize: "14px" }}>
               | Đã bán {product.selled || 0}

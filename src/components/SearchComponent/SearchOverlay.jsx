@@ -16,6 +16,8 @@ import {
 } from "./style";
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
+import { useDisableScroll } from "../../hooks/useDisableScroll";
+import debounce from "lodash/debounce";
 
 const { Search } = Input;
 
@@ -34,6 +36,9 @@ const SearchOverlay = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isSearchOpen, toggleSearch } = useSearch();
+  useDisableScroll(isSearchOpen);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [productLoading, setProductLoading] = useState(false);
 
   // State từ SearchPage
   const [currentPage, setCurrentPage] = useState(1);
@@ -165,7 +170,6 @@ const SearchOverlay = () => {
       return;
     }
 
-    setLoading(true);
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_URL_BACKEND}/product/search?query=${query}`
@@ -192,18 +196,23 @@ const SearchOverlay = () => {
       setSuggestions([]);
     } finally {
       setLoading(false);
+      setSearchLoading(false);
     }
   };
 
   const handleSearch = (value) => {
     const searchParams = new URLSearchParams(location.search);
 
+    setProductLoading(true);
+
     if (!value.trim()) {
       searchParams.delete("search");
       dispatch(setSearchTerm(""));
+      setSearchLoading(false);
     } else {
       searchParams.set("search", value);
       dispatch(setSearchTerm(value));
+      setSearchLoading(true);
 
       const updatedSearches = [
         value,
@@ -218,6 +227,10 @@ const SearchOverlay = () => {
     });
 
     setLimit(8);
+
+    setTimeout(() => {
+      setProductLoading(false);
+    }, 1000);
   };
 
   const handleCloseSearch = useCallback(() => {
@@ -257,6 +270,29 @@ const SearchOverlay = () => {
     setLimit(8);
     fetchAllProducts();
   };
+
+  //Debounce Search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((query) => {
+        fetchSuggestions(query);
+        setSearchLoading(false);
+      }, 300),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    let timeoutId;
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   return (
     <>
@@ -304,7 +340,8 @@ const SearchOverlay = () => {
               if (!value.trim()) {
                 handleClearSearch();
               } else {
-                setTimeout(() => fetchSuggestions(value.trim()), 300);
+                setSearchLoading(true); // Hiển thị spinner ngay khi bắt đầu nhập
+                debouncedSearch(value.trim());
                 handleSearch(value.trim());
               }
             }}
@@ -327,7 +364,9 @@ const SearchOverlay = () => {
                 boxShadow: "0px 4px 8px rgba(0,0,0,0.1)",
               }}
               dataSource={
-                suggestions.length > 0
+                searchLoading
+                  ? [{ name: "loading", disabled: true }]
+                  : suggestions.length > 0
                   ? suggestions
                   : [{ name: "Không có sản phẩm", disabled: true }]
               }
@@ -350,7 +389,13 @@ const SearchOverlay = () => {
                     !item.disabled && handleSelectSuggestion(item.name)
                   }
                 >
-                  {loading ? <Spin /> : item.name}
+                  {searchLoading && item.name === "loading" ? (
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <Spin size="small" />
+                    </div>
+                  ) : (
+                    item.name
+                  )}
                 </List.Item>
               )}
             />
@@ -366,26 +411,55 @@ const SearchOverlay = () => {
       />
       <ProductsContainer>
         <MainContent>
-          {isLoading ? (
-            <p>Loading...</p>
+          {isLoading || productLoading ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "300px",
+              }}
+            >
+              <Spin size="large" tip="Đang tải sản phẩm..." />
+            </div>
           ) : filteredProducts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <p>Đang tải...</p>
+            <div
+              style={{
+                textAlign: "center",
+                padding: "40px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "16px",
+              }}
+            >
+              <img
+                src="/empty-state.png"
+                alt="Không có sản phẩm"
+                style={{ width: "120px", opacity: 0.7 }}
+              />
+              <p style={{ fontSize: "16px", color: "#666" }}>
+                Không tìm thấy sản phẩm phù hợp
+              </p>
+              <Button type="primary" onClick={handleClearSearch}>
+                Xóa bộ lọc
+              </Button>
             </div>
           ) : (
-            <CardComponent products={displayedProducts} />
-          )}
-
-          {totalFilteredProducts > limit && (
-            <WrapperButtonContainer>
-              <WrapperButtonMore
-                style={{ marginTop: 50 }}
-                type="default"
-                onClick={() => setLimit((prev) => prev + 8)}
-              >
-                Xem thêm
-              </WrapperButtonMore>
-            </WrapperButtonContainer>
+            <>
+              <CardComponent products={displayedProducts} />
+              {totalFilteredProducts > limit && (
+                <WrapperButtonContainer>
+                  <WrapperButtonMore
+                    style={{ marginTop: 50 }}
+                    type="default"
+                    onClick={() => setLimit((prev) => prev + 8)}
+                  >
+                    Xem thêm
+                  </WrapperButtonMore>
+                </WrapperButtonContainer>
+              )}
+            </>
           )}
         </MainContent>
       </ProductsContainer>

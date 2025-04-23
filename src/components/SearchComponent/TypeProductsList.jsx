@@ -7,18 +7,37 @@ const TypeProductsList = ({ types, selectedTypes, setSelectedTypes }) => {
     );
   };
 
+  const handleReset = () => {
+    setSelectedTypes([]);
+  };
+
   return (
-    <TypeListContainer>
-      {types.map((type) => (
-        <TypeButton
-          key={type}
-          $isSelected={selectedTypes.includes(type)}
-          onClick={() => handleTypeClick(type)}
-        >
-          {type}
-        </TypeButton>
-      ))}
-    </TypeListContainer>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "20px",
+        justifyContent: "center",
+        marginLeft: "50px",
+      }}
+    >
+      <TypeListContainer>
+        {types.map((type) => (
+          <TypeButton
+            key={type}
+            $isSelected={selectedTypes.includes(type)}
+            onClick={() => handleTypeClick(type)}
+          >
+            {type}
+          </TypeButton>
+        ))}
+      </TypeListContainer>
+
+      <ResetButton $visible={selectedTypes.length > 0} onClick={handleReset}>
+        Reset
+      </ResetButton>
+    </div>
   );
 };
 
@@ -29,7 +48,7 @@ const TypeListContainer = styled.div`
   gap: 8px;
   padding: 16px;
   justify-content: center;
-  background-color: #f8f8f8;
+  //background-color: #f8f8f8;
   border-radius: 8px;
   margin: 16px 0;
 `;
@@ -48,6 +67,18 @@ const TypeButton = styled.button`
     border-color: #1890ff;
     color: #1890ff;
   }
+`;
+
+const ResetButton = styled.button`
+  padding: 5px 10px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  visibility: ${(props) => (props.$visible ? "visible" : "hidden")};
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
 `;
 
 export default TypeProductsList;
