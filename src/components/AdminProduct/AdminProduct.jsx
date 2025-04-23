@@ -469,16 +469,28 @@ const AdminProduct = () => {
 
   useEffect(() => {}, [stateProduct.variants]);
 
-  const renderAction = () => {
+  const renderAction = (_, record) => {
+    const hasSales = record.selled > 0;
     return (
       <div>
         <EditOutlined
           style={{ color: "#9FCBFF", fontSize: "20px", cursor: "pointer" }}
-          onClick={handleDetailsPorduct}
+          onClick={() => handleDetailsPorduct(record._id)}
         />{" "}
         <DeleteOutlined
-          style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
-          onClick={handleDeleteProduct}
+          style={{
+            color: hasSales ? "#ccc" : "red",
+            fontSize: "20px",
+            cursor: hasSales ? "not-allowed" : "pointer",
+          }}
+          onClick={() => {
+            if (!hasSales) {
+              setRowSelected(record._id);
+              handleDeleteProduct();
+            } else {
+              message.warning("Không thể xóa sản phẩm đã có đơn hàng");
+            }
+          }}
         />
       </div>
     );
@@ -902,7 +914,7 @@ const AdminProduct = () => {
       dataIndex: "action",
       width: "5vw",
       align: "center",
-      render: renderAction,
+      render: (_, record) => renderAction(_, record),
     },
   ];
 

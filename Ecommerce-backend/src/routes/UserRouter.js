@@ -37,6 +37,12 @@ router.delete(
   authUserMiddleware,
   userController.deleteUser
 );
+router.delete(
+  "/delete/:userId",
+  authMiddleware,
+  authUserMiddleware,
+  userController.deleteUserAccount
+);
 router.get("/getAll", authMiddleware, userController.getAllUser);
 router.post("/change-password/", authMiddleware, userController.changePassword);
 router.get(
@@ -89,5 +95,18 @@ router.get("/:userId/address-info/:addressId", userController.getInfoAddress);
 //API mở/khóa tài khoản người dùng
 
 router.put("/block/:userId", userController.blockUser);
+
+//YÊU CẦU XÓA TÀI KHOẢN
+router.post(
+  "/request-delete",
+  authMiddleware,
+  userController.requestDeleteAccount
+);
+
+router.patch(
+  "/cancel-request-delete/:userId",
+  authUserMiddleware,
+  userController.cancelRequestDeleteAccount
+);
 
 module.exports = router;

@@ -7,6 +7,7 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 const { message } = require("antd");
 const MailService = require("../services/MailService");
 const mongoose = require("mongoose");
+const { default: axios } = require("axios");
 
 // Extend plugin customParseFormat
 dayjs.extend(customParseFormat);
@@ -56,7 +57,6 @@ const checkUserExistsByEmail = async (email) => {
 //__________________________________________________QUÊN MẬT KHẨU
 const forgotPassword = async (email, newPassword, confirmPassword) => {
   try {
-    // Kiểm tra email tồn tại
     const user = await User.findOne({ email });
     if (!user) {
       return {
@@ -65,7 +65,6 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       };
     }
 
-    // Kiểm tra độ dài mật khẩu
     if (newPassword.length < 5) {
       return {
         status: "WARNING",
@@ -73,7 +72,6 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       };
     }
 
-    // Kiểm tra xác nhận mật khẩu
     if (newPassword !== confirmPassword) {
       return {
         status: "ERROR",
@@ -81,7 +79,6 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       };
     }
 
-    // Hash mật khẩu và cập nhật
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
@@ -91,7 +88,7 @@ const forgotPassword = async (email, newPassword, confirmPassword) => {
       message: "Mật khẩu đã được cập nhật thành công!",
     };
   } catch (e) {
-    throw new Error("Có lỗi xảy ra khi đặt lại mật khẩu: " + e.message);
+    throw new Error("Lỗi khi đặt lại mật khẩu: " + e.message);
   }
 };
 
@@ -129,9 +126,17 @@ const sendNotificationBlockUserMail = async ({ email }) => {
 };
 
 //______________________HÀM TẠO CAPTCHA
-const validateCaptcha = (captcha) => {
-  // Kiểm tra mã CAPTCHA hợp lệ
-  return captcha === "1234"; // Thay bằng logic thật sự (Google reCAPTCHA)
+const validateCaptcha = async (captcha) => {
+  try {
+    const response = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captcha}`
+    );
+
+    return response.data.success;
+  } catch (error) {
+    console.error("CAPTCHA validation error:", error);
+    return false;
+  }
 };
 //_______________________________________________________________ĐĂNG NHẬP
 const loginUser = async ({ email, password, captcha }) => {
@@ -147,16 +152,24 @@ const loginUser = async ({ email, password, captcha }) => {
       return {
         status: "BLOCKED",
         message:
-          "Tài khoản của bạn đã bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng liên hệ quản trị viên để mở khóa.",
+          "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
       };
     }
 
-    if (checkUser.failedAttempts >= 3 && checkUser.failedAttempts < 5) {
-      if (!captcha || !validateCaptcha(captcha)) {
-        console.log("CHECK CAPTCHA");
+    // Nếu failedAttempts >= 5, yêu cầu CAPTCHA hợp lệ
+    if (checkUser.failedAttempts >= 5) {
+      if (!captcha) {
         return {
           status: "CAPTCHA_REQUIRED",
-          message: "Vui lòng nhập CAPTCHA để tiếp tục.",
+          message: "Vui lòng nhập mã CAPTCHA để tiếp tục.",
+        };
+      }
+
+      const isCaptchaValid = await validateCaptcha(captcha);
+      if (!isCaptchaValid) {
+        return {
+          status: "CAPTCHA_REQUIRED",
+          message: "Mã CAPTCHA không hợp lệ.",
         };
       }
     }
@@ -165,30 +178,24 @@ const loginUser = async ({ email, password, captcha }) => {
 
     if (!isMatch) {
       checkUser.failedAttempts += 1;
-      console.log("SỐ LẦN SAI MẬT KHẨU:", checkUser.failedAttempts);
 
-      if (checkUser.failedAttempts >= 5) {
-        const wasBlockedBefore = checkUser.isBlocked;
-
+      // Nếu nhập sai quá 10 lần => khóa tài khoản
+      if (checkUser.failedAttempts >= 10) {
         checkUser.isBlocked = true;
         await checkUser.save();
-        if (!wasBlockedBefore) {
-          const emailResponse = await sendNotificationBlockUserMail({
-            email: checkUser.email,
-          });
 
-          if (emailResponse.status === "ERROR") {
-            console.error(
-              "Lỗi khi gửi email thông báo:",
-              emailResponse.message
-            );
-          }
+        // Gửi email thông báo bị khóa
+        const emailResponse = await sendNotificationBlockUserMail({
+          email: checkUser.email,
+        });
+        if (emailResponse.status === "ERROR") {
+          console.error("Lỗi khi gửi email thông báo:", emailResponse.message);
         }
 
         return {
           status: "BLOCKED",
           message:
-            "Bạn đã nhập sai mật khẩu quá 5 lần, tài khoản của bạn đã bị khóa.",
+            "Bạn đã nhập sai mật khẩu quá nhiều lần. Tài khoản của bạn đã bị khóa.",
         };
       }
 
@@ -197,12 +204,12 @@ const loginUser = async ({ email, password, captcha }) => {
       return {
         status: "ERROR",
         message: `Tài khoản hoặc mật khẩu không chính xác! Bạn còn ${
-          5 - checkUser.failedAttempts
-        } lần thử.`,
+          10 - checkUser.failedAttempts
+        } lần thử trước khi bị khóa.`,
       };
     }
 
-    // ✅ Nếu đăng nhập đúng, reset số lần nhập sai và mở khóa tài khoản
+    // ✅ Đăng nhập đúng => reset lại mọi thứ
     checkUser.failedAttempts = 0;
     checkUser.isBlocked = false;
     await checkUser.save();

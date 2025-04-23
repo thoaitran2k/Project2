@@ -110,7 +110,16 @@ const userSchema = new mongoose.Schema(
         totalDiscount: { type: Number },
       },
     ],
+    requireDelete: {
+      type: Boolean,
+      default: false,
+    },
+    deleteRequestedAt: {
+      type: Date,
+      default: null,
+    },
   },
+
   {
     timestamps: true,
   }

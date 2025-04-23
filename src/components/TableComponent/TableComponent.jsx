@@ -34,8 +34,6 @@ const TableComponent = ({
     return flatColumns;
   }, [columns]);
 
-  console.log("Data source", dataSource, columns);
-
   // Ẩn hiệu ứng loading khi dữ liệu đã tải xong
   useEffect(() => {
     if (!isloading) {

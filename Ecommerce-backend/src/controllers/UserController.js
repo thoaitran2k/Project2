@@ -71,11 +71,16 @@ const blockUser = async (req, res) => {
     const { userId } = req.params;
     const { isBlocked } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { isBlocked },
-      { new: true }
-    );
+    const updateData = { isBlocked };
+
+    // Nếu mở khóa thì reset failedAttempts
+    if (isBlocked === false) {
+      updateData.failedAttempts = 0;
+    }
+
+    const user = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
 
     if (!user) {
       return res.status(404).json({ message: "Người dùng không tồn tại!" });
@@ -261,6 +266,7 @@ const forgotPassword = async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
 
+    // Kiểm tra đầu vào cơ bản
     if (!email || !newPassword || !confirmPassword) {
       return res.status(400).json({
         status: "ERROR",
@@ -275,33 +281,23 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json({
-        status: "ERROR",
-        message: "Mật khẩu mới và xác nhận mật khẩu không khớp!",
-      });
+    const result = await UserService.forgotPassword(
+      email,
+      newPassword,
+      confirmPassword
+    );
+
+    // Trả về response theo result
+    if (result.status === "OK") {
+      return res.status(200).json(result);
+    } else if (result.status === "WARNING") {
+      return res.status(400).json(result);
+    } else {
+      return res.status(404).json(result);
     }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        status: "ERROR",
-        message: "Người dùng không tồn tại!",
-      });
-    }
-
-    // Hash mật khẩu mới trước khi cập nhật
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    await User.updateOne({ email }, { password: hashedPassword });
-
-    return res.status(200).json({
-      status: "SUCCESS",
-      message: "Cập nhật mật khẩu thành công!",
-    });
   } catch (e) {
     return res.status(500).json({
+      status: "ERROR",
       message: "Có lỗi xảy ra khi đặt lại mật khẩu!",
       error: e.message,
     });
@@ -312,7 +308,7 @@ const forgotPassword = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captcha } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -327,7 +323,7 @@ const loginUser = async (req, res) => {
         .json({ status: "WARNING", message: "Email không hợp lệ!" });
     }
 
-    const checkUser = await UserService.loginUser({ email, password });
+    const checkUser = await UserService.loginUser({ email, password, captcha });
 
     if (checkUser.status === "BLOCKED") {
       return res.status(403).json({
@@ -342,6 +338,13 @@ const loginUser = async (req, res) => {
         message: "Đăng nhập thành công!",
         accessToken: checkUser.accessToken,
         refreshToken: checkUser.refreshToken,
+      });
+    }
+
+    if (checkUser.status === "CAPTCHA_REQUIRED") {
+      return res.status(403).json({
+        status: "CAPTCHA_REQUIRED",
+        message: checkUser.message,
       });
     }
 
@@ -518,6 +521,34 @@ const deleteUser = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error deleting user", error: e.message });
+  }
+};
+
+const deleteUserAccount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Kiểm tra xem user có yêu cầu xóa không
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    if (!user.requireDelete) {
+      return res.status(400).json({
+        message: "Người dùng chưa yêu cầu xóa tài khoản",
+      });
+    }
+
+    // Thực hiện xóa user
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      message: "Đã xóa tài khoản thành công",
+    });
+  } catch (err) {
+    console.error("Lỗi khi xóa tài khoản:", err);
+    return res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -757,6 +788,58 @@ const getInfoAddress = async (req, res) => {
   }
 };
 
+const requestDeleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+
+    if (user.requireDelete)
+      return res
+        .status(400)
+        .json({ message: "Bạn đã yêu cầu xóa tài khoản trước đó." });
+
+    user.requireDelete = true;
+    user.deleteRequestedAt = new Date();
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ message: "Yêu cầu xóa tài khoản đã được ghi nhận." });
+  } catch (err) {
+    console.error("Lỗi yêu cầu xóa tài khoản:", err);
+    return res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
+const cancelRequestDeleteAccount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+
+    if (!user.requireDelete)
+      return res
+        .status(400)
+        .json({ message: "Tài khoản này không có yêu cầu xóa." });
+
+    user.requireDelete = false;
+    user.deleteRequestedAt = null;
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ message: "Đã hủy yêu cầu xóa tài khoản thành công." });
+  } catch (err) {
+    console.error("Lỗi khi hủy yêu cầu xóa:", err);
+    return res.status(500).json({ message: "Lỗi server." });
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -779,4 +862,7 @@ module.exports = {
   blockUser,
   sendNotificationBlockUserMail,
   updateCart,
+  requestDeleteAccount,
+  cancelRequestDeleteAccount,
+  deleteUserAccount,
 };

@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import axios from "axios";
 import { updateAddress } from "../../Services/UserService";
 import { resetCart } from "./cartSlice";
+import { message } from "antd";
 
 // ✅ Lấy user từ localStorage nếu có
 const getUserFromLocalStorage = () => {
@@ -144,6 +145,68 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
+export const requestDeleteAccount = createAsyncThunk(
+  "user/requestDeleteAccount",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { user } = getState();
+      const response = await axios.post(
+        "http://localhost:3002/api/user/request-delete",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const cancelDeleteRequest = createAsyncThunk(
+  "user/cancelDeleteRequest",
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { user } = getState();
+      const response = await axios.patch(
+        `http://localhost:3002/api/user/cancel-request-delete/${userId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const confirmDeleteAccount = createAsyncThunk(
+  "user/confirmDeleteAccount",
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { user } = getState();
+      const response = await axios.delete(
+        `http://localhost:3002/api/user/delete/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = getUserFromLocalStorage() || {
   isAuthenticated: false,
   _id: null,
@@ -161,6 +224,8 @@ const initialState = getUserFromLocalStorage() || {
   isBlocked: false,
   orderHistory: [],
   orders: [],
+  requireDelete: false,
+  deleteRequestedAt: null,
 };
 
 const getInitialState = () => ({
@@ -188,6 +253,11 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
+    setDeleteRequest: (state, action) => {
+      state.requireDelete = action.payload.requireDelete;
+      state.deleteRequestedAt = action.payload.deleteRequestedAt;
+      localStorage.setItem("user", JSON.stringify(state));
+    },
     setUser: (state, action) => {
       const userData = action.payload;
 
@@ -350,6 +420,45 @@ const userSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      .addCase(cancelDeleteRequest.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(cancelDeleteRequest.fulfilled, (state, action) => {
+        state.requireDelete = false;
+        state.deleteRequestedAt = null;
+        localStorage.setItem("user", JSON.stringify(state));
+        state.isLoading = false;
+        message.success("Đã hủy yêu cầu xóa tài khoản");
+      })
+      .addCase(cancelDeleteRequest.rejected, (state, action) => {
+        state.isLoading = false;
+        message.error(action.payload?.message || "Hủy yêu cầu thất bại");
+      })
+      .addCase(confirmDeleteAccount.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(confirmDeleteAccount.fulfilled, (state, action) => {
+        state.isLoading = false;
+        message.success("Đã xóa tài khoản thành công");
+      })
+      .addCase(confirmDeleteAccount.rejected, (state, action) => {
+        state.isLoading = false;
+        message.error(action.payload?.message || "Xóa tài khoản thất bại");
+      })
+      .addCase(requestDeleteAccount.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(requestDeleteAccount.fulfilled, (state, action) => {
+        state.requireDelete = true;
+        state.deleteRequestedAt = new Date().toISOString();
+        localStorage.setItem("user", JSON.stringify(state));
+        state.isLoading = false;
+      })
+      .addCase(requestDeleteAccount.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
       .addCase(fetchCart.fulfilled, (state, action) => {})
       .addCase(logoutUser.fulfilled, (state) => {
         return getInitialState();
@@ -450,5 +559,6 @@ export const {
   updateAddresses,
   setUserAddresses,
   removeUserAddress,
+  setDeleteRequest,
 } = userSlice.actions;
 export default userSlice.reducer;

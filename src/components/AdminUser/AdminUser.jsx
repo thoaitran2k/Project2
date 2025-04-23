@@ -38,6 +38,10 @@ import axios from "axios";
 import { Swal } from "sweetalert2/dist/sweetalert2";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import {
+  cancelDeleteRequest,
+  confirmDeleteAccount,
+} from "../../redux/slices/userSlice";
 dayjs.extend(customParseFormat);
 
 const AdminUser = () => {
@@ -322,6 +326,38 @@ const AdminUser = () => {
     confirm();
   };
 
+  //XÁC NHẬN XÓA TÀI KHOẢN
+  const handleConfirmDelete = async (userId) => {
+    Modal.confirm({
+      title: "Xác nhận xóa tài khoản",
+      content:
+        "Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await dispatch(confirmDeleteAccount(userId)).unwrap();
+          // Refresh danh sách người dùng sau khi xóa thành công
+          dispatch(getAllUsers());
+        } catch (error) {
+          message.error(error.message || "Xóa tài khoản thất bại");
+        }
+      },
+    });
+  };
+
+  //HỦY XÓA
+  const handleCancelDelete = async (userId) => {
+    try {
+      await dispatch(cancelDeleteRequest(userId)).unwrap();
+      // Refresh danh sách người dùng sau khi hủy thành công
+      dispatch(getAllUsers());
+    } catch (error) {
+      message.error(error.message || "Hủy yêu cầu thất bại");
+    }
+  };
+
   //________________________________________________________DỮ LIỆU BẢNG
   //_________________________________________________CÁCH FILTER
   //__________________________________________SERACH
@@ -414,7 +450,9 @@ const AdminUser = () => {
       dataIndex: "_id",
       align: "center",
       render: (id, record) => {
-        if (!record._id) return null; // Hàng trống, trả về null
+        if (!record._id) return null;
+        const hasOrders = record.orderHistory && record.orderHistory.length > 0;
+
         return (
           <div>
             <EditOutlined
@@ -425,10 +463,23 @@ const AdminUser = () => {
               }}
               onClick={() => handleDetailsUser(id)}
             />{" "}
-            <DeleteOutlined
-              style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
-              onClick={() => handleDeleteUser(id)}
-            />
+            <Tooltip
+              title={hasOrders ? "Không thể xóa người dùng có đơn hàng" : ""}
+            >
+              <DeleteOutlined
+                style={{
+                  color: hasOrders ? "gray" : "red",
+                  fontSize: "20px",
+                  cursor: hasOrders ? "not-allowed" : "pointer",
+                  opacity: hasOrders ? 0.5 : 1,
+                }}
+                onClick={() => {
+                  if (!hasOrders) {
+                    handleDeleteUser(id);
+                  }
+                }}
+              />
+            </Tooltip>
             {!record.isAdmin && (
               <LockOutlined
                 style={{
@@ -443,6 +494,38 @@ const AdminUser = () => {
         );
       },
     },
+    {
+      title: "RequireDelete",
+      dataIndex: "requireDelete",
+      align: "center",
+      render: (requireDelete, record) => {
+        if (!record._id || !requireDelete) return null;
+
+        return (
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <Tooltip title="Xác nhận xóa tài khoản">
+              <Button
+                danger
+                size="small"
+                onClick={() => handleConfirmDelete(record._id)}
+              >
+                Xác nhận
+              </Button>
+            </Tooltip>
+            <Tooltip title="Hủy yêu cầu xóa">
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleCancelDelete(record._id)}
+              >
+                Hủy
+              </Button>
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+
     {
       title: "Status",
       dataIndex: "isBlocked",

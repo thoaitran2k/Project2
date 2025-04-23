@@ -72,9 +72,13 @@ const ProductList = ({ productType }) => {
     return <div style={{ padding: "20px" }}>Không có sản phẩm tương tự</div>;
   }
 
-  const productSimilars = products.filter(
+  const productList = Array.isArray(products) ? products : products?.data || [];
+
+  const productSimilars = productList?.filter(
     (product) => product.type === productType
   );
+
+  console.log("productSimilars", productSimilars);
 
   return (
     <Loading>

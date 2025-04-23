@@ -2,11 +2,12 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_URL_BACKEND;
 
-export const loginUser = async (email, password) => {
+export const loginUser = async ({ email, password, captcha }) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/user/sign-in`, {
       email,
       password,
+      captcha,
     });
     return response.data;
   } catch (error) {

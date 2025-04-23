@@ -222,7 +222,9 @@ const HomePage = () => {
               <BannerContent>
                 <BannerTitle>Tận hưởng trải nghiệm mua sắm tại đây</BannerTitle>
                 <BannerSubtitle>Túi xách</BannerSubtitle>
-                <BannerButton onClick={() => navigate("/product-type/vi")}>
+                <BannerButton
+                  onClick={() => navigate("/product-type/tui-xach")}
+                >
                   Mua ngay
                 </BannerButton>
               </BannerContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
@@ -27,6 +27,7 @@ import {
   signUpUser,
 } from "../../Services/UserService";
 import Loading from "../../components/LoadingComponent/Loading";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function SignInPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -36,6 +37,9 @@ export default function SignInPage() {
   const [step, setStep] = useState(1);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginFailCount, setLoginFailCount] = useState(0);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   const [resetPassword, setResetPassword] = useState({
     newPassword: "",
@@ -44,6 +48,7 @@ export default function SignInPage() {
 
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading.isLoading);
+  const recaptchaRef = useRef(null);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -79,6 +84,13 @@ export default function SignInPage() {
       newPassword: "",
       confirmNewPassword: "",
     });
+  };
+
+  const resetCaptcha = () => {
+    if (recaptchaRef.current) {
+      recaptchaRef.current.reset();
+    }
+    setCaptchaToken(null);
   };
 
   const handleDateChange = (date, dateString) => {
@@ -132,13 +144,26 @@ export default function SignInPage() {
       return;
     }
 
+    if (showCaptcha && !captchaToken) {
+      message.error("Vui lòng xác minh CAPTCHA!");
+      return;
+    }
+
     dispatch(setLoading(true));
 
     try {
-      const response = await loginUser(formData.email, formData.password);
+      const response = await loginUser({
+        email: formData.email,
+        password: formData.password,
+        captcha: captchaToken,
+      });
 
       if (response.status === "OK") {
         const { accessToken, refreshToken } = response;
+
+        setLoginFailCount(0);
+        setShowCaptcha(false);
+        setCaptchaToken(null);
 
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
@@ -192,8 +217,29 @@ export default function SignInPage() {
           const redirectPath = location.state?.from || "/home";
           navigate(redirectPath);
         }, 500);
+      } else if (response.status === "CAPTCHA_REQUIRED") {
+        setShowCaptcha(true);
+        setCaptchaToken(null);
+        message.error(response.message);
+      } else {
+        const count = loginFailCount + 1;
+        setLoginFailCount(count);
+
+        if (count >= 5) {
+          setShowCaptcha(true);
+          resetCaptcha();
+        }
+        message.error(response.message || "Đăng nhập thất bại");
       }
     } catch (errorMsg) {
+      const count = loginFailCount + 1;
+      setLoginFailCount(count);
+
+      if (count >= 5) {
+        setShowCaptcha(true);
+        resetCaptcha();
+      }
+
       message.error(errorMsg);
     } finally {
       setTimeout(() => {
@@ -610,7 +656,15 @@ export default function SignInPage() {
                 Quên mật khẩu?
               </ToggleButton>
             ) : null}
-
+            {showCaptcha && (
+              <div style={{ margin: "16px 0" }}>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey="6LcBACIrAAAAAMvAP82b82BHf-q53atm0jAJMUTX"
+                  onChange={(token) => setCaptchaToken(token)}
+                />
+              </div>
+            )}
             {isForgot ? (
               step === 3 ? (
                 <SubmitButton type="button" onClick={handleUpdatePassword}>

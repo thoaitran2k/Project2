@@ -24,7 +24,7 @@ import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
 import { changePasswordUser, updateUser } from "../../Services/UserService";
 import { setLoading } from "../../redux/slices/loadingSlice";
-import { setUser } from "../../redux/slices/userSlice";
+import { requestDeleteAccount, setUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
 import { getBase64 } from "../../utils/UploadAvatar";
 import axios from "axios";
@@ -40,6 +40,7 @@ const ProfileForm = () => {
 
   const [isPhoneModalVisible, setIsPhoneModalVisible] = useState(false);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
 
   // Lấy dữ liệu từ Redux
   const user = useSelector((state) => state.user);
@@ -103,6 +104,10 @@ const ProfileForm = () => {
       <div style={{ marginTop: 8 }}>Upload</div>
     </div>
   );
+
+  const handleRequestDelete = () => {
+    setIsDeleteConfirmVisible(true);
+  };
 
   useEffect(() => {
     if (user) {
@@ -248,6 +253,16 @@ const ProfileForm = () => {
     }
   };
 
+  const confirmDeleteRequest = async () => {
+    try {
+      await dispatch(requestDeleteAccount()).unwrap();
+      message.success("Yêu cầu xóa tài khoản đã được gửi thành công");
+      setIsDeleteConfirmVisible(false);
+    } catch (error) {
+      message.error(error.message || "Có lỗi xảy ra khi gửi yêu cầu");
+    }
+  };
+
   return (
     <Loading>
       <Form
@@ -355,9 +370,59 @@ const ProfileForm = () => {
               Đổi mật khẩu
             </Button>
             <h3>Yêu cầu xóa tài khoản</h3>
-            <Button type="primary" danger>
-              Yêu cầu
-            </Button>
+            {user.isAdmin ? (
+              <div>
+                <p style={{ color: "gray", fontStyle: "italic" }}>
+                  Tài khoản admin không thể yêu cầu xóa
+                </p>
+                <Button type="primary" danger disabled>
+                  Yêu cầu xóa tài khoản
+                </Button>
+              </div>
+            ) : user.requireDelete ? (
+              <div>
+                <p style={{ color: "red" }}>
+                  Bạn đã yêu cầu xóa tài khoản vào{" "}
+                  {new Date(user.deleteRequestedAt).toLocaleString()}
+                </p>
+                <Button type="primary" danger disabled>
+                  Đã yêu cầu
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button type="primary" danger onClick={handleRequestDelete}>
+                  Yêu cầu xóa tài khoản
+                </Button>
+                <Modal
+                  title="Xác nhận yêu cầu xóa tài khoản"
+                  open={isDeleteConfirmVisible}
+                  onCancel={() => setIsDeleteConfirmVisible(false)}
+                  footer={[
+                    <Button
+                      key="cancel"
+                      onClick={() => setIsDeleteConfirmVisible(false)}
+                    >
+                      Hủy
+                    </Button>,
+                    <Button
+                      key="submit"
+                      type="primary"
+                      danger
+                      onClick={confirmDeleteRequest}
+                    >
+                      Xác nhận
+                    </Button>,
+                  ]}
+                >
+                  <p>Bạn có chắc chắn muốn yêu cầu xóa tài khoản?</p>
+                  <p style={{ color: "red" }}>
+                    Lưu ý: Tài khoản sẽ bị xóa sau khi yêu cầu được xử lý. Bạn
+                    sẽ không thể hoàn tác hành động này.
+                  </p>
+                </Modal>
+              </>
+            )}
           </Col>
         </Row>
       </Form>
