@@ -120,7 +120,13 @@ const productsComponent = ({ product }) => {
     }
 
     // Tạo id dựa trên biến thể
-    const id = [product._id, selectedSize, selectedColor, selectedDiameter]
+    const id = [
+      product._id,
+      selectedSize,
+      selectedColor,
+      selectedDiameter,
+      "buyNow",
+    ]
       .filter(Boolean)
       .join("-");
 
