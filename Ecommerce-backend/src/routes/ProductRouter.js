@@ -319,7 +319,7 @@ router.put("/:id/update-rating", async (req, res) => {
 //LẤY SẢN PHẨM ĐƯỢC MUA NHIỀU NHẤT
 router.get("/top-sell", async (req, res) => {
   try {
-    const topProducts = await Product.find().sort({ selled: -1 }).limit(5);
+    const topProducts = await Product.find().sort({ selled: -1 }).limit(8);
 
     const topTypes = await Product.aggregate([
       {

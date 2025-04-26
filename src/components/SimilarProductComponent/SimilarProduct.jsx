@@ -52,7 +52,7 @@ const ProductCard = ({ productSimilar }) => {
   );
 };
 
-const ProductList = ({ productType }) => {
+const ProductList = ({ productType, excludeId }) => {
   const carouselRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ const ProductList = ({ productType }) => {
   const productList = Array.isArray(products) ? products : products?.data || [];
 
   const productSimilars = productList?.filter(
-    (product) => product.type === productType
+    (product) => product.type === productType && product._id !== excludeId
   );
 
   console.log("productSimilars", productSimilars);

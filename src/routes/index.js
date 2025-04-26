@@ -14,6 +14,7 @@ import OrderDetailsPage from "../pages/OrderDetailsPage/OrderDetailsPage";
 import MomoReturn from "../components/Checkout/momo-return";
 import FemaleCollectionPage from "../pages/CollectionPage/FemaleCollectionPage";
 import BestSellingProducts from "../pages/BestSellProducts/BestSellingProducts";
+import CollectionPage from "../pages/CollectionPage/CollectionPage";
 
 export const routes = [
   //PAGE
@@ -106,8 +107,8 @@ export const routes = [
   },
   //COLLECTIONPAGE
   {
-    path: "/nu",
-    page: FemaleCollectionPage,
+    path: "/collection/:gender",
+    page: CollectionPage,
     isShowHeader: true,
     isShowFooter: true,
   },

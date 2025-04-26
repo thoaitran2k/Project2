@@ -30,7 +30,6 @@ const NavbarComponent = ({
       items: ["Túi xách nữ", "Trang sức nữ"],
     },
     { title: "Phụ kiện thời trang cho nam", items: ["Ví", "Đồng hồ"] },
-    { title: "Dịch vụ", items: ["Chăm sóc khách hàng", "Liên hệ trả hàng"] },
   ];
 
   const viewedCategories = topSellByType
@@ -189,14 +188,11 @@ const NavbarComponent = ({
         <Divider style={{ margin: "16px 0" }} />
 
         <GenderCategories>
-          <GenderCategory onClick={() => handleNavigate("/nu")}>
+          <GenderCategory onClick={() => handleNavigate("/collection/nu")}>
             Dành cho Nữ
           </GenderCategory>
-          <GenderCategory onClick={() => handleNavigate("/nam")}>
+          <GenderCategory onClick={() => handleNavigate("/collection/nam")}>
             Dành cho Nam
-          </GenderCategory>
-          <GenderCategory onClick={() => handleNavigate("/trang-suc")}>
-            Dành cho Trang sức
           </GenderCategory>
         </GenderCategories>
       </SupportInfo>

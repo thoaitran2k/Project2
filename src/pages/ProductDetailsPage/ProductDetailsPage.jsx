@@ -78,7 +78,7 @@ const ProductDetailsPage = () => {
         ) : productDetail?.status === "OK" ? (
           <>
             <ProductDetailsComponent product={productDetail.data} />
-            <ProductList productType={productType} />
+            <ProductList productType={productType} excludeId={productId} />
             <h2>Comments</h2>
             <ReviewComponent
               productId={productId}

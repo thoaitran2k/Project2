@@ -1,4 +1,4 @@
-import { Row, Col, Image, Breadcrumb, message } from "antd";
+import { Row, Col, Button, message, Modal, Radio, Space } from "antd";
 import React, { useEffect, useState } from "react";
 import imageProduct from "../../assets/aonam.jpg";
 import imageSmallProduct from "../../assets/vi.jpg";
@@ -72,6 +72,11 @@ const productsComponent = ({ product }) => {
     isPants ? availablePantsSizes : availableShirtSizes
   );
 
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(
+    defaultAddress?._id || null
+  );
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,6 +85,28 @@ const productsComponent = ({ product }) => {
   const uniqueColors = [
     ...new Set(product.variants?.map((variant) => variant.color)),
   ];
+
+  const showAddressModal = () => {
+    setIsAddressModalVisible(true);
+  };
+
+  const handleAddressOk = () => {
+    setIsAddressModalVisible(false);
+  };
+
+  const handleAddressCancel = () => {
+    setIsAddressModalVisible(false);
+  };
+
+  const getDisplayAddress = () => {
+    if (selectedAddressId) {
+      const selected = user.address?.find(
+        (addr) => addr._id === selectedAddressId
+      );
+      return selected?.address || defaultAddress?.address;
+    }
+    return defaultAddress?.address || "Chưa có địa chỉ mặc định";
+  };
 
   const handleCheckout = async () => {
     if (!user.isAuthenticated) {
@@ -130,6 +157,10 @@ const productsComponent = ({ product }) => {
       .filter(Boolean)
       .join("-");
 
+    const selectedAddress =
+      user.address?.find((addr) => addr._id === selectedAddressId) ||
+      defaultAddress ||
+      user.address?.[0];
     // Giữ nguyên cấu trúc, chỉ thêm id
     const checkoutItem = {
       id,
@@ -149,13 +180,17 @@ const productsComponent = ({ product }) => {
 
     console.log("checkoutItem", checkoutItem);
 
+    if (!selectedAddress) {
+      message.error("Vui lòng chọn địa chỉ giao hàng trước khi thanh toán");
+      return;
+    }
+
     navigate("/checkout", {
       state: {
         selectedItems: [checkoutItem],
         total: product.price * quantityPay,
         discount: (product.price * (product.discount || 0) * quantityPay) / 100,
-        selectedAddress:
-          user.address?.find((addr) => addr.isDefault) || user.address?.[0],
+        selectedAddress: selectedAddress,
         directCheckout: true,
       },
     });
@@ -634,23 +669,60 @@ const productsComponent = ({ product }) => {
             }}
           >
             <span style={{ color: "#666" }}>Giao đến </span>
-            <span style={{ fontWeight: 500 }}>
-              {defaultAddress
-                ? defaultAddress.address
-                : "Chưa có địa chỉ mặc định"}
-            </span>
+            <span style={{ fontWeight: 500 }}>{getDisplayAddress()}</span>
             <span
               style={{
                 color: "#1890ff",
                 marginLeft: "8px",
                 cursor: "pointer",
-                ":hover": { textDecoration: "underline" },
               }}
+              onClick={
+                defaultAddress
+                  ? showAddressModal
+                  : () => navigate("/profile/address")
+              }
             >
-              Đổi địa chỉ
+              {defaultAddress ? "Đổi địa chỉ" : "Thêm địa chỉ"}
             </span>
-          </div>
 
+            {/* Modal chọn địa chỉ */}
+            <Modal
+              title="Chọn địa chỉ giao hàng"
+              open={isAddressModalVisible}
+              onOk={handleAddressOk}
+              onCancel={handleAddressCancel}
+              footer={[
+                <Button key="add" onClick={() => navigate("/profile/address")}>
+                  Thêm địa chỉ mới
+                </Button>,
+                <Button key="submit" type="primary" onClick={handleAddressOk}>
+                  Xác nhận
+                </Button>,
+              ]}
+            >
+              <Radio.Group
+                onChange={(e) => setSelectedAddressId(e.target.value)}
+                value={selectedAddressId}
+              >
+                <Space direction="vertical">
+                  {user.address?.map((addr) => (
+                    <Radio key={addr._id} value={addr._id}>
+                      <div>
+                        <strong>{addr.name}</strong> - {addr.phoneDelivery}
+                        <br />
+                        {addr.address}
+                        {addr.isDefault && (
+                          <span style={{ color: "#1890ff", marginLeft: "8px" }}>
+                            (Mặc định)
+                          </span>
+                        )}
+                      </div>
+                    </Radio>
+                  ))}
+                </Space>
+              </Radio.Group>
+            </Modal>
+          </div>
           {/* Color Selection */}
           <div style={{ marginBottom: "24px" }}>
             <h3
