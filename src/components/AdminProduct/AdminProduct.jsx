@@ -60,12 +60,12 @@ const AdminProduct = () => {
 
   //COLOR_____________________________________
   const colorMap = {
-    Hồng: "#FF69B4",
-    Nâu: "#8B4513",
+    Hồng: "#E0D2D1",
+    Nâu: "#8E7766",
     Đen: "#000000",
     Trắng: "#FFFFFF",
-    "Xanh dương": "#0000FF",
-    "Xanh lá": "#008000",
+    "Xanh dương": "#B5C6DF",
+    "Xanh lá": "#5F604E",
     Vàng: "#FFD700",
   };
 

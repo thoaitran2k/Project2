@@ -97,13 +97,13 @@ const ProductsPage = () => {
   }, [location.search]);
 
   const fetchProductAll = async ({ queryKey }) => {
-    const [, limit, page, selectedTypes] = queryKey; // Nhận selectedTypes từ queryKey
+    const [, limit, page, selectedTypes] = queryKey;
 
     try {
       const res = await ProductService.getAllProduct({
-        limit: 1000, // 🚀 Lấy toàn bộ sản phẩm để filter cục bộ
-        page: 1, // 🚀 Đảm bảo lấy tất cả sản phẩm
-        type: selectedTypes.length > 0 ? selectedTypes : undefined, // 🏷 Truyền danh mục nếu có
+        limit: 1000,
+        page: 1,
+        type: selectedTypes.length > 0 ? selectedTypes : undefined,
       });
       return res;
     } catch (error) {
@@ -117,7 +117,7 @@ const ProductsPage = () => {
     data: products = { data: [], total: 0 },
     refetch,
   } = useQuery({
-    queryKey: ["products", limit, currentPage, selectedTypes], // 🆕 Theo dõi selectedTypes
+    queryKey: ["products", limit, currentPage, selectedTypes],
     queryFn: fetchProductAll,
     retry: 3,
     retryDelay: 1000,
@@ -125,7 +125,7 @@ const ProductsPage = () => {
 
   useEffect(() => {
     if (products?.data) {
-      dispatch(setProducts(products.data)); // Cập nhật Redux mỗi khi dữ liệu thay đổi
+      dispatch(setProducts(products.data));
     }
   }, [products, dispatch]);
 

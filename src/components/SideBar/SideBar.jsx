@@ -12,6 +12,8 @@ const SideBar = ({
   setSelectedTypes,
   onPriceFilter,
   onRatingFilter,
+  types = [],
+  formattedType,
 }) => {
   const [type, setType] = useState([]);
 
@@ -70,6 +72,8 @@ const SideBar = ({
     }
     setSearchParams(newSearchParams, { replace: true });
   };
+
+  const isSaleOffPage = location.pathname === "/sale-off";
 
   const renderStars = (count, label) => {
     const stars = [];
@@ -164,25 +168,36 @@ const SideBar = ({
   // console.log("products", products);
 
   const filteredType = useMemo(() => {
+    if (isSaleOffPage && types.length > 0) {
+      return type.map((item) => ({
+        ...item,
+        disabled: !types.includes(item.value),
+      }));
+    }
+
     if (isTypeProductPage) {
       return type.filter(
         (item) => normalizeText(item.value) === selectedTypeFromUrl
-      ); // Chỉ hiển thị danh mục khớp với URL
+      );
     }
 
-    // Nếu không có tìm kiếm, trả về toàn bộ danh mục
     if (!searchTerm.trim()) return type;
 
-    // Lọc danh mục dựa trên sản phẩm có liên quan đến từ khóa tìm kiếm
     const filteredProducts = products.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    //console.log("filteredProducts", filteredProducts);
-
     const matchedTypes = new Set(filteredProducts.map((p) => p.type));
     return type.filter((item) => matchedTypes.has(item.value));
-  }, [searchTerm, type, products, isTypeProductPage, selectedTypeFromUrl]);
+  }, [
+    searchTerm,
+    type,
+    products,
+    isTypeProductPage,
+    selectedTypeFromUrl,
+    types,
+    isSaleOffPage,
+  ]);
 
   const handleCategoryChange = useCallback(
     (values) => {
@@ -221,24 +236,28 @@ const SideBar = ({
           isTypeProductPage || searchTerm.trim() ? (
             // Nếu có tìm kiếm, hiển thị danh sách có thể click
             <CategoryList>
-              {filteredType.map((item) => (
-                <CategoryItem
-                  key={item.value}
-                  onClick={() => {
-                    const newSelectedTypes = selectedTypes.includes(item.value)
-                      ? selectedTypes.filter((type) => type !== item.value)
-                      : [...selectedTypes, item.value];
+              {filteredType
+                .filter((item) => !isSaleOffPage || !item.disabled)
+                .map((item) => (
+                  <CategoryItem
+                    key={item.value}
+                    onClick={() => {
+                      if (isTypeProductPage) return;
+                      if (item.disabled) return;
 
-                    setSelectedTypes(newSelectedTypes);
+                      const newSelectedTypes = selectedTypes.includes(
+                        item.value
+                      )
+                        ? selectedTypes.filter((type) => type !== item.value)
+                        : [...selectedTypes, item.value];
 
-                    //console.log("newSelectedTypes", newSelectedTypes);
-                    //handleCategoryChange(newSelectedTypes);
-                  }}
-                  isSelected={selectedTypes.includes(item.value)}
-                >
-                  {item.label}
-                </CategoryItem>
-              ))}
+                      setSelectedTypes(newSelectedTypes);
+                    }}
+                    isSelected={selectedTypes.includes(item.value)}
+                  >
+                    {item.label}
+                  </CategoryItem>
+                ))}
             </CategoryList>
           ) : (
             <StyledCheckboxGroup
@@ -323,13 +342,14 @@ const CategoryList = styled.ul`
 const CategoryItem = styled.li`
   font-size: 15px;
   padding: 10px;
-  cursor: pointer;
+  cursor: pointer; // 🖐 Luôn có cursor pointer
   border-radius: 5px;
   background: ${({ isSelected }) => (isSelected ? "#1890ff" : "#fff")};
   color: ${({ isSelected }) => (isSelected ? "#fff" : "#000")};
   transition: 0.3s;
+
   &:hover {
-    background: #f0f0f0;
+    background: #f0f0f0; // 🧹 Hover bình thường
   }
 `;
 

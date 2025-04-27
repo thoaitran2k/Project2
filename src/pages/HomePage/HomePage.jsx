@@ -44,7 +44,7 @@ const HomePage = () => {
 
   const promotions = [
     {
-      title: "30% Off Winter Sale",
+      title: "15% Off Hot Sale",
       image: shop1Banner,
       buttonText: "Xem ngay",
     },
@@ -79,6 +79,26 @@ const HomePage = () => {
       buttonText: "Truy cập ngay",
     },
   ];
+
+  const handleClick = (promo) => {
+    switch (promo.title) {
+      case "15% Off Hot Sale":
+        console.log("👉 Chuyển đến trang giảm giá!");
+        navigate("/sale-off");
+        break;
+      case "Baby & Kids Clothings":
+        console.log("👉 Chuyển đến danh mục quần áo trẻ em!");
+        // navigate("/kids-clothing");
+        break;
+      case "#1 eCommerce Platform":
+        console.log("👉 Xem testimonies!");
+        // navigate("/testimonials");
+        break;
+      default:
+        console.log(`👉 Clicked: ${promo.title}`);
+      // navigate("/some-default-page");
+    }
+  };
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -269,7 +289,9 @@ const HomePage = () => {
                 {promo.subtitle && (
                   <PromotionSubtitle>{promo.subtitle}</PromotionSubtitle>
                 )}
-                <PromotionButton>{promo.buttonText}</PromotionButton>
+                <PromotionButton onClick={() => handleClick(promo)}>
+                  {promo.buttonText}
+                </PromotionButton>
               </PromotionOverlay>
             </PromotionCard>
           ))}

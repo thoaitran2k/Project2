@@ -341,4 +341,25 @@ router.get("/top-sell", async (req, res) => {
   }
 });
 
+//LẤY SẢN PHẨM CÓ GIẢM GIÁ N%
+router.get("/discount-15", async (req, res) => {
+  try {
+    const products = await Product.find({ discount: { $gte: 15 } }).populate(
+      "type"
+    );
+    const typesSet = new Set(
+      products.map((product) => product.type?.name || product.type)
+    );
+    const types = Array.from(typesSet);
+
+    res.json({
+      products,
+      types,
+    });
+  } catch (error) {
+    console.error("Error fetching discounted products:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
 module.exports = router;

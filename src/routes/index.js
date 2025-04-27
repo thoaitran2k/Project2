@@ -15,6 +15,7 @@ import MomoReturn from "../components/Checkout/momo-return";
 import FemaleCollectionPage from "../pages/CollectionPage/FemaleCollectionPage";
 import BestSellingProducts from "../pages/BestSellProducts/BestSellingProducts";
 import CollectionPage from "../pages/CollectionPage/CollectionPage";
+import SaleOffPage from "../pages/SaleOffPage/SaleOffPage";
 
 export const routes = [
   //PAGE
@@ -116,6 +117,13 @@ export const routes = [
   {
     path: "/top-selling",
     page: BestSellingProducts,
+    isShowHeader: true,
+    isShowFooter: true,
+  },
+  //SALEOFF
+  {
+    path: "/sale-off",
+    page: SaleOffPage,
     isShowHeader: true,
     isShowFooter: true,
   },

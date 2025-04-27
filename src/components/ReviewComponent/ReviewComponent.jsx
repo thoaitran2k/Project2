@@ -273,7 +273,11 @@ const ReviewComponent = ({ productId, onReviewSubmitted }) => {
                     defaultValue={review.rating}
                     className="mb-2"
                   />
-                  <Text strong className="block mt-1">
+                  <Text
+                    style={{ paddingLeft: "10px" }}
+                    strong
+                    className="block mt-1"
+                  >
                     {review.title || "Không có tiêu đề"}
                   </Text>
                   <Paragraph>{review.comment}</Paragraph>

@@ -82,8 +82,6 @@ const TypeProductPage = () => {
     queryFn: () => getProductType({ type: formattedType }),
   });
 
-  console.log("products", products);
-
   useEffect(() => {
     if (products) {
       dispatch(setProducts(products)); // Cập nhật Redux mỗi khi dữ liệu thay đổi
@@ -181,6 +179,7 @@ const TypeProductPage = () => {
               setSelectedTypes={setSelectedTypes}
               onPriceFilter={handlePriceFilter}
               onRatingFilter={handleRatingFilter}
+              formattedType={formattedType}
             />
           </SideBarContainer>
 

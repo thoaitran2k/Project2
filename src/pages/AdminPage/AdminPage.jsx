@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "antd";
-import { AppstoreOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  AppstoreOutlined,
+  OrderedListOutlined,
+  PercentageOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import HeaderComponent from "../../components/HeaderComponent/HeaderComponent";
 import AdminUser from "../../components/AdminUser/AdminUser";
 import AdminProduct from "../../components/AdminProduct/AdminProduct";
@@ -18,23 +23,30 @@ const items = [
     key: "user",
     icon: <UserOutlined />,
     label: "Người dùng",
-    children: [
-      { key: "user_list", label: "Danh sách người dùng" },
-      { key: "orders_list", label: "Danh sách đơn hàng" },
-    ],
+    children: [{ key: "user_list", label: "Danh sách người dùng" }],
   },
   {
     key: "product",
     icon: <AppstoreOutlined />,
     label: "Sản phẩm",
+    children: [{ key: "product_list", label: "Danh sách sản phẩm" }],
+  },
+  {
+    key: "orders",
+    icon: <OrderedListOutlined />,
+    label: "Đơn hàng",
+    children: [{ key: "orders_list", label: "Danh sách đơn hàng" }],
+  },
+  {
+    key: "promotion",
+    icon: <PercentageOutlined />,
+    label: "Giảm giá",
     children: [
-      { key: "product_list", label: "Danh sách sản phẩm" },
       { key: "product_discount", label: "Điều chỉnh giảm giá" },
       { key: "product_promotion", label: "Tạo mã giảm giá" },
     ],
   },
 ];
-
 const AdminPage = () => {
   const user = useSelector((state) => state.user);
   const navigate = useNavigate();

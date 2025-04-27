@@ -32,13 +32,24 @@ const ProductCard = ({ productSimilar }) => {
             {productSimilar.oldPrice}
           </Text>
         )}
-        <Text strong>{productSimilar.price.toLocaleString("vi-VN")} VNĐ</Text>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <Text strong>{productSimilar.price.toLocaleString("vi-VN")} VNĐ</Text>{" "}
+          {productSimilar.discount && (
+            <Text type="danger" style={{ display: "block", marginTop: "5px" }}>
+              -{productSimilar.discount}%
+            </Text>
+          )}
+        </div>
       </div>
-      {productSimilar.discount && (
-        <Text type="danger" style={{ display: "block", marginTop: "5px" }}>
-          {productSimilar.discount}
-        </Text>
-      )}
+
       {productSimilar.prime && (
         <Text type="success" style={{ display: "block", marginTop: "5px" }}>
           ✔ Prime
