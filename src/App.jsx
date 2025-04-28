@@ -23,6 +23,7 @@ import SearchOverlay from "./components/SearchComponent/SearchOverlay";
 import SearchComponent from "./components/SearchComponent/SearchComponent";
 import useAutoLogoutWhenTokenMissing from "./hooks/useAutoLogoutWhenTokenMissing";
 import FooterComponent from "./components/FooterComponent/FooterComponent";
+import ChatbotComponent from "./components/Chatbot/ChatbotComponent";
 // import { SearchProvider } from "./components/Layout/SearchContext";
 
 function App() {
@@ -106,6 +107,8 @@ function App() {
             const LayoutComponent = route.isShowHeader
               ? Layout
               : React.Fragment;
+
+            const showChatbot = route.isShowChatbot;
             return (
               <Route
                 key={route.path}
@@ -113,7 +116,10 @@ function App() {
                 element={
                   ischeckAuth ? (
                     <LayoutComponent>
-                      <Page />
+                      <>
+                        <Page />
+                        {showChatbot && <ChatbotComponent />}
+                      </>
                     </LayoutComponent>
                   ) : (
                     <Navigate to="/home" />

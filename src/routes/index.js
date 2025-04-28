@@ -24,6 +24,7 @@ export const routes = [
     page: HomePage,
     isShowHeader: true,
     isShowFooter: true,
+    isShowChatbot: true,
   },
   {
     path: "/order",
@@ -87,6 +88,7 @@ export const routes = [
     page: CheckoutPage,
     isShowHeader: false,
     isShowFooter: true,
+    isShowChatbot: false,
   },
   {
     path: "/checkout/success",
