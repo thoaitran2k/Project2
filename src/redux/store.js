@@ -7,6 +7,7 @@ import adminUsersReducer from "./reducers/adminUserSlice";
 import cartReducer from "./slices/cartSlice";
 import orderReducer from "./slices/orderSlice";
 import reviewReducer from "./slices/reviewSlice";
+import likeReducer from "./slices/likeSlice";
 import storage from "redux-persist/lib/storage"; // Lưu vào localStorage
 import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers } from "redux";
@@ -38,6 +39,7 @@ const rootReducer = combineReducers({
   cart: cartReducer,
   order: orderReducer,
   reviews: reviewReducer,
+  like: likeReducer,
 });
 
 // Áp dụng cấu hình persist vào rootReducer

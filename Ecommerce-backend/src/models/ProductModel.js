@@ -34,6 +34,7 @@ const productSchema = new mongoose.Schema(
         return this.type === "Đồng hồ";
       },
     },
+    likeCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -70,6 +71,22 @@ productSchema.statics.updateProductRating = async function (productId) {
     return 0;
   } catch (error) {
     console.error("Error updating product rating:", error);
+    throw error;
+  }
+};
+
+productSchema.statics.updateProductLikeCount = async function (productId) {
+  try {
+    const Like = require("./Like");
+
+    // Đếm số lượt like cho sản phẩm
+    const likeCount = await Like.countDocuments({ product: productId });
+
+    await this.findByIdAndUpdate(productId, { likeCount });
+
+    return likeCount;
+  } catch (error) {
+    console.error("Error updating product like count:", error);
     throw error;
   }
 };

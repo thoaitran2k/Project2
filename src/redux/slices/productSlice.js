@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { toggleLikeProduct } from "./likeSlice";
 
 // 🔥 Action gọi API lấy tất cả sản phẩm_____________________________________
 export const getAllProduct = createAsyncThunk(
@@ -12,6 +13,7 @@ export const getAllProduct = createAsyncThunk(
           params: { limit, page }, // ✅ Truyền limit và page vào API
         }
       );
+
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Lấy sản phẩm thất bại");
@@ -163,6 +165,17 @@ const productSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      //Xử lý like
+      .addCase(toggleLikeProduct.fulfilled, (state, action) => {
+        const { productId, liked, likeCount } = action.payload;
+
+        // Cập nhật lại trạng thái likedByCurrentUser của sản phẩm trong danh sách
+        state.products = state.products.map((product) =>
+          product._id === productId
+            ? { ...product, likedByCurrentUser: liked, likeCount } // Cập nhật like
+            : product
+        );
+      })
       //✅ Xử lý xóa nhiều sản phẩm cùng lúc
       .addCase(deleteManyProduct.pending, (state) => {
         state.loading = true;
@@ -230,6 +243,15 @@ const productSlice = createSlice({
       .addCase(getAllProduct.fulfilled, (state, action) => {
         state.loading = false;
         state.products = action.payload; // Giữ nguyên danh sách sản phẩm
+
+        // Cập nhật trạng thái likedByCurrentUser cho từng sản phẩm nếu đã có
+        if (state.products.length > 0 && state.user) {
+          state.products = state.products.map((product) => {
+            // Kiểm tra xem người dùng đã like sản phẩm này chưa
+            const likedByCurrentUser = product.likedByCurrentUser || false; // Đảm bảo trạng thái likedByCurrentUser tồn tại
+            return { ...product, likedByCurrentUser }; // Cập nhật lại thông tin sản phẩm
+          });
+        }
       })
       .addCase(getAllProduct.rejected, (state, action) => {
         state.loading = false;

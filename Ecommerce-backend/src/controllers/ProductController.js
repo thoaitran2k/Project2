@@ -3,6 +3,7 @@ const uploadImageProductService = require("../services/uploadImageProductService
 const Product = require("../models/ProductModel");
 const PromotionCode = require("../models/PromotionCode");
 const PromotionService = require("../services/promotionService");
+const Like = require("../models/Like");
 
 const createProduct = async (req, res) => {
   try {
@@ -443,6 +444,41 @@ const updateSelledCount = async (req, res) => {
   }
 };
 
+//LIKE SẢN PHẨM
+const toggleLike = async (req, res) => {
+  const { userId } = req.body;
+  const { productId } = req.params;
+
+  if (!userId || !productId) {
+    return res.status(400).json({ message: "Missing userId or productId" });
+  }
+
+  try {
+    // Kiểm tra xem đã like chưa
+    const existingLike = await Like.findOne({
+      user: userId,
+      product: productId,
+    });
+
+    if (existingLike) {
+      // Nếu đã like => Unlike
+      await Like.deleteOne({ _id: existingLike._id });
+    } else {
+      // Nếu chưa like => Like
+      await Like.create({ user: userId, product: productId });
+    }
+
+    // Cập nhật số lượng like
+    const likeCount = await Like.countDocuments({ product: productId });
+    await Product.findByIdAndUpdate(productId, { likeCount });
+
+    res.status(200).json({ liked: !existingLike, likeCount });
+  } catch (err) {
+    console.error("Toggle like error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 //________________________________________________________________________________
 module.exports = {
   createProduct,
@@ -460,4 +496,5 @@ module.exports = {
   createPromotionCode,
   getPromotionList,
   updateSelledCount,
+  toggleLike,
 };

@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, Rate, Button, Space, Typography, Carousel } from "antd";
 import { CarouselStyled } from "./style";
 import {
+  HeartFilled,
   HeartOutlined,
   LeftOutlined,
   RightOutlined,
@@ -13,15 +14,37 @@ import Loading from "../../components/LoadingComponent/Loading";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
+import { toggleLikeProduct } from "../../redux/slices/likeSlice";
 
 const { Text, Title } = Typography;
 
 const ProductCard = ({ productSimilar }) => {
+  const currentUser = useSelector((state) => state.user);
+  const likedProducts = useSelector((state) => state.like.likedProducts);
+  const dispatch = useDispatch();
+  const likedProductIds =
+    useSelector((state) => state.like.likedProductIds) || [];
+  const isLiked =
+    !!productSimilar?._id && likedProductIds.includes(productSimilar._id);
+
+  const handleLike = (e, productId) => {
+    e.stopPropagation();
+
+    if (!currentUser) {
+      return message.warning("Please log in to like this product");
+    }
+
+    dispatch(toggleLikeProduct({ productId }));
+  };
+
   return (
     <Card
       hoverable
       style={{ width: 320, margin: "10px", background: "transparent" }}
       cover={<img alt={productSimilar.name} src={productSimilar.image} />}
+      onClick={() => {
+        // Navigate to product details
+      }}
     >
       <Title level={5}>{productSimilar.name}</Title>
       <Rate disabled defaultValue={productSimilar.rating} />
@@ -32,7 +55,6 @@ const ProductCard = ({ productSimilar }) => {
             {productSimilar.oldPrice}
           </Text>
         )}
-
         <div
           style={{
             display: "flex",
@@ -41,7 +63,7 @@ const ProductCard = ({ productSimilar }) => {
             gap: "10px",
           }}
         >
-          <Text strong>{productSimilar.price.toLocaleString("vi-VN")} VNĐ</Text>{" "}
+          <Text strong>{productSimilar.price.toLocaleString("vi-VN")} VNĐ</Text>
           {productSimilar.discount && (
             <Text type="danger" style={{ display: "block", marginTop: "5px" }}>
               -{productSimilar.discount}%
@@ -55,9 +77,27 @@ const ProductCard = ({ productSimilar }) => {
           ✔ Prime
         </Text>
       )}
-      <Space style={{ marginTop: "10px" }}>
-        <Button icon={<ShoppingCartOutlined />}>Thêm vào giỏ hàng</Button>
-        <Button icon={<HeartOutlined />}>Thích</Button>
+
+      <Space
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginTop: "10px",
+        }}
+      >
+        <Button
+          type="button"
+          icon={
+            isLiked ? (
+              <HeartFilled style={{ color: "red" }} />
+            ) : (
+              <HeartOutlined />
+            )
+          }
+          onClick={(e) => handleLike(e, productSimilar._id)}
+        >
+          {productSimilar.likeCount}
+        </Button>
       </Space>
     </Card>
   );
@@ -88,8 +128,6 @@ const ProductList = ({ productType, excludeId }) => {
   const productSimilars = productList?.filter(
     (product) => product.type === productType && product._id !== excludeId
   );
-
-  console.log("productSimilars", productSimilars);
 
   return (
     <Loading>
@@ -123,10 +161,9 @@ const ProductList = ({ productType, excludeId }) => {
           slidesToShow={Math.min(4, productSimilars?.length || 0)}
           slidesToScroll={1}
           infinite={productSimilars?.length > 4}
-          arrows={productSimilars?.length >= 4} // Chỉ hiện mũi tên khi có đủ 4 sản phẩm
-          variableWidth={true} // Tắt nếu bạn muốn các item có width bằng nhau
-          // centerPadding="40px" // Khoảng cách padding khi center mode
-          className="custom-carousel" // Thêm class riêng
+          arrows={productSimilars?.length >= 4}
+          variableWidth={true}
+          className="custom-carousel"
         >
           {productSimilars?.map((productSimilar) => {
             const toSlug = (name) =>

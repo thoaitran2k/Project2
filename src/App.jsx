@@ -24,6 +24,7 @@ import SearchComponent from "./components/SearchComponent/SearchComponent";
 import useAutoLogoutWhenTokenMissing from "./hooks/useAutoLogoutWhenTokenMissing";
 import FooterComponent from "./components/FooterComponent/FooterComponent";
 import ChatbotComponent from "./components/Chatbot/ChatbotComponent";
+import { fetchUserLikes } from "./redux/slices/likeSlice";
 // import { SearchProvider } from "./components/Layout/SearchContext";
 
 function App() {
@@ -87,6 +88,13 @@ function App() {
       }
     }
   }, [user, isUserLoaded]);
+
+  useEffect(() => {
+    if (user) {
+      console.log("chạy...........");
+      dispatch(fetchUserLikes());
+    }
+  }, [user, dispatch]);
 
   return (
     <AppContainer>

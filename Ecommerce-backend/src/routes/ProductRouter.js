@@ -7,6 +7,7 @@ const uploadExcel = require("../middleware/ImportExcelMiddleware");
 const Product = require("../models/ProductModel"); // Đường dẫn đến file model Product
 const PromotionCode = require("../models/PromotionCode");
 const PromotionService = require("../services/promotionService");
+const Like = require("../models/Like");
 const promotionController = require("../controllers/promotionController");
 
 const xlsx = require("xlsx");
@@ -359,6 +360,26 @@ router.get("/discount-15", async (req, res) => {
   } catch (error) {
     console.error("Error fetching discounted products:", error);
     res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+//LIKE SẢN PHẨM
+
+router.post("/like/:productId", ProductController.toggleLike);
+
+router.get("/get-likes", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const likes = await Like.find({ user: userId }).populate("product");
+
+    // Lọc bỏ các like không có product hoặc product._id không hợp lệ
+    const validLikes = likes.filter((like) => like.product && like.product._id);
+
+    // Chỉ trả về mảng các productId hợp lệ
+    res.json(validLikes.map((like) => like.product._id.toString()));
+  } catch (error) {
+    console.error("Error fetching likes:", error);
+    res.status(500).json([]); // Luôn trả về mảng
   }
 });
 
