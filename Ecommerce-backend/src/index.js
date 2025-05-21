@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const faqData = require("./services/faqData");
 const askGPT = require("./services/gptService");
+const axios = require("axios");
 
 dotenv.config();
 

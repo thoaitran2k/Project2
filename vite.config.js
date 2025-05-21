@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: "/home",
+    base: "/home",
     proxy: {
       "/provinces-api": {
         target: "https://provinces.open-api.vn",
