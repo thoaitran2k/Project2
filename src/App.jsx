@@ -91,7 +91,6 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      console.log("chạy...........");
       dispatch(fetchUserLikes());
     }
   }, [user, dispatch]);

@@ -27,10 +27,20 @@ const OrderManage = () => {
       setSelectedOrders(selectedRows);
     },
   };
+  const [sortedOrders, setSortedOrders] = useState([]);
 
   useEffect(() => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      const sorted = [...orders].sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      setSortedOrders(sorted);
+    }
+  }, [orders]);
 
   const exportInvoicesToExcel = () => {
     if (selectedOrders.length === 0) {
@@ -390,7 +400,7 @@ const OrderManage = () => {
       <Table
         columns={columns}
         rowSelection={rowSelection}
-        dataSource={orders}
+        dataSource={sortedOrders}
         rowKey="_id"
         loading={loading}
         pagination={{ pageSize: 10 }}

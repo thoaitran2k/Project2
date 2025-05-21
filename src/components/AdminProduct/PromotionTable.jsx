@@ -95,6 +95,31 @@ const PromotionTable = ({ refreshKey }) => {
     setIsModalVisible(true);
   };
 
+  const handleDelete = (record) => {
+    Modal.confirm({
+      title: `Xác nhận xoá mã "${record.code}"?`,
+      content:
+        record.usedCount > 0
+          ? "Mã đã được sử dụng, không thể xoá."
+          : "Bạn có chắc muốn xoá mã này? Thao tác không thể hoàn tác.",
+      okText: "Xoá",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: async () => {
+        try {
+          await axios.delete(
+            `http://localhost:3002/api/product/promotion/${record._id}`
+          );
+          message.success("Xoá mã giảm giá thành công");
+          fetchPromotions();
+        } catch (error) {
+          console.error("Lỗi khi xóa:", error);
+          message.error("Lỗi khi xoá mã giảm giá");
+        }
+      },
+    });
+  };
+
   const columns = [
     {
       title: "Mã Giảm Giá",

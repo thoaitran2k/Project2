@@ -40,6 +40,7 @@ const productsComponent = ({ product }) => {
     Đồng: "#B87333",
   };
 
+  const [tempSelectedAddressId, setTempSelectedAddressId] = useState(null);
   const [quantityPay, setQuantityPay] = useState(1);
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -91,12 +92,19 @@ const productsComponent = ({ product }) => {
   };
 
   const handleAddressOk = () => {
+    setSelectedAddressId(tempSelectedAddressId);
     setIsAddressModalVisible(false);
   };
 
   const handleAddressCancel = () => {
     setIsAddressModalVisible(false);
   };
+
+  useEffect(() => {
+    if (isAddressModalVisible) {
+      setTempSelectedAddressId(selectedAddressId);
+    }
+  }, [isAddressModalVisible]);
 
   const getDisplayAddress = () => {
     if (selectedAddressId) {
@@ -701,8 +709,8 @@ const productsComponent = ({ product }) => {
               ]}
             >
               <Radio.Group
-                onChange={(e) => setSelectedAddressId(e.target.value)}
-                value={selectedAddressId}
+                onChange={(e) => setTempSelectedAddressId(e.target.value)}
+                value={tempSelectedAddressId}
               >
                 <Space direction="vertical">
                   {user.address?.map((addr) => (

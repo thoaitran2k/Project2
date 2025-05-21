@@ -111,7 +111,12 @@ const OrderDetailsComponent = () => {
             <Text strong>{text}</Text>
             <br />
             <Text type="secondary">
-              Màu: {record.color}, Size: {record.size}
+              Màu: {record.color}
+              {record.size
+                ? `, Size: ${record.size}`
+                : record.diameter
+                ? `, Đường kính: ${record.diameter}`
+                : ""}
             </Text>
           </div>
         </Space>

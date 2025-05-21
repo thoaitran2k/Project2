@@ -247,8 +247,6 @@ const getInitialState = () => ({
   orders: [],
 });
 
-console.log("initialState", initialState);
-
 const userSlice = createSlice({
   name: "user",
   initialState,
