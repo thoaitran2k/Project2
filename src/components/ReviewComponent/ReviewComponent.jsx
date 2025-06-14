@@ -339,7 +339,7 @@ const ReviewComponent = ({ productId, onReviewSubmitted }) => {
                           <Avatar src={c.avatar} style={{ marginRight: 8 }} />
                           <Text strong>{c.username || "Người dùng"}</Text>:{" "}
                           {c.content}
-                          <div style={{ fontSize: 12, color: "#888" }}>
+                          <div style={{ fontSize: 12, color: "blue" }}>
                             {new Date(c.createdAt).toLocaleString()}
                           </div>
                         </div>

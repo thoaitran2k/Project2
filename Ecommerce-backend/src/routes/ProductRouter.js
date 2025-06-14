@@ -105,6 +105,7 @@ router.post(
           selled: row.selled || 0,
           colors: row.colors ? row.colors.split(",") : [],
           sizes: sizes,
+          size: row.size || (sizes.length > 0 ? sizes[0] : null),
           variants: row.variants ? JSON.parse(row.variants) : [],
           ...additionalFields,
         };
@@ -293,6 +294,8 @@ router.put("/promotions/use", async (req, res) => {
 
 router.put("/update-promotion/:id", promotionController.updatePromotion);
 
+//-----------------------------------------------------------
+
 //CẬP NHẬT SỐ LƯỢNG KHI ĐẶT HÀNG
 router.post("/update-selled", ProductController.updateSelledCount);
 
@@ -380,6 +383,31 @@ router.get("/get-likes", authMiddleware, async (req, res) => {
   } catch (error) {
     console.error("Error fetching likes:", error);
     res.status(500).json([]); // Luôn trả về mảng
+  }
+});
+
+//LẤY TỶ LỆ GIẢM GIÁ CỦA TỪNG SẢN PHẨM
+router.get("/discounts-by-type", async (req, res) => {
+  try {
+    const result = await Product.aggregate([
+      {
+        $group: {
+          _id: "$type",
+          averageDiscount: { $avg: "$discount" },
+          maxDiscount: { $max: "$discount" },
+          minDiscount: { $min: "$discount" },
+          totalProduct: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { averageDiscount: -1 },
+      },
+    ]);
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error getting discounts by type:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

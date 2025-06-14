@@ -34,11 +34,11 @@ const Sidebar = () => {
         },
         { key: "orders", icon: <FormOutlined />, label: "Quản lý đơn hàng" },
         { key: "address", icon: <EnvironmentOutlined />, label: "Sổ địa chỉ" },
-        {
-          key: "change-password",
-          icon: <LockOutlined />,
-          label: "Đổi mật khẩu",
-        },
+        // {
+        //   key: "change-password",
+        //   icon: <LockOutlined />,
+        //   label: "Đổi mật khẩu",
+        // },
       ].map((item) => (
         <Menu.Item
           key={item.key}

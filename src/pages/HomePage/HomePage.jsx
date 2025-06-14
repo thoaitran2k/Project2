@@ -1,12 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Card, Row, Col, Typography } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-import SliderComponent from "../../components/SliderComponent/SliderComponent";
-
-import slider1 from "../../assets/slider1.png";
-import slider2 from "../../assets/slider2.png";
-import slider3 from "../../assets/slider3.png";
 import shop1Banner from "../../assets/thiet-ke-shop-quan-ao-a.jpg";
 import shop2Banner from "../../assets/thiet-ke-shop-quan-ao-dep.jpg";
 import shop3Banner from "../../assets/Best_Selling_banner.webp";
@@ -17,6 +12,7 @@ import shopwallet from "../../assets/the-gioi-bop-da.jpg";
 import shopwatch from "../../assets/thiet-ke-shop-dong-ho-1.jpg";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "../../redux/slices/loadingSlice";
+import axios from "axios";
 
 const { Title } = Typography;
 
@@ -41,6 +37,39 @@ const HomePage = () => {
     { category: "Trang sức", image: "/src/assets/trangsucCol.png" },
     { category: "Ví", image: "/src/assets/vi.png" },
   ];
+
+  const [discountedTypes, setDiscountedTypes] = useState([]);
+
+  useEffect(() => {
+    const fetchDiscountedTypes = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:3002/api/product/discounts-by-type"
+        );
+        const sorted = res.data
+          .filter((item) => item.maxDiscount > 0)
+          .sort((a, b) => b.maxDiscount - a.maxDiscount);
+        setDiscountedTypes(sorted.slice(0, 5));
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách loại sản phẩm giảm giá:", error);
+      }
+    };
+
+    fetchDiscountedTypes();
+  }, []);
+
+  const imageMap = {
+    "Áo nam":
+      "/src/assets/custom-t-shirts-banner-design-template-4900533935ea094ef9a9b73571605d04_screen.jpg",
+    "Quần nam": "/src/assets/quannamCol.png",
+    "Đồng hồ": "/src/assets/banner-zenith.jpg",
+    "Áo nữ": "/src/assets/banner-bo-suu-tap-thoi-trang_113854225.png",
+    "Quần nữ":
+      "/src/assets/banner_new_arrival_quan_tay_d68ca787f34c48ca95bfb639ba029a64.webp",
+    "Túi xách": "/src/assets/bagCol.png",
+    "Trang sức": "/src/assets/trang-suc-nu-bia-moi.jpg",
+    Ví: "/src/assets/vi.png",
+  };
 
   const promotions = [
     {
@@ -281,20 +310,57 @@ const HomePage = () => {
       <SectionContainer>
         <SectionTitle>Các ưu đãi đặc biệt</SectionTitle>
         <PromotionsGrid>
-          {promotions.slice(0, 4).map((promo, index) => (
-            <PromotionCard key={index}>
-              <PromotionImage src={promo.image} alt={promo.title} />
+          {/* Thẻ "15% Off Hot Sale" thực chất là loại có discount lớn nhất */}
+          {discountedTypes.length > 0 && (
+            <PromotionCard key={discountedTypes[0]._id}>
+              <PromotionImage
+                src={imageMap[discountedTypes[0]._id] || shop1Banner}
+                alt={discountedTypes[0]._id}
+              />
               <PromotionOverlay>
-                <PromotionTitle>{promo.title}</PromotionTitle>
-                {promo.subtitle && (
-                  <PromotionSubtitle>{promo.subtitle}</PromotionSubtitle>
-                )}
-                <PromotionButton onClick={() => handleClick(promo)}>
-                  {promo.buttonText}
+                <PromotionTitle>{discountedTypes[0]._id}</PromotionTitle>
+                <PromotionSubtitle>
+                  Giảm đến {discountedTypes[0].maxDiscount}%
+                </PromotionSubtitle>
+                <PromotionButton
+                  onClick={() =>
+                    navigate(
+                      `/product-type/${removeVietnameseTones(
+                        discountedTypes[0]._id
+                      )}`
+                    )
+                  }
+                >
+                  Mua ngay
                 </PromotionButton>
               </PromotionOverlay>
             </PromotionCard>
-          ))}
+          )}
+
+          {/* 3 loại tiếp theo có discount cao tiếp theo */}
+          {discountedTypes.slice(1, 4).map((item) => {
+            const image = imageMap[item._id] || shop5banner;
+            return (
+              <PromotionCard key={item._id}>
+                <PromotionImage src={image} alt={item._id} />
+                <PromotionOverlay>
+                  <PromotionTitle>{item._id}</PromotionTitle>
+                  <PromotionSubtitle>
+                    Giảm đến {item.maxDiscount}%
+                  </PromotionSubtitle>
+                  <PromotionButton
+                    onClick={() =>
+                      navigate(
+                        `/product-type/${removeVietnameseTones(item._id)}`
+                      )
+                    }
+                  >
+                    Mua ngay
+                  </PromotionButton>
+                </PromotionOverlay>
+              </PromotionCard>
+            );
+          })}
         </PromotionsGrid>
       </SectionContainer>
     </HomeContainer>
@@ -344,7 +410,7 @@ const ShopButton = styled.button`
   color: white;
   border: none;
   border-radius: 25px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -423,8 +489,8 @@ const BannerText = styled.p`
 `;
 
 const BannerButton = styled(ShopButton)`
-  padding: 8px 20px;
-  font-size: 0.9rem;
+  padding: 12px 20px;
+  font-size: 1.4rem;
 `;
 
 const BannerRow = styled.section`
@@ -566,20 +632,20 @@ const PromotionOverlay = styled.div`
 `;
 
 const PromotionTitle = styled.h3`
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   margin-bottom: 10px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 `;
 
 const PromotionSubtitle = styled.p`
-  font-size: 1rem;
+  font-size: 1.7rem;
   margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 `;
 
 const PromotionButton = styled(ShopButton)`
-  padding: 8px 20px;
-  font-size: 0.9rem;
+  padding: 12px 20px;
+  font-size: 1.2rem;
 `;
 
 export default HomePage;

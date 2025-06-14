@@ -5,9 +5,9 @@ async function askGPT(message) {
     const response = await axios.post(
       "http://localhost:11434/api/chat",
       {
-        model: "phi3", // Tên model bạn đã pull về (ví dụ: phi3, mistral, llama3...)
+        model: "phi3",
         messages: [{ role: "user", content: message }],
-        stream: false, // Không stream kết quả, trả về một lần
+        stream: false,
       },
       {
         headers: {

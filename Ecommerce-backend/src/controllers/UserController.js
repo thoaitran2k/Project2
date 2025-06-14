@@ -1,5 +1,5 @@
 const UserService = require("../services/UserService");
-const JwtService = require("../services/JwtService");
+const JwtService = require("../services/jwtService");
 const MailService = require("../services/MailService");
 const { sendPromoCodeToUser } = require("../controllers/promotionController");
 const mongoose = require("mongoose");

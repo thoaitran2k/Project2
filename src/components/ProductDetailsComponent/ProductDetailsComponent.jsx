@@ -444,10 +444,10 @@ const productsComponent = ({ product }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const defaultImages = [
-    imageProduct,
-    imageSmallProduct,
-    "https://res-console.cloudinary.com/dxwqi77i8/thumbnails/v1/image/upload/v1742212680/YXZhdGFycy9tem9neWl2b2dtY2tnZXd1bmNneg==/drilldown",
-    "https://res.cloudinary.com/dxwqi77i8/image/upload/v1742212842/avatars/clpwb1rpi1u5vptyyb2n.webp",
+    product?.image,
+    product?.image,
+    product?.image,
+    product?.image,
   ];
 
   const imagesPreview = product?.imagesPreview?.length
