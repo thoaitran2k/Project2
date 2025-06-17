@@ -25,7 +25,7 @@ const OrderSchema = new Schema({
       size: { type: String }, // Kích thước
       color: { type: String }, // Màu sắc
       diameter: { type: String }, // Đường kính (nếu có)
-      productSubtotal: { type: Number, required: true },
+      productSubtotal: { type: Number },
       discountAmount: { type: Number }, // Subtotal cho mỗi mặt hàng
       type: { type: String },
     },

@@ -109,14 +109,12 @@ const OrderComponent = () => {
 
     if (isAllChecked) {
       dispatch(clearCart());
-      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true })); // Xóa toàn bộ giỏ hàng nếu đã chọn tất cả
+      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
     } else {
       selectedProducts.forEach((itemId) => {
         dispatch(removeFromCart(itemId));
-        updateCartOnServer({ forceUpdateEmptyCart: true }); // Xóa từng sản phẩm đã tích
+        updateCartOnServer({ forceUpdateEmptyCart: true });
       });
-
-      // Reset danh sách chọn
     }
   };
 
@@ -162,13 +160,6 @@ const OrderComponent = () => {
       },
     });
   };
-
-  // const increaseQuantity = () =>
-  //   setQuantityPay((prev) => Math.min(prev + 1, 10));
-  // const decreaseQuantity = () =>
-  //   setQuantityPay((prev) => Math.max(prev - 1, 1));
-
-  // const getQuantity = (id) => quantities[id] || 1;
 
   //Hàm tính tổng tiền sản phẩm
   const calculateSelectedTotal = () => {
@@ -240,6 +231,10 @@ const OrderComponent = () => {
     return <UnauthenticatedCart />;
   }
 
+  const sortedCartItems = [...cartItems].sort((a, b) => {
+    return new Date(b.addedAt) - new Date(a.addedAt);
+  });
+
   return (
     <OrderContainer>
       <LeftColumn>
@@ -267,7 +262,7 @@ const OrderComponent = () => {
             value={selectedProducts}
             onChange={handleProductCheck}
           >
-            {cartItems.map((item) => {
+            {sortedCartItems.map((item) => {
               return (
                 <GridRow key={item.id}>
                   <ProductCell>
@@ -395,24 +390,17 @@ const OrderComponent = () => {
             <span>Tạm tính</span>
             <span>{calculateSelectedTotal().toLocaleString()}₫</span>
           </PriceRow>
-          <PriceRow>
-            <span>Thuế</span>
-            <span>₫</span>
-          </PriceRow>
-
-          <PriceRow>
-            <span>Giảm giá trực tiếp</span>
-            <span>-{calculateDiscounts().toLocaleString()}₫</span>
-          </PriceRow>
 
           <Divider style={{ margin: "16px 0" }} />
 
           <PriceRow>
-            <TotalPrice>Tổng tiền tạm tính</TotalPrice>
+            <TotalPrice>Tổng tiền thanh toán</TotalPrice>
             <TotalPrice>{calculateTotal().toLocaleString()}₫</TotalPrice>
           </PriceRow>
 
-          <SavingsTag>Tiết kiệm 4.000.000₫</SavingsTag>
+          <SavingsTag>
+            Tiết kiệm {calculateDiscounts().toLocaleString()} đ
+          </SavingsTag>
 
           <VATText>(Bao gồm VAT nếu có)</VATText>
         </Section>
@@ -444,7 +432,7 @@ export default OrderComponent;
 const OrderContainer = styled.div`
   display: flex;
   gap: 16px;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -574,7 +562,7 @@ const Section = styled(Card)`
   }
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h1`
   font-weight: 600;
   margin-bottom: 16px;
   display: flex;

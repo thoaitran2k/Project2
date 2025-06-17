@@ -126,7 +126,7 @@ const cartSlice = createSlice({
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
-        state.cartItems.push({
+        state.cartItems.unshift({
           id: itemId, // Giữ nguyên ID duy nhất
           product,
           quantity,

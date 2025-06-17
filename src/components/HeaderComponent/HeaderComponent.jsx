@@ -8,6 +8,7 @@ import {
   ShoppingCartOutlined,
   SettingOutlined,
   OrderedListOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -49,19 +50,18 @@ const Sidebar = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [drawerWidth, setDrawerWidth] = useState(300);
   const [topSellByType, setTopSellByType] = useState({});
+  const [topLikeProduct, setTopLikeProduct] = useState({});
 
-  // Khi category được chọn, mở rộng drawer
   useEffect(() => {
     if (selectedCategory?.items?.length > 0) {
       setDrawerWidth(800);
     } else {
-      setDrawerWidth(300); // Trở lại width ban đầu
+      setDrawerWidth(300);
     }
   }, [selectedCategory]);
 
   useEffect(() => {
     if (open) {
-      console.log("Chạy useEffect...........");
       axios.get("http://localhost:3002/api/product/top-sell").then((res) => {
         const grouped = {};
         res.data.topProducts.forEach((p) => {
@@ -70,6 +70,17 @@ const Sidebar = () => {
         });
         setTopSellByType(grouped);
       });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      axios
+        .get("http://localhost:3002/api/like/most-liked-list")
+        .then((res) => {
+          const topLikeProducts = res.data.slice(0, 10);
+          setTopLikeProduct(topLikeProducts);
+        });
     }
   }, [open]);
 
@@ -109,6 +120,7 @@ const Sidebar = () => {
             mode="vertical"
             drawerWidth={drawerWidth}
             topSellByType={topSellByType}
+            topLikeProduct={topLikeProduct}
           />
         </Drawer>
       </div>
@@ -397,11 +409,12 @@ const HeaderComponent = ({
     },
     {
       key: "3",
-      label: "Đăng xuất",
-      icon: <LogoutOutlined />,
-      onClick: handleLogout,
+      label: "Sản phẩm yêu thích",
+      icon: <HeartOutlined />,
+      onClick: () => navigate("/profile/like-products"),
     },
   ];
+
   if (isAdmin) {
     items.push({
       key: "4",
@@ -410,6 +423,13 @@ const HeaderComponent = ({
       onClick: () => navigate("/system/admin"),
     });
   }
+
+  items.push({
+    key: "5",
+    label: "Đăng xuất",
+    icon: <LogoutOutlined />,
+    onClick: handleLogout,
+  });
 
   return (
     <Loading>

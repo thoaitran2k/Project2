@@ -484,7 +484,7 @@ const BannerTitle = styled.h2`
 `;
 
 const BannerText = styled.p`
-  font-size: 1rem;
+  font-size: 1.4rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 `;
 

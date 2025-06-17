@@ -404,7 +404,7 @@ const AddressList = ({ userId, accessToken, addressId }) => {
   return (
     <ErrorBoundary>
       <Container>
-        <Title>Số địa chỉ ({address.length})</Title>
+        <Title>Số địa chỉ ({address.length}/6)</Title>
         <AddNewAddress onClick={() => handleAddAddress()}>
           <PlusOutlined /> <span>Thêm địa chỉ mới</span>
         </AddNewAddress>

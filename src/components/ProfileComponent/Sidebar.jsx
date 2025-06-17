@@ -4,7 +4,7 @@ import {
   UserOutlined,
   FormOutlined,
   EnvironmentOutlined,
-  LockOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -34,11 +34,16 @@ const Sidebar = () => {
         },
         { key: "orders", icon: <FormOutlined />, label: "Quản lý đơn hàng" },
         { key: "address", icon: <EnvironmentOutlined />, label: "Sổ địa chỉ" },
-        // {
-        //   key: "change-password",
-        //   icon: <LockOutlined />,
-        //   label: "Đổi mật khẩu",
-        // },
+        {
+          key: "like-products",
+          icon: <HeartOutlined />,
+          label: "Sản phẩm yêu thích",
+        },
+        {
+          key: "review",
+          icon: <HeartOutlined />,
+          label: "Nhận xét của tôi",
+        },
       ].map((item) => (
         <Menu.Item
           key={item.key}
@@ -54,9 +59,9 @@ const Sidebar = () => {
             gap: "10px",
             borderRadius: "8px",
             cursor: "pointer",
-            color: activePage === item.key ? "#1677ff" : "#000", // Chỉ đổi màu khi được chọn
+            color: activePage === item.key ? "#1677ff" : "#000",
             backgroundColor:
-              activePage === item.key ? "rgb(230, 244, 255)" : "transparent", // Chỉ đổi màu nền khi được chọn
+              activePage === item.key ? "rgb(230, 244, 255)" : "transparent",
             transition: "all 0.3s ease",
           }}
         >

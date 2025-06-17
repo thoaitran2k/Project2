@@ -108,6 +108,9 @@ const Orders = () => {
       }
 
       dispatch(updateCartOnServer());
+
+      navigate("/order");
+
       message.success("🛒 Đã thêm các sản phẩm từ đơn cũ vào giỏ hàng");
     } catch (error) {
       message.error("Có lỗi xảy ra khi mua lại đơn hàng");
@@ -522,12 +525,20 @@ const Orders = () => {
             </Card>
           ))
         ) : (
-          <Card>
+          <Card style={{ textAlign: "center", padding: "40px 20px" }}>
             <Empty
               description={
-                <Text type="secondary">
-                  Không có đơn hàng nào trong mục này
-                </Text>
+                <>
+                  <Text
+                    type="secondary"
+                    style={{ display: "block", marginBottom: "16px" }}
+                  >
+                    Bạn chưa có đơn hàng!
+                  </Text>
+                  <Button type="primary" onClick={() => navigate("/products")}>
+                    Đi mua sắm
+                  </Button>
+                </>
               }
             />
           </Card>

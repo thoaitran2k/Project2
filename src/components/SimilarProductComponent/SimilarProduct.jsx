@@ -129,6 +129,13 @@ const ProductList = ({ productType, excludeId }) => {
     (product) => product.type === productType && product._id !== excludeId
   );
 
+  console.log("productList", productList);
+  console.log("productType", productType);
+  console.log(
+    "product types:",
+    productList.map((p) => p.type)
+  );
+
   return (
     <Loading>
       <div

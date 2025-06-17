@@ -11,6 +11,8 @@ import styled from "styled-components";
 import AddressList from "../../components/ProfileComponent/AddressComponent/AddressList";
 
 import Orders from "../../components/ProfileComponent/Orders";
+import LikeProducts from "../../components/ProfileComponent/LikeProducts";
+import Reviewed from "../../components/ProfileComponent/Reviewed";
 
 const { Title } = Typography;
 
@@ -18,7 +20,8 @@ const pageTitles = {
   "customer-info": "Thông tin tài khoản",
   orders: "Đơn hàng của tôi",
   address: "Chỉnh sửa địa chỉ",
-  "change-password": "Đổi mật khẩu",
+  "like-products": "Sản phẩm bạn đã thích",
+  review: "Nhận xét của tôi",
 };
 
 const ProfilePage = () => {
@@ -56,8 +59,10 @@ const ProfilePage = () => {
             )}
           </div>
         );
-      case "change-password":
-        return <h2>Đổi mật khẩu</h2>;
+      case "like-products":
+        return <LikeProducts />;
+      case "review":
+        return <Reviewed />;
       default:
         return <ProfileForm />;
     }

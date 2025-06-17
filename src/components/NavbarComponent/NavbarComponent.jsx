@@ -18,8 +18,11 @@ const NavbarComponent = ({
   setSelectedCategory,
   drawerWidth,
   topSellByType = {},
+  topLikeProduct = {},
 }) => {
   const navigate = useNavigate();
+
+  const [hoveredLiked, setHoveredLiked] = useState(false);
 
   const mainCategories = [
     { title: "Đồ nam", items: ["Áo nam", "Quần nam"] },
@@ -50,7 +53,7 @@ const NavbarComponent = ({
     onClose?.();
   };
 
-  console.log("topSellByType", topSellByType);
+  console.log("topLikeProduct", topLikeProduct);
 
   return (
     <Wrapper $expanded={!!selectedCategory?.items?.length}>
@@ -97,19 +100,45 @@ const NavbarComponent = ({
               </CategoryHeader>
             </div>
           ))}
+
+          <Divider />
+
+          <SectionTitleLike
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              if (selectedCategory?.title === "Sản phẩm được yêu thích") {
+                setSelectedCategory(null);
+              } else {
+                setSelectedCategory({
+                  title: "Sản phẩm được yêu thích",
+                  items: topLikeProduct.map((p) => ({
+                    ...p.product,
+                    image: p.product.image,
+                    _id: p.product._id,
+                    name: p.product.name,
+                  })),
+                });
+              }
+            }}
+            data-active={
+              selectedCategory?.title === "Sản phẩm được yêu thích"
+                ? "true"
+                : "false"
+            }
+          >
+            SẢN PHẨM ĐƯỢC YÊU THÍCH
+          </SectionTitleLike>
         </LeftNav>
 
         {selectedCategory?.items?.length > 0 && (
           <RightNav>
-            {selectedCategory?.items?.[0]?.image ? (
+            {selectedCategory.title === "Sản phẩm được yêu thích" ||
+            selectedCategory?.items?.[0]?.image ? (
               <>
                 <SubCategoryTitle>
-                  Các sản phẩm{" "}
-                  <span style={{ fontWeight: "bold" }}>
-                    {selectedCategory.title.charAt(0).toUpperCase() +
-                      selectedCategory.title.slice(1)}{" "}
-                  </span>
-                  bán chạy
+                  {selectedCategory.title === "Sản phẩm được yêu thích"
+                    ? "CÁC SẢN PHẨM ĐƯỢC YÊU THÍCH"
+                    : `CÁC SẢN PHẨM ${selectedCategory.title.toUpperCase()} BÁN CHẠY`}
                 </SubCategoryTitle>
                 <ProductGrid>
                   {selectedCategory.items.map((item, idx) => {
@@ -182,7 +211,7 @@ const NavbarComponent = ({
         <SupportTitle>Chúng tôi có thể giúp gì cho bạn?</SupportTitle>
         <ContactInfo>
           <PhoneIcon />
-          <span>+84 2838614107</span>
+          <span>+84 0794330648</span>
         </ContactInfo>
 
         <Divider style={{ margin: "16px 0" }} />
@@ -390,7 +419,14 @@ const Divider = styled.div`
 const SectionTitle = styled.div`
   padding: 12px 24px;
   font-size: 14px;
-  color: #999;
+  color: blue;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+`;
+const SectionTitleLike = styled.div`
+  padding: 12px 24px;
+  font-size: 14px;
+  color: red;
   text-transform: uppercase;
   letter-spacing: 1px;
 `;

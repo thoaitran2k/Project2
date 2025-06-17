@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 
 const PromotionCode = require("../models/PromotionCode");
 
+const Product = require("../models/ProductModel");
+
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
