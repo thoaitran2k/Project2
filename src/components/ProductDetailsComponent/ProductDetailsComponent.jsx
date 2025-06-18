@@ -8,6 +8,7 @@ import {
   Space,
   Rate,
   Divider,
+  Image,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import imageProduct from "../../assets/aonam.jpg";
@@ -67,6 +68,7 @@ const productsComponent = ({ product }) => {
   const shirtSizes = ["S", "M", "L", "XL", "XXL"];
   const watchDiameters = [38, 39, 40, 41, 42];
   const pantsSizes = [28, 29, 30, 31, 32];
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -1689,7 +1691,9 @@ const productsComponent = ({ product }) => {
               overflow: "hidden",
               border: "1px solid #f0f0f0",
               boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+              cursor: "pointer", // Thêm để hiển thị con trỏ
             }}
+            onClick={() => setPreviewVisible(true)} // Click vào ảnh chính để mở preview
           >
             <img
               src={imageList[selectedImageIndex]}
@@ -1703,6 +1707,18 @@ const productsComponent = ({ product }) => {
               }}
             />
           </div>
+
+          {/* Ant Design Preview */}
+          <Image
+            width={0} // Không hiển thị
+            height={0}
+            style={{ display: "none" }} // Ẩn luôn
+            preview={{
+              visible: previewVisible,
+              src: imageList[selectedImageIndex],
+              onVisibleChange: (vis) => setPreviewVisible(vis),
+            }}
+          />
 
           {/* Thumbnail Gallery */}
           <div

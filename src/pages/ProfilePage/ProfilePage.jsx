@@ -82,7 +82,6 @@ const ProfilePage = () => {
           flexGrow: 1,
         }}
       >
-        {/* Nút Menu (chỉ hiển thị trên mobile) */}
         <Col xs={24} sm={0} style={{ textAlign: "left", marginBottom: "10px" }}>
           <Button
             type="primary"
@@ -93,7 +92,6 @@ const ProfilePage = () => {
           </Button>
         </Col>
 
-        {/* Sidebar (ẩn trên mobile) */}
         <Col xs={0} sm={6} md={5} style={{ minHeight: "100vh" }}>
           <Card
             style={{
@@ -120,7 +118,6 @@ const ProfilePage = () => {
           </Card>
         </Col>
 
-        {/* Nội dung chính */}
         <Col xs={24} sm={18} md={19} style={{ width: "100%" }}>
           <Card
             style={{
@@ -136,7 +133,6 @@ const ProfilePage = () => {
           </Card>
         </Col>
 
-        {/* Drawer Sidebar cho mobile */}
         <Drawer
           title="Menu"
           placement="left"

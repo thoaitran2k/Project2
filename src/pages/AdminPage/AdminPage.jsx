@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu } from "antd";
 import {
   AppstoreOutlined,
+  BarChartOutlined,
   OrderedListOutlined,
   PercentageOutlined,
   UserOutlined,
@@ -16,6 +17,7 @@ import { getAllProduct } from "../../redux/slices/productSlice";
 
 import OrderManage from "../../components/AdminUser/OrderManage";
 import PromotionManagement from "../../components/AdminProduct/PromotionManagement";
+import ReportComponent from "../../components/AdminProduct/ReportComponent";
 
 // Menu items
 const items = [
@@ -45,6 +47,12 @@ const items = [
       { key: "product_discount", label: "Điều chỉnh giảm giá" },
       { key: "product_promotion", label: "Tạo mã giảm giá" },
     ],
+  },
+  {
+    key: "report",
+    icon: <BarChartOutlined />,
+    label: "Báo cáo - Thống kê",
+    children: [{ key: "product_report", label: "Báo cáo bán hàng" }],
   },
 ];
 const AdminPage = () => {
@@ -141,6 +149,19 @@ const AdminPage = () => {
             }}
           >
             <PromotionManagement />
+          </div>
+        );
+      case "product_report":
+        return (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "10px",
+              width: "100%",
+            }}
+          >
+            <ReportComponent />
           </div>
         );
       default:

@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Input, Button, Row, Col, List, Spin } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { Input, Button, Row, Col, List, Spin, Card, Typography } from "antd";
+import {
+  SearchOutlined,
+  HeartOutlined,
+  HeartFilled,
+  StarFilled,
+} from "@ant-design/icons";
 import { setSearchTerm, setProducts } from "../../redux/slices/productSlice";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router";
 import { useSearch } from "../Layout/SearchContext";
-import CardComponent from "../../components/CardComponent/CardComponent";
 import TypeProductsList from "./TypeProductsList";
 import * as ProductService from "../../Services/ProductService";
 import {
@@ -20,8 +24,22 @@ import { useDisableScroll } from "../../hooks/useDisableScroll";
 import debounce from "lodash/debounce";
 
 const { Search } = Input;
+const { Text, Title } = Typography;
 
 const SearchOverlay = () => {
+  const createSlug = (name, id) => {
+    return (
+      name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/Đ/g, "D")
+        .replace(/đ/g, "d")
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, "-") + `-${id}`
+    );
+  };
+
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -32,7 +50,7 @@ const SearchOverlay = () => {
   const [resetProducts, setResetProducts] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const searchTerm = useSelector((state) => state.product.searchTerm);
-  const [limit, setLimit] = useState(8);
+  const [limit, setLimit] = useState(10);
   const location = useLocation();
   const navigate = useNavigate();
   const { isSearchOpen, toggleSearch } = useSearch();
@@ -64,6 +82,11 @@ const SearchOverlay = () => {
       console.error("🚨 Lỗi API:", error);
       return { data: [], total: 0 };
     }
+  };
+
+  const handleProductClick = (product) => {
+    toggleSearch();
+    navigate(`/product-details/${createSlug(product.name, product._id)}`);
   };
 
   // Fetch danh mục sản phẩm
@@ -226,7 +249,7 @@ const SearchOverlay = () => {
       replace: true,
     });
 
-    setLimit(8);
+    setLimit(10);
 
     setTimeout(() => {
       setProductLoading(false);
@@ -267,7 +290,7 @@ const SearchOverlay = () => {
     setSearchValue("");
     setSuggestions([]);
     dispatch(setSearchTerm(""));
-    setLimit(8);
+    setLimit(10);
     fetchAllProducts();
   };
 
@@ -447,13 +470,72 @@ const SearchOverlay = () => {
             </div>
           ) : (
             <>
-              <CardComponent products={displayedProducts} />
+              <StyledProductsGrid>
+                {displayedProducts.map((product) => (
+                  <ProductCard
+                    key={product._id}
+                    hoverable
+                    onClick={() => handleProductClick(product)}
+                  >
+                    <ProductImageContainer>
+                      <ProductImage
+                        src={product.image}
+                        alt={product.name}
+                        loading="lazy"
+                      />
+                      {product.discount > 0 && (
+                        <DiscountBadge>-{product.discount}%</DiscountBadge>
+                      )}
+                    </ProductImageContainer>
+                    <ProductInfo>
+                      <ProductName ellipsis={{ rows: 2 }}>
+                        {product.name}
+                      </ProductName>
+                      <PriceContainer>
+                        {product.discount > 0 ? (
+                          <>
+                            <CurrentPrice>
+                              {(
+                                (product.price * (100 - product.discount)) /
+                                100
+                              ).toLocaleString()}
+                              ₫
+                            </CurrentPrice>
+                            <OriginalPrice>
+                              {product.price.toLocaleString()}₫
+                            </OriginalPrice>
+                          </>
+                        ) : (
+                          <CurrentPrice>
+                            {product.price.toLocaleString()}₫
+                          </CurrentPrice>
+                        )}
+                      </PriceContainer>
+                      <RatingContainer>
+                        <StarFilled style={{ color: "#faad14" }} />
+                        <RatingText>
+                          {product.rating?.toFixed(1) || "0.0"}
+                        </RatingText>
+                        <SoldText>Đã bán {product.selled || 0}</SoldText>
+                      </RatingContainer>
+                      <LikeButton>
+                        {product.isLiked ? (
+                          <HeartFilled style={{ color: "#ff4d4f" }} />
+                        ) : (
+                          <HeartOutlined />
+                        )}
+                      </LikeButton>
+                    </ProductInfo>
+                  </ProductCard>
+                ))}
+              </StyledProductsGrid>
+
               {totalFilteredProducts > limit && (
                 <WrapperButtonContainer>
                   <WrapperButtonMore
                     style={{ marginTop: 50 }}
                     type="default"
-                    onClick={() => setLimit((prev) => prev + 8)}
+                    onClick={() => setLimit((prev) => prev + 10)}
                   >
                     Xem thêm
                   </WrapperButtonMore>
@@ -467,12 +549,149 @@ const SearchOverlay = () => {
   );
 };
 
+// Styled components
+const StyledProductsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  width: 100%;
+  padding: 0 16px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ProductCard = styled(Card)`
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .ant-card-body {
+    padding: 12px;
+  }
+`;
+
+const ProductImageContainer = styled.div`
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* Tạo tỷ lệ khung hình vuông */
+  margin-bottom: 12px;
+  overflow: hidden;
+`;
+
+const ProductImage = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+
+  ${ProductCard}:hover & {
+    transform: scale(1.05);
+  }
+`;
+
+const DiscountBadge = styled.div`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #ff4d4f;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const ProductInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const ProductName = styled(Text)`
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+  min-height: 44px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const PriceContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+`;
+
+const CurrentPrice = styled(Text)`
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff424e;
+`;
+
+const OriginalPrice = styled(Text)`
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+`;
+
+const RatingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+`;
+
+const RatingText = styled(Text)`
+  font-size: 12px;
+  color: #666;
+`;
+
+const SoldText = styled(Text)`
+  font-size: 12px;
+  color: #666;
+  margin-left: 8px;
+`;
+
+const LikeButton = styled.div`
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1;
+`;
+
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 90vh;
-  width: 100%;
-  min-width: 98vw;
+  width: 96vw;
+  padding: 0 16px;
 `;
-
 export default SearchOverlay;

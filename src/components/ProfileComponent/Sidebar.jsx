@@ -39,11 +39,6 @@ const Sidebar = () => {
           icon: <HeartOutlined />,
           label: "Sản phẩm yêu thích",
         },
-        {
-          key: "review",
-          icon: <HeartOutlined />,
-          label: "Nhận xét của tôi",
-        },
       ].map((item) => (
         <Menu.Item
           key={item.key}
