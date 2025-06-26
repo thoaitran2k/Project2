@@ -425,7 +425,7 @@ const productsComponent = ({ product }) => {
         discount: product.discount,
       },
       quantity: quantityPay,
-      amount: isAccessory ? quantityPay : 1, // Phụ kiện tính toàn bộ vào cartCount, còn lại mặc định 1
+      amount: isAccessory ? quantityPay : 1,
 
       // Xử lý biến thể theo từng loại sản phẩm
       ...(isClothing || isPants
@@ -438,8 +438,8 @@ const productsComponent = ({ product }) => {
 
       ...(isWatch
         ? {
-            diameter: selectedDiameter, // Lấy đúng đường kính từ biến thể đã chọn
-            color: selectedColor, // Lấy đúng màu từ biến thể đã chọn
+            diameter: selectedDiameter,
+            color: selectedColor,
             variant: selectedVariant,
           }
         : {}),
@@ -2233,6 +2233,56 @@ const productsComponent = ({ product }) => {
       >
         {renderSizeGuide()}
       </StyledModal>
+
+      <Modal
+        title="Chọn địa chỉ giao hàng"
+        open={isAddressModalVisible}
+        onOk={handleAddressOk}
+        onCancel={handleAddressCancel}
+        footer={[
+          <Button key="back" onClick={handleAddressCancel}>
+            Hủy
+          </Button>,
+          <Button key="submit" type="primary" onClick={handleAddressOk}>
+            Xác nhận
+          </Button>,
+        ]}
+      >
+        <Radio.Group
+          value={tempSelectedAddressId}
+          onChange={(e) => setTempSelectedAddressId(e.target.value)}
+        >
+          <Space direction="vertical">
+            {address?.map((addr) => (
+              <Radio key={addr._id} value={addr._id}>
+                <div>
+                  <strong>{addr.name}</strong> - {addr.phoneDelivery}
+                  <div>{addr.address}</div>
+                  {addr.isDefault && (
+                    <span style={{ color: "#52c41a" }}>
+                      <CheckCircleOutlined /> Mặc định
+                    </span>
+                  )}
+                </div>
+              </Radio>
+            ))}
+          </Space>
+        </Radio.Group>
+        {address?.length === 0 && (
+          <div style={{ textAlign: "center", padding: "16px" }}>
+            <p>Bạn chưa có địa chỉ nào</p>
+            <Button
+              type="primary"
+              onClick={() => {
+                setIsAddressModalVisible(false);
+                navigate("/profile/address");
+              }}
+            >
+              Thêm địa chỉ mới
+            </Button>
+          </div>
+        )}
+      </Modal>
     </Row>
   );
 };
