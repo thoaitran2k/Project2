@@ -2,7 +2,6 @@ const express = require("express");
 
 const router = express.Router();
 
-// routes/MomoWebhook.js
 router.post("/ipn", async (req, res) => {
   console.log("MoMo IPN received:", req.body);
 
