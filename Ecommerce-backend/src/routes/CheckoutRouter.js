@@ -25,14 +25,14 @@ router.post("/momo", async (req, res) => {
   const partnerCode = "MOMO";
   const orderInfo = "Thanh toán đơn hàng";
   const redirectUrl = "http://localhost:3000/checkout/momo-return";
-  const ipnUrl = redirectUrl;
+  const ipnUrl = "http://localhost:3002/api/momo/ipn";
   const requestType = "payWithMethod";
   const extraData = "";
   const autoCapture = true;
   const lang = "vi";
 
-  const orderId = partnerCode + new Date().getTime();
-  const requestId = orderId;
+  const orderId = req.body.orderId;
+  const requestId = partnerCode + new Date().getTime();
 
   // Tạo chuỗi chữ ký
   const rawSignature =
@@ -76,6 +76,7 @@ router.post("/momo", async (req, res) => {
 
   const momoRequest = https.request(options, (momoRes) => {
     let data = "";
+    momoRes.setEncoding("utf8");
 
     momoRes.on("data", (chunk) => {
       data += chunk;
@@ -84,15 +85,24 @@ router.post("/momo", async (req, res) => {
     momoRes.on("end", () => {
       try {
         const parsed = JSON.parse(data);
+        console.log("MoMo response:", parsed);
+
         if (parsed.resultCode === 0) {
+          console.log(`MoMo payment initiated for order ${orderId}`);
           return res.json({ payUrl: parsed.payUrl });
         } else {
-          return res
-            .status(400)
-            .json({ message: "Tạo thanh toán thất bại", result: parsed });
+          console.error(`MoMo error for order ${orderId}:`, parsed.message);
+          return res.status(400).json({
+            message: parsed.message || "Tạo thanh toán thất bại",
+            result: parsed,
+          });
         }
       } catch (err) {
-        return res.status(500).json({ message: "Lỗi phản hồi từ MoMo", err });
+        console.error("MoMo response parse error:", err);
+        return res.status(500).json({
+          message: "Lỗi phản hồi từ MoMo",
+          error: err.message,
+        });
       }
     });
   });

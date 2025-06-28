@@ -392,9 +392,8 @@ const CheckoutComponent = () => {
     initData();
   }, [state, user]);
 
-  //console.log("orderData ", orderData);
-
   const handlePlaceOrder = async () => {
+    // Kiểm tra điều kiện ban đầu
     if (!paymentMethod) {
       message.error("Vui lòng chọn phương thức thanh toán");
       return;
@@ -407,6 +406,7 @@ const CheckoutComponent = () => {
 
     const roundedTotal = Math.round(orderData.total);
 
+    // Tạo payload đơn hàng
     const orderPayload = {
       customer: orderData.customer,
       selectedItems: orderData.products.map((item) => ({
@@ -434,11 +434,12 @@ const CheckoutComponent = () => {
       status: paymentMethod === "momo" ? "pending_payment" : "pending",
     };
 
-    console.log("orderPayload", orderPayload);
+    console.log("Order payload:", orderPayload);
 
     try {
       dispatch(setLoading(true));
 
+      // 1. Tạo đơn hàng
       const response = await axios.post(
         "http://localhost:3002/api/order/create",
         orderPayload
@@ -448,6 +449,7 @@ const CheckoutComponent = () => {
         throw new Error("Tạo đơn hàng thất bại");
       }
 
+      // 2. Xử lý mã khuyến mãi nếu có
       const usedPromoCodes = Object.values(productPromotions).map(
         (promo) => promo.code
       );
@@ -465,73 +467,149 @@ const CheckoutComponent = () => {
       const createdOrder = response.data.order;
       const orderId = createdOrder._id;
 
+      // 3. Xử lý thanh toán MoMo
       if (paymentMethod === "momo") {
-        // Gọi tới MoMo để lấy payUrl
-        const momoResponse = await axios.post(
-          "http://localhost:3002/api/checkout/momo",
-          {
-            amount: roundedTotal,
-            orderId,
+        try {
+          console.log("Initiating MoMo payment for order:", orderId);
+
+          const momoResponse = await axios.post(
+            "http://localhost:3002/api/checkout/momo",
+            {
+              amount: roundedTotal,
+              orderId,
+            }
+          );
+
+          if (!momoResponse.data.payUrl) {
+            console.error("No payUrl received from MoMo");
+            await cancelOrderAndNavigate(
+              orderId,
+              "Không nhận được liên kết thanh toán từ MoMo",
+              "Không thể kết nối tới cổng thanh toán MoMo. Đơn hàng đã bị huỷ."
+            );
+            return;
           }
-        );
 
-        if (!momoResponse.data.payUrl) {
-          throw new Error("Không nhận được link thanh toán từ MoMo");
-        }
+          // Lưu thông tin đơn hàng tạm thời
+          localStorage.setItem(
+            "momoPendingOrder",
+            JSON.stringify({
+              orderId,
+              products: orderData.products,
+              total: orderData.total,
+              timestamp: Date.now(), // Thêm timestamp để xử lý timeout
+              paymentMethod: "momo",
+            })
+          );
 
-        // Lưu đơn hàng tạm thời để xử lý khi redirect về
-        localStorage.setItem(
-          "momoPendingOrder",
-          JSON.stringify({
+          // Bắt đầu kiểm tra timeout
+          startPaymentTimeoutCheck(orderId);
+
+          console.log("Redirecting to MoMo payment page");
+          window.location.href = momoResponse.data.payUrl;
+          return;
+        } catch (err) {
+          console.error("MoMo API error:", err);
+          await cancelOrderAndNavigate(
             orderId,
-            products: orderData.products,
-            total: orderData.total,
-          })
-        );
-
-        window.location.href = momoResponse.data.payUrl;
-        return;
+            "Gọi đến MoMo thất bại",
+            "Không thể kết nối tới cổng thanh toán MoMo. Đơn hàng đã bị huỷ."
+          );
+          return;
+        }
       }
 
-      // Nếu không phải MoMo thì tiếp tục hoàn tất đơn hàng
-      const orderedProductIds = orderData.products.map((item) => item.id);
-
-      await axios.post("http://localhost:3002/api/product/update-selled", {
-        products: orderData.products.map((item) => ({
-          productId: item.product._id,
-          quantity: item.quantity,
-          color: item.color || "",
-          size: item.size || "",
-          diameter: item.diameter || "",
-        })),
-      });
-
-      dispatch(removeMultipleFromCart(orderedProductIds));
-      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+      // 4. Xử lý phương thức thanh toán khác (COD)
+      console.log("Processing non-MoMo payment");
+      await processNonMoMoPayment(orderId, orderData.products);
 
       message.success("Đặt hàng thành công!");
       localStorage.removeItem("checkoutData");
 
-      setTimeout(() => {
-        dispatch(setLoading(false));
-        navigate("/checkout/success", {
-          replace: true,
-          state: {
-            total: orderData.total,
-            paymentMethod,
-            createdAt: new Date().toLocaleString("vi-VN", {
-              hour12: false,
-              dateStyle: "short",
-              timeStyle: "short",
-            }),
-          },
-        });
-      }, 1000);
+      dispatch(setLoading(false));
+      navigateToSuccessPage(orderData.total, paymentMethod);
     } catch (error) {
+      console.error("Order placement error:", error);
       dispatch(setLoading(false));
       message.error(error.response?.data?.message || "Đặt hàng thất bại");
-      console.error("Lỗi:", error);
     }
+  };
+
+  // Hủy đơn hàng và chuyển hướng đến trang thất bại
+  const cancelOrderAndNavigate = async (orderId, cancelReason, userMessage) => {
+    try {
+      await axios.post("http://localhost:3002/api/order/cancel", {
+        orderId,
+        reason: cancelReason,
+      });
+    } catch (err) {
+      console.error("Failed to cancel order:", err);
+    }
+
+    dispatch(setLoading(false));
+    navigate("/checkout/payment-failed", {
+      replace: true,
+      state: {
+        reason: userMessage,
+        orderId,
+      },
+    });
+  };
+
+  // Xử lý thanh toán không phải MoMo (COD)
+  const processNonMoMoPayment = async (orderId, products) => {
+    const orderedProductIds = products.map((item) => item.id);
+
+    await axios.post("http://localhost:3002/api/product/update-selled", {
+      products: products.map((item) => ({
+        productId: item.product._id,
+        quantity: item.quantity,
+        color: item.color || "",
+        size: item.size || "",
+        diameter: item.diameter || "",
+      })),
+    });
+
+    dispatch(removeMultipleFromCart(orderedProductIds));
+    dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+  };
+
+  // Chuyển hướng đến trang thành công
+  const navigateToSuccessPage = (total, paymentMethod) => {
+    navigate("/checkout/success", {
+      replace: true,
+      state: {
+        total,
+        paymentMethod,
+        createdAt: new Date().toLocaleString("vi-VN", {
+          hour12: false,
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+      },
+    });
+  };
+
+  // Kiểm tra timeout thanh toán
+  const startPaymentTimeoutCheck = (orderId) => {
+    const paymentTimeout = 1 * 60 * 1000; // 15 phút
+
+    const timeoutId = setTimeout(async () => {
+      const pendingOrder = JSON.parse(localStorage.getItem("momoPendingOrder"));
+
+      if (pendingOrder && pendingOrder.orderId === orderId) {
+        console.warn(`Payment timeout for order ${orderId}`);
+        await cancelOrderAndNavigate(
+          orderId,
+          "Quá thời gian thanh toán",
+          "Quá thời gian thanh toán. Đơn hàng đã bị huỷ."
+        );
+        localStorage.removeItem("momoPendingOrder");
+      }
+    }, paymentTimeout);
+
+    // Lưu timeoutId để clear khi component unmount (nếu cần)
+    return () => clearTimeout(timeoutId);
   };
 
   if (orderData.products.length === 0) {

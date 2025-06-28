@@ -16,6 +16,7 @@ import FemaleCollectionPage from "../pages/CollectionPage/FemaleCollectionPage";
 import BestSellingProducts from "../pages/BestSellProducts/BestSellingProducts";
 import CollectionPage from "../pages/CollectionPage/CollectionPage";
 import SaleOffPage from "../pages/SaleOffPage/SaleOffPage";
+import CheckoutFail from "../pages/CheckoutPage/CheckoutFail";
 
 export const routes = [
   //PAGE
@@ -93,6 +94,12 @@ export const routes = [
   {
     path: "/checkout/success",
     page: CheckoutSuccesPage,
+    isShowHeader: false,
+    isShowFooter: true,
+  },
+  {
+    path: "/checkout/payment-failed",
+    page: CheckoutFail,
     isShowHeader: false,
     isShowFooter: true,
   },

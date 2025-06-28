@@ -274,9 +274,90 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+//Hủy đơn hàng khi thanh toán thất bại
+const cancelOrderImmediately = async (req, res) => {
+  try {
+    const { orderId, reason } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: "Thiếu orderId" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đơn hàng" });
+    }
+
+    // Chỉ được hủy nếu chưa xử lý
+    if (!["pending", "pending_payment"].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể hủy đơn hàng đang ở trạng thái "${order.status}"`,
+      });
+    }
+
+    order.status = "cancelled";
+    order.updatedAt = new Date();
+    if (reason) order.cancelReason = reason; // Nếu muốn, cần thêm trường này vào schema
+
+    await order.save();
+
+    // Cập nhật luôn trong orderHistory của user
+    await User.updateOne(
+      {
+        _id: order.customer.userId,
+        "orderHistory.orderId": order._id,
+      },
+      {
+        $set: {
+          "orderHistory.$.status": "cancelled",
+        },
+      }
+    );
+
+    return res.json({
+      success: true,
+      message: "Đã hủy đơn hàng thành công do lỗi thanh toán",
+      order,
+    });
+  } catch (err) {
+    console.error("cancelOrderImmediately error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi hủy đơn hàng",
+    });
+  }
+};
+
+const getOrderStatus = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).select(
+      "status cancelReason paymentMethod total"
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json({
+      status: order.status,
+      cancelReason: order.cancelReason,
+      paymentMethod: order.paymentMethod,
+      total: order.total,
+    });
+  } catch (error) {
+    console.error("getOrderStatus error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   createOrder,
   updateOrderStatus,
   getAllOrders,
   requestCancel,
+  cancelOrderImmediately,
+  getOrderStatus,
 };
