@@ -7,6 +7,8 @@ const PromotionCode = require("../models/PromotionCode");
 
 const Product = require("../models/ProductModel");
 
+const { sendOrderStatusEmail } = require("../services/MailService");
+
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
@@ -261,6 +263,25 @@ const updateOrderStatus = async (req, res) => {
         history.status = status;
         await user.save();
       }
+    }
+
+    // ✅ Gửi email thông báo cập nhật trạng thái
+    const emailResult = await sendOrderStatusEmail(
+      order.customer.email,
+      order.customer.username,
+      order._id.toString(),
+      status,
+      order
+    );
+
+    if (emailResult.status === "SUCCESS") {
+      console.log("✅ Gửi email thành công:", emailResult.message);
+    } else {
+      console.error(
+        "❌ Gửi email thất bại:",
+        emailResult.message,
+        emailResult.error
+      );
     }
 
     res.status(200).json({ success: true, order });

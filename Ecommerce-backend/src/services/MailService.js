@@ -123,4 +123,132 @@ const sendPromotionCode = async (email, promoData, userName) => {
   }
 };
 
-module.exports = { sendVerificationCode, sendPromotionCode };
+/**
+ * Gửi email khi thay đổi trạng thái đơn hàng
+ * @param {string} email - Email khách hàng
+ * @param {string} userName - Tên khách hàng
+ * @param {string} orderId - Mã đơn hàng
+ * @param {string} status - Trạng thái mới của đơn hàng
+ * @returns {Promise<{status: string, message: string, error?: any}>}
+ */
+const sendOrderStatusEmail = async (
+  email,
+  userName,
+  orderId,
+  status,
+  order
+) => {
+  try {
+    const subject = `Cập nhật trạng thái đơn hàng #${orderId}`;
+    let statusMessage = "";
+
+    switch (status) {
+      case "pending":
+        statusMessage =
+          "Chúng tôi đã nhận được đơn hàng của bạn và đang chờ xác nhận.";
+        break;
+      case "processing":
+        statusMessage = "Đơn hàng của bạn đang được xử lý bởi hệ thống.";
+        break;
+      case "pending_payment":
+        statusMessage =
+          "Đơn hàng của bạn đang chờ thanh toán. Vui lòng hoàn tất thanh toán để tiếp tục.";
+        break;
+      case "shipping":
+        statusMessage = "Đơn hàng của bạn đã được giao cho đơn vị vận chuyển.";
+        break;
+      case "delivered":
+        statusMessage =
+          "Đơn hàng của bạn đã được giao thành công. Cảm ơn bạn đã mua hàng!";
+        break;
+      case "paid":
+        statusMessage =
+          "Chúng tôi đã nhận được thanh toán cho đơn hàng của bạn.";
+        break;
+      case "requestedCancel":
+        statusMessage =
+          "Yêu cầu hủy đơn hàng của bạn đã được ghi nhận. Chúng tôi sẽ xử lý sớm nhất có thể.";
+        break;
+      case "cancelled":
+        statusMessage =
+          "Đơn hàng của bạn đã bị hủy. Nếu có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ.";
+        break;
+      default:
+        statusMessage = "Trạng thái đơn hàng của bạn đã được cập nhật.";
+        break;
+    }
+
+    const productListHtml = order.selectedItems
+      .map(
+        (item) => `
+      <tr>
+        <td>${item.productName}</td>
+        <td style="text-align:center;">${item.quantity}</td>
+        <td style="text-align:right;">${item.price.toLocaleString()}₫</td>
+      </tr>
+    `
+      )
+      .join("");
+
+    const msg = {
+      to: email,
+      from: "thoaitptp23@gmail.com",
+      subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
+          <h2 style="color: #1976d2;">Xin chào ${userName},</h2>
+          <p>${statusMessage}</p>
+
+          <h3>Thông tin đơn hàng</h3>
+          <p><strong>Mã đơn hàng:</strong> #${orderId}</p>
+          <p><strong>Phương thức thanh toán:</strong> ${order.paymentMethod.toUpperCase()}</p>
+          <p><strong>Phí vận chuyển:</strong> ${order.shippingFee.toLocaleString()}₫</p>
+          <p><strong>Tổng tiền:</strong> ${order.total.toLocaleString()}₫</p>
+
+          <h3>Danh sách sản phẩm</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f2f2f2;">
+                <th style="text-align:left; padding: 8px;">Sản phẩm</th>
+                <th style="text-align:center;">SL</th>
+                <th style="text-align:right;">Giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productListHtml}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px;">
+            <p>Trân trọng,</p>
+            <p>Đội ngũ hỗ trợ</p>
+            <p>Hotline: 0794330648 - Liên hệ: Trần Phú Thoại</p>
+          </div>
+        </div>
+      `,
+    };
+
+    await sgMail.send(msg);
+    console.log("✅ Email đã gửi thành công.");
+    return {
+      status: "SUCCESS",
+      message: "Email cập nhật trạng thái đơn hàng đã được gửi",
+    };
+  } catch (error) {
+    console.error(
+      "Lỗi gửi email trạng thái đơn hàng:",
+      error.response?.body || error.message
+    );
+    return {
+      status: "ERROR",
+      message: "Gửi email trạng thái đơn hàng thất bại",
+      error: error.response?.body || error.message,
+    };
+  }
+};
+
+module.exports = {
+  sendVerificationCode,
+  sendPromotionCode,
+  sendOrderStatusEmail,
+};
