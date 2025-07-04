@@ -444,6 +444,59 @@ const updateSelledCount = async (req, res) => {
   }
 };
 
+const revertSelledToStock = async (req, res) => {
+  try {
+    const { products } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Danh sách sản phẩm không hợp lệ" });
+    }
+
+    const updatePromises = products.map(async (item) => {
+      const { productId, quantity = 0, color, size, diameter } = item;
+      const product = await Product.findById(productId);
+
+      if (!product) return;
+
+      // Giảm số lượng đã bán và tăng tồn kho tổng
+      product.selled = Math.max((product.selled || 0) - quantity, 0);
+      product.countInStock = (product.countInStock || 0) + quantity;
+
+      // Cập nhật tồn kho biến thể nếu có
+      if (Array.isArray(product.variants) && product.variants.length > 0) {
+        const isWatch = product.type?.toLowerCase() === "đồng hồ";
+
+        const matchedVariant = product.variants.find((v) => {
+          const matchColor = !color || v.color === color;
+          const matchSize = !size || String(v.size) === String(size);
+          const matchDiameter = isWatch
+            ? Number(v.diameter) === Number(diameter)
+            : true;
+
+          return matchColor && matchSize && matchDiameter;
+        });
+
+        if (matchedVariant) {
+          matchedVariant.quantity = (matchedVariant.quantity || 0) + quantity;
+        }
+      }
+
+      await product.save();
+    });
+
+    await Promise.all(updatePromises);
+
+    res
+      .status(200)
+      .json({ message: "Đã hoàn kho và giảm selled sau khi huỷ đơn" });
+  } catch (error) {
+    console.error("Lỗi khi hoàn kho:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 //LIKE SẢN PHẨM
 const toggleLike = async (req, res) => {
   const { userId } = req.body;
@@ -497,4 +550,5 @@ module.exports = {
   getPromotionList,
   updateSelledCount,
   toggleLike,
+  revertSelledToStock,
 };

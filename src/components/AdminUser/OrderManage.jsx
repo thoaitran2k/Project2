@@ -9,6 +9,8 @@ import {
   requestCancelOrder,
 } from "../../redux/slices/orderSlice";
 
+import axios from "axios";
+
 const OrderManage = () => {
   const dispatch = useDispatch();
   const { orders, loading } = useSelector((state) => state.order);
@@ -115,6 +117,21 @@ const OrderManage = () => {
             content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
             onOk: async () => {
               try {
+                // 1. Gọi API revert selled trước
+                await axios.post(
+                  "http://localhost:3002/api/product/revert-selled",
+                  {
+                    products: selectedOrder.selectedItems.map((item) => ({
+                      productId: item.product._id,
+                      quantity: item.quantity,
+                      color: item.color,
+                      size: item.size,
+                      diameter: item.diameter,
+                    })),
+                  }
+                );
+
+                // 2. Cập nhật trạng thái đơn hàng
                 await dispatch(
                   updateOrderStatus({
                     orderId: selectedOrder._id,
@@ -123,9 +140,11 @@ const OrderManage = () => {
                       newStatus === "cancelled" && { confirmCancel: true }),
                   })
                 );
+
                 message.success("✅ Đã xác nhận hủy đơn hàng thành công.");
                 dispatch(fetchAllOrders());
               } catch (error) {
+                console.error("Lỗi khi hủy đơn hàng:", error);
                 message.error("❌ Xác nhận hủy đơn hàng thất bại.");
               }
             },
@@ -297,6 +316,21 @@ const OrderManage = () => {
                     content: "Bạn có chắc chắn muốn hủy đơn hàng này?",
                     onOk: async () => {
                       try {
+                        // 1. Gọi API revert selled trước
+                        await axios.post(
+                          "http://localhost:3002/api/product/revert-selled",
+                          {
+                            products: record.selectedItems.map((item) => ({
+                              productId: item.product._id,
+                              quantity: item.quantity,
+                              color: item.color,
+                              size: item.size,
+                              diameter: item.diameter,
+                            })),
+                          }
+                        );
+
+                        // 2. Cập nhật trạng thái đơn hàng
                         await dispatch(
                           updateOrderStatus({
                             orderId: record._id,
@@ -304,11 +338,13 @@ const OrderManage = () => {
                             confirmCancel: true,
                           })
                         );
+
                         message.success(
                           "✅ Đã xác nhận hủy đơn hàng thành công."
                         );
                         dispatch(fetchAllOrders());
                       } catch (error) {
+                        console.error("Lỗi khi hủy đơn hàng:", error);
                         message.error("❌ Xác nhận hủy đơn hàng thất bại.");
                       }
                     },

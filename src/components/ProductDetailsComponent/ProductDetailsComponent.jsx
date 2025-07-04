@@ -2063,9 +2063,12 @@ const productsComponent = ({ product }) => {
             </div>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               {(isWatch ? watchDiameters : displaySizes).map((item, index) => {
+                // Kiểm tra xem size có tồn tại trong variants không
                 const isAvailable = isWatch
                   ? product.diameter?.includes(item)
-                  : availableSizeSet.has(item);
+                  : product.variants?.some((v) => v.size === item.toString()) ||
+                    product.variants?.some((v) => v.size === item);
+
                 const isSelected = isWatch
                   ? selectedDiameter === item
                   : selectedSize === item;
@@ -2078,8 +2081,16 @@ const productsComponent = ({ product }) => {
                       padding: "10px 12px",
                       borderRadius: "8px",
                       border: "1px solid",
-                      borderColor: isSelected ? "#1890ff" : "#d9d9d9",
-                      backgroundColor: isSelected ? "#e6f7ff" : "#fff",
+                      borderColor: isSelected
+                        ? "#1890ff"
+                        : isAvailable
+                        ? "#d9d9d9"
+                        : "#999",
+                      backgroundColor: isSelected
+                        ? "#e6f7ff"
+                        : isAvailable
+                        ? "#fff"
+                        : "#f5f5f5",
                       color: isSelected
                         ? "#1890ff"
                         : isAvailable
@@ -2104,6 +2115,18 @@ const productsComponent = ({ product }) => {
                     disabled={!isAvailable}
                   >
                     {isWatch ? `${item}mm` : item}
+                    {!isAvailable && (
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: "10px",
+                          color: "#ff4d4f",
+                          marginTop: "2px",
+                        }}
+                      >
+                        Hết hàng
+                      </span>
+                    )}
                   </button>
                 );
               })}

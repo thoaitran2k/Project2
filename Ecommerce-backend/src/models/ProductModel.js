@@ -91,5 +91,54 @@ productSchema.statics.updateProductLikeCount = async function (productId) {
   }
 };
 
+productSchema.statics.updateSoldCount = async function (products) {
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const bulkOps = products.map((item) => {
+      // Base update operation
+      const updateOp = {
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(item.productId) },
+          update: {
+            $inc: {
+              selled: item.quantity,
+              countInStock: -item.quantity,
+            },
+          },
+          session,
+        },
+      };
+
+      // Nếu sản phẩm có variants (quần áo, đồng hồ)
+      if (item.color || item.size || item.diameter) {
+        const variantMatch = {};
+        if (item.color) variantMatch["variants.color"] = item.color;
+        if (item.size) variantMatch["variants.size"] = item.size;
+        if (item.diameter) variantMatch["variants.diameter"] = item.diameter;
+
+        updateOp.updateOne.update.$inc["variants.$[matchedVariant].quantity"] =
+          -item.quantity;
+        updateOp.updateOne.arrayFilters = [{ matchedVariant: variantMatch }];
+      }
+
+      return updateOp;
+    });
+
+    // Thực hiện bulk write trong transaction
+    const result = await this.bulkWrite(bulkOps, { session });
+    await session.commitTransaction();
+    session.endSession();
+
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error updating sold count:", error);
+    throw error;
+  }
+};
+
 const Product = mongoose.model("Product", productSchema);
 module.exports = Product;

@@ -299,6 +299,8 @@ router.put("/update-promotion/:id", promotionController.updatePromotion);
 //CẬP NHẬT SỐ LƯỢNG KHI ĐẶT HÀNG
 router.post("/update-selled", ProductController.updateSelledCount);
 
+router.post("/revert-selled", ProductController.revertSelledToStock);
+
 //CẬP NHẬT LẠI RATING KHI BÌNH LUẬN
 router.put("/:id/update-rating", async (req, res) => {
   try {
