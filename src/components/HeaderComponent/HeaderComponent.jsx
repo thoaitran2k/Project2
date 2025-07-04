@@ -40,7 +40,7 @@ import { persistor } from "../../redux/store";
 import styled from "styled-components";
 import { color } from "framer-motion";
 import { useSearch } from "../Layout/SearchContext";
-import useAutoLogoutWhenTokenMissing from "../../hooks/useAutoLogoutWhenTokenMissing";
+import logoImage from "../../assets/logo-shop-thoi-trang-04-removebg-preview.png";
 
 const { useBreakpoint } = Grid;
 
@@ -105,11 +105,11 @@ const Sidebar = () => {
           open={open}
           width={drawerWidth}
           styles={{
-            body: { padding: 0, display: "flex" }, // Thêm display flex
+            body: { padding: 0, display: "flex" },
             header: {
               padding: "16px 24px",
               borderBottom: "1px solid #f0f0f0",
-            }, // Thay headerStyle thành styles.header
+            },
           }}
         >
           <NavbarComponent
@@ -494,7 +494,13 @@ const HeaderComponent = ({
                     : -55,
               }}
             >
-              <WrapperLogo>LOGO</WrapperLogo>
+              <WrapperLogo>
+                <img
+                  src={logoImage}
+                  alt="The Fashion Shop"
+                  style={{ height: "85px", objectFit: "contain" }}
+                />
+              </WrapperLogo>
             </div>
           </Col>
 

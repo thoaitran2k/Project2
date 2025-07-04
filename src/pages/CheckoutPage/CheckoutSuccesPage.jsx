@@ -3,6 +3,7 @@ import CheckoutSuccess from "../../components/Checkout/CheckoutSuccess";
 import styled from "styled-components";
 import zaloicon from "../../assets/zaloicon.png";
 import { useNavigate } from "react-router";
+import logoImage from "../../assets/logo-shop-thoi-trang-04-removebg-preview.png";
 
 const CheckoutSuccesPage = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const CheckoutSuccesPage = () => {
                 cursor: "pointer",
               }}
             >
-              LOGO
+              <LogoImage src={logoImage} alt="The Fashion Shop" />
             </div>
           </div>
 
@@ -84,4 +85,9 @@ const CheckoutHeaderWrapper = styled.div`
   align-items: center;
   justify-content: space-between;
   font-size: 25px;
+`;
+
+const LogoImage = styled.img`
+  height: 60px;
+  object-fit: contain;
 `;

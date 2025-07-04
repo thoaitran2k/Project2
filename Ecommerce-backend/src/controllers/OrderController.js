@@ -275,10 +275,10 @@ const updateOrderStatus = async (req, res) => {
     );
 
     if (emailResult.status === "SUCCESS") {
-      console.log("✅ Gửi email thành công:", emailResult.message);
+      console.log("Gửi email thành công:", emailResult.message);
     } else {
       console.error(
-        "❌ Gửi email thất bại:",
+        " Gửi email thất bại:",
         emailResult.message,
         emailResult.error
       );

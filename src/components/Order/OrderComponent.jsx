@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Card, Divider, Button, Tag, Checkbox, message } from "antd";
+import {
+  Card,
+  Divider,
+  Button,
+  Tag,
+  Checkbox,
+  message,
+  Empty,
+  Modal,
+} from "antd";
 import AddressModal from "./AddressModal";
-
 import {
   clearCart,
   removeFromCart,
@@ -20,7 +28,6 @@ import {
   MinusOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { hover } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
@@ -28,49 +35,56 @@ const UnauthenticatedCart = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ textAlign: "center", padding: "40px" }}>
-      <ShoppingCartOutlined style={{ fontSize: "48px", color: "#ccc" }} />
-      <p>Vui lòng đăng nhập để xem giỏ hàng</p>
-      <Button
-        style={{ marginLeft: 10 }}
-        onClick={() => navigate("/sign-in", { state: { from: "/order" } })}
-      >
-        Đăng nhập
-      </Button>
-    </div>
+    <EmptyContainer>
+      <Empty
+        image={
+          <ShoppingCartOutlined style={{ fontSize: 64, color: "#1890ff" }} />
+        }
+        description={
+          <div>
+            <p style={{ fontSize: 16, marginBottom: 16 }}>
+              Vui lòng đăng nhập để xem giỏ hàng
+            </p>
+            <Button
+              type="primary"
+              onClick={() =>
+                navigate("/sign-in", { state: { from: "/order" } })
+              }
+            >
+              Đăng nhập
+            </Button>
+          </div>
+        }
+      />
+    </EmptyContainer>
   );
 };
 
 const OrderComponent = () => {
-  //const [quantities, setQuantities] = useState({});
-  const { isAuthenticated, address, _id } = useSelector((state) => state.user);
-
-  const isUnauthenticated = !isAuthenticated;
-
-  const [quantityPay, setQuantityPay] = useState(1);
-
+  const { isAuthenticated } = useSelector((state) => state.user);
   const [isOpenModal, setIsOpenModal] = useState(false);
-
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const user = useSelector((state) => state.user);
-  const defaultAddress = user.address.find((addr) => addr.isDefault);
+  const { cartItems } = useSelector((state) => state.cart);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Set default address
   const [selectedAddress, setSelectedAddress] = useState(() => {
     if (!user.address || user.address.length === 0) return null;
     return user.address.find((addr) => addr.isDefault) || user.address[0];
   });
 
-  const { cartItems, cartCount } = useSelector((state) => state.cart);
+  // Selected products
   const selectedProducts = cartItems
     .filter((item) => item.selected)
     .map((item) => item.id);
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
   const isAllChecked =
     cartItems.length > 0 && cartItems.every((item) => item.selected);
 
-  console.log("cartItems", cartItems);
-
+  // Handle quantity changes
   const handleIncreaseQuantity = (itemId) => {
     const item = cartItems.find((item) => item.id === itemId);
     if (item) {
@@ -82,12 +96,6 @@ const OrderComponent = () => {
       );
     }
   };
-
-  useEffect(() => {
-    if (user?._id) {
-      dispatch(updateCartOnServer());
-    }
-  }, [cartItems, dispatch, user]);
 
   const handleDecreaseQuantity = (itemId) => {
     const item = cartItems.find((item) => item.id === itemId);
@@ -101,55 +109,90 @@ const OrderComponent = () => {
     }
   };
 
+  // Sync cart with server
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(updateCartOnServer());
+    }
+  }, [cartItems, dispatch, user]);
+
+  // Handle remove items
+  const showDeleteModal = (itemId = null) => {
+    setItemToDelete(itemId);
+    setIsDeleteModalVisible(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (itemToDelete === null) {
+      // Delete all selected items
+      if (isAllChecked) {
+        dispatch(clearCart());
+        dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+      } else {
+        selectedProducts.forEach((itemId) => {
+          dispatch(removeFromCart(itemId));
+          dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+        });
+      }
+      message.success("Đã xóa sản phẩm khỏi giỏ hàng");
+    } else {
+      // Delete single item
+      dispatch(removeFromCart(itemToDelete));
+      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
+      message.success("Đã xóa sản phẩm khỏi giỏ hàng");
+    }
+    setIsDeleteModalVisible(false);
+    setItemToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteModalVisible(false);
+    setItemToDelete(null);
+  };
+
   const hanleRemoveAllCartItems = () => {
     if (selectedProducts.length === 0) {
       message.warning("Bạn chưa chọn sản phẩm nào!");
       return;
     }
-
-    if (isAllChecked) {
-      dispatch(clearCart());
-      dispatch(updateCartOnServer({ forceUpdateEmptyCart: true }));
-    } else {
-      selectedProducts.forEach((itemId) => {
-        dispatch(removeFromCart(itemId));
-        updateCartOnServer({ forceUpdateEmptyCart: true });
-      });
-    }
+    showDeleteModal();
   };
 
-  const handleChangeAddress = () => {
-    console.log("Thay đổi địa chỉ");
-    setIsOpenModal(true);
-  };
+  // Address handling
+  const handleChangeAddress = () => setIsOpenModal(true);
+  const handleSelectAddress = (address) => setSelectedAddress(address);
 
-  const handleSelectAddress = (address) => {
-    setSelectedAddress(address);
-  };
-
+  // Checkbox handlers
   const handleCheckAll = (e) => {
-    const shouldSelectAll = e.target.checked;
-    dispatch(toggleAllCartItemsSelected(shouldSelectAll));
+    dispatch(toggleAllCartItemsSelected(e.target.checked));
   };
 
   const handleProductCheck = (checkedValues) => {
-    // Tìm sự khác biệt giữa giá trị mới và cũ
     const allIds = cartItems.map((item) => item.id);
-
-    // Cập nhật từng item được thay đổi
     allIds.forEach((id) => {
       const shouldBeSelected = checkedValues.includes(id);
       const item = cartItems.find((item) => item.id === id);
-
       if (item && item.selected !== shouldBeSelected) {
         dispatch(toggleCartItemSelected(id));
       }
     });
   };
+
+  // Checkout handler
   const handleCheckout = () => {
     const selectedItems = cartItems.filter((item) =>
       selectedProducts.includes(item.id)
     );
+
+    if (selectedItems.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
+
+    if (!selectedAddress) {
+      message.warning("Vui lòng chọn địa chỉ giao hàng");
+      return;
+    }
 
     navigate("/checkout", {
       state: {
@@ -161,71 +204,26 @@ const OrderComponent = () => {
     });
   };
 
-  //Hàm tính tổng tiền sản phẩm
+  // Calculation functions
   const calculateSelectedTotal = () => {
     return cartItems
       .filter((item) => selectedProducts.includes(item.id))
       .reduce((total, item) => total + item.product.price * item.quantity, 0);
   };
 
-  //Hàm tính giảm giá
   const calculateDiscounts = () => {
     return cartItems
       .filter((item) => selectedProducts.includes(item.id))
       .reduce((total, item) => {
-        const itemDiscount = item.product.discount || 0; // % discount
+        const itemDiscount = item.product.discount || 0;
         const discountPerItem = (item.product.price * itemDiscount) / 100;
         return total + discountPerItem * item.quantity;
       }, 0);
   };
 
-  const calculateSubtotal = () => {
-    return cartItems
-      .filter((item) => selectedProducts.includes(item.id))
-      .reduce((total, item) => total + item.product.price * item.quantity, 0);
-  };
-
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const discount = calculateDiscounts();
-    return subtotal - discount;
+    return calculateSelectedTotal() - calculateDiscounts();
   };
-
-  const logSelectedItems = () => {
-    const selectedItems = cartItems.filter((item) =>
-      selectedProducts.includes(item.id)
-    );
-
-    //console.log("Các sản phẩm đã chọn:", selectedItems);
-
-    selectedItems.forEach((item, index) => {
-      const isWatch = item.product.type === "Đồng hồ";
-      const actualSize = isWatch ? item.variant?.diameter : item.size;
-
-      console.log(`Sản phẩm ${index + 1}:`, {
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-        color: item.color,
-        size: actualSize,
-        discount: item.product.discount,
-        total: item.product.price * item.quantity,
-      });
-    });
-
-    const totalPrice = selectedItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    );
-
-    //console.log("Tổng tiền:", totalPrice);
-  };
-
-  useEffect(() => {
-    if (selectedProducts.length > 0) {
-      logSelectedItems();
-    }
-  }, [selectedProducts]);
 
   if (!isAuthenticated) {
     return <UnauthenticatedCart />;
@@ -238,32 +236,48 @@ const OrderComponent = () => {
   return (
     <OrderContainer>
       <LeftColumn>
-        {/* Header Giỏ hàng */}
         <SectionTitle>
-          <ShoppingCartOutlined /> GIỎ HÀNG
+          <ShoppingCartOutlined /> GIỎ HÀNG ({cartItems.length})
         </SectionTitle>
 
-        <Section>
-          {/* Header row - Fixed column widths */}
+        <CartSection>
           <GridHeader>
             <Checkbox onChange={handleCheckAll} checked={isAllChecked}>
-              Tất cả ({cartItems.length} sản phẩm)
+              <strong>Tất cả ({cartItems.length} sản phẩm)</strong>
             </Checkbox>
             <HeaderPrice>Đơn giá</HeaderPrice>
             <HeaderQuantity>Số lượng</HeaderQuantity>
             <HeaderTotal>Thành tiền</HeaderTotal>
-            <HeaderDelete style={{ textAlign: "right" }}>
-              <DeleteOutlined onClick={hanleRemoveAllCartItems} />
-            </HeaderDelete>
+            <HeaderAction>
+              <DeleteOutlined
+                onClick={hanleRemoveAllCartItems}
+                style={{
+                  color: selectedProducts.length > 0 ? "#ff4d4f" : "#d9d9d9",
+                }}
+              />
+            </HeaderAction>
           </GridHeader>
-          {/* Product list */}
 
-          <Checkbox.Group
-            value={selectedProducts}
-            onChange={handleProductCheck}
-          >
-            {sortedCartItems.map((item) => {
-              return (
+          {cartItems.length === 0 ? (
+            <EmptyCartMessage>
+              <Empty
+                description="Giỏ hàng của bạn đang trống"
+                image={
+                  <ShoppingCartOutlined
+                    style={{ fontSize: 48, color: "#ccc" }}
+                  />
+                }
+              />
+              <Button type="primary" onClick={() => navigate("/home")}>
+                Tiếp tục mua sắm
+              </Button>
+            </EmptyCartMessage>
+          ) : (
+            <Checkbox.Group
+              value={selectedProducts}
+              onChange={handleProductCheck}
+            >
+              {sortedCartItems.map((item) => (
                 <GridRow key={item.id}>
                   <ProductCell>
                     <Checkbox
@@ -282,260 +296,203 @@ const OrderComponent = () => {
                     <ProductInfo>
                       <ProductName>{item.product.name}</ProductName>
                       <ProductDetails>
-                        {item.color && <div>Màu: {item.color}</div>}
-                        {item.size && <div>Size: {item.size}</div>}
+                        {item.color && (
+                          <DetailItem>Màu: {item.color}</DetailItem>
+                        )}
+                        {item.size && (
+                          <DetailItem>Size: {item.size}</DetailItem>
+                        )}
                         {item.diameter && (
-                          <div>Đường kính: {item.diameter}</div>
+                          <DetailItem>Đường kính: {item.diameter}</DetailItem>
                         )}
                       </ProductDetails>
                     </ProductInfo>
                   </ProductCell>
 
-                  <PriceCell>{item.product.price.toLocaleString()}₫</PriceCell>
+                  <PriceCell>
+                    {item.product.discount > 0 ? (
+                      <>
+                        <OriginalPrice hasDiscount>
+                          {item.product.price.toLocaleString()}₫
+                        </OriginalPrice>
+                        <DiscountPrice>
+                          {(
+                            item.product.price *
+                            (1 - item.product.discount / 100)
+                          ).toLocaleString()}
+                          ₫
+                        </DiscountPrice>
+                      </>
+                    ) : (
+                      <OriginalPrice>
+                        {item.product.price.toLocaleString()}₫
+                      </OriginalPrice>
+                    )}
+                  </PriceCell>
 
                   <QuantityCell>
-                    <QuantityContainer>
-                      <MinusOutlined
+                    <QuantityControl>
+                      <QuantityButton
                         onClick={() => handleDecreaseQuantity(item.id)}
-                        className="quantity-btn"
-                      />
-                      <span className="quantity-value">{item.quantity}</span>
-                      <PlusOutlined
+                        disabled={item.quantity <= 1}
+                      >
+                        <MinusOutlined />
+                      </QuantityButton>
+                      <QuantityValue>{item.quantity}</QuantityValue>
+                      <QuantityButton
                         onClick={() => handleIncreaseQuantity(item.id)}
-                        className="quantity-btn"
-                      />
-                    </QuantityContainer>
+                      >
+                        <PlusOutlined />
+                      </QuantityButton>
+                    </QuantityControl>
                   </QuantityCell>
 
                   <TotalCell>
-                    {(item.product.price * item.quantity).toLocaleString()}₫
+                    <FinalPrice>
+                      {(
+                        (item.product.discount > 0
+                          ? item.product.price *
+                            (1 - item.product.discount / 100)
+                          : item.product.price) * item.quantity
+                      ).toLocaleString()}
+                      ₫
+                    </FinalPrice>
+                    {item.product.discount > 0 && (
+                      <DiscountBadge>-{item.product.discount}%</DiscountBadge>
+                    )}
                   </TotalCell>
 
-                  <DeleteCell onClick={() => dispatch(removeFromCart(item.id))}>
-                    <DeleteOutlined />
-                  </DeleteCell>
+                  <ActionCell>
+                    <DeleteButton onClick={() => showDeleteModal(item.id)} />
+                  </ActionCell>
                 </GridRow>
-              );
-            })}
-          </Checkbox.Group>
-        </Section>
+              ))}
+            </Checkbox.Group>
+          )}
+        </CartSection>
 
-        {/* Khu vực mã khuyến mãi */}
-        <Section>
-          <ArrowLink>
-            <span>
-              <TagOutlined /> Thêm mã khuyến mãi của Shop
-            </span>
+        <PromotionSection>
+          <PromotionHeader>
+            <TagOutlined /> Mã giảm giá
             <RightOutlined />
-          </ArrowLink>
-          <Divider style={{ margin: "12px 0" }} />
+          </PromotionHeader>
           <PromotionTag>
-            <span style={{ marginRight: 4 }}>🚚</span>
+            <span style={{ marginRight: 8 }}>🚚</span>
             Freeship 10k đơn từ 45k, Freeship 25k đơn từ 100k
           </PromotionTag>
-        </Section>
+        </PromotionSection>
       </LeftColumn>
+
       <RightColumn>
-        <SectionTitle>
-          <br />
-        </SectionTitle>
-        {/* Thông tin giao hàng */}
-        {/* Thông tin giao hàng */}
-        {user.isAuthenticated && (
-          <Section>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h4>
-                <EnvironmentOutlined /> Giao tới
-              </h4>
-              <div
-                style={{
-                  alignItems: "center",
-                  cursor: "pointer",
-                  color: "blue",
-                  transition: "color 0.3s ease",
-                }}
-                onMouseEnter={(e) => (e.target.style.color = "red")}
-                onMouseLeave={(e) => (e.target.style.color = "#1890ff")}
-                onClick={handleChangeAddress}
-              >
-                Đổi địa chỉ
-              </div>
-            </div>
-            <AddressInfo>
-              <div>
-                <strong>
-                  {selectedAddress?.name || "Chưa có tên người nhận hàng"}
-                </strong>
-              </div>
-              <div>
-                {selectedAddress?.phoneDelivery || "Chưa có số điện thoại"}
-              </div>
-              <div>{selectedAddress?.address || "Chưa có địa chỉ"}</div>
-            </AddressInfo>
-          </Section>
-        )}
+        <br />
+        <br />
+        <br />
+        <SummarySection>
+          <SectionHeader>
+            <EnvironmentOutlined /> ĐỊA CHỈ GIAO HÀNG
+          </SectionHeader>
+          <AddressCard>
+            <AddressHeader>
+              <strong>
+                {selectedAddress?.name || "Chưa có tên người nhận hàng"}
+              </strong>
+              <ChangeAddressButton onClick={handleChangeAddress}>
+                Thay đổi
+              </ChangeAddressButton>
+            </AddressHeader>
+            <AddressDetail>
+              {selectedAddress?.phoneDelivery || "Chưa có số điện thoại"}
+            </AddressDetail>
+            <AddressDetail>
+              {selectedAddress?.address || "Chưa có địa chỉ"}
+            </AddressDetail>
+          </AddressCard>
 
-        {/* Khu vực chọn khuyến mãi */}
+          <Divider style={{ margin: "16px 0", borderColor: "#f0f0f0" }} />
 
-        {/* Tổng kết thanh toán */}
-        <Section>
-          <PriceRow>
-            <span>Tạm tính</span>
-            <span>{calculateSelectedTotal().toLocaleString()}₫</span>
-          </PriceRow>
+          <SectionHeader>THANH TOÁN</SectionHeader>
+          <PriceSummary>
+            <PriceRow>
+              <span>Tạm tính</span>
+              <span>{calculateSelectedTotal().toLocaleString()}₫</span>
+            </PriceRow>
+            <PriceRow>
+              <span>Giảm giá</span>
+              <span>-{calculateDiscounts().toLocaleString()}₫</span>
+            </PriceRow>
+            <Divider style={{ margin: "12px 0", borderColor: "#f0f0f0" }} />
+            <TotalPriceRow>
+              <span>Tổng cộng</span>
+              <TotalPrice>{calculateTotal().toLocaleString()}₫</TotalPrice>
+            </TotalPriceRow>
+            <SavingsNote>
+              Bạn đã tiết kiệm {calculateDiscounts().toLocaleString()}₫
+            </SavingsNote>
+            <VATNote>(Đã bao gồm VAT nếu có)</VATNote>
+          </PriceSummary>
 
-          <Divider style={{ margin: "16px 0" }} />
-
-          <PriceRow>
-            <TotalPrice>Tổng tiền thanh toán</TotalPrice>
-            <TotalPrice>{calculateTotal().toLocaleString()}₫</TotalPrice>
-          </PriceRow>
-
-          <SavingsTag>
-            Tiết kiệm {calculateDiscounts().toLocaleString()} đ
-          </SavingsTag>
-
-          <VATText>(Bao gồm VAT nếu có)</VATText>
-        </Section>
-
-        {/* Nút thanh toán */}
-        <CheckoutButton
-          type="primary"
-          size="large"
-          disabled={selectedProducts.length === 0}
-          onClick={handleCheckout}
-        >
-          Mua Hàng ({selectedProducts.length})
-        </CheckoutButton>
+          <CheckoutButton
+            type="primary"
+            size="large"
+            disabled={selectedProducts.length === 0 || !selectedAddress}
+            onClick={handleCheckout}
+            block
+          >
+            ĐẶT HÀNG ({selectedProducts.length})
+          </CheckoutButton>
+        </SummarySection>
       </RightColumn>
-      {/*  Modal đổi địa chỉ giao hàng */}
+
       <AddressModal
         isOpen={isOpenModal}
         onClose={() => setIsOpenModal(false)}
         onSelect={handleSelectAddress}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa sản phẩm"
+        visible={isDeleteModalVisible}
+        onOk={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        okText="Xóa"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <p>
+          {itemToDelete
+            ? "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+            : "Bạn có chắc chắn muốn xóa tất cả sản phẩm đã chọn khỏi giỏ hàng?"}
+        </p>
+      </Modal>
     </OrderContainer>
   );
 };
 
 export default OrderComponent;
 
-// Styled components
+// Styled components (remain the same as before)
+const EmptyContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+`;
 
 const OrderContainer = styled.div`
   display: flex;
-  gap: 16px;
-  max-width: 1600px;
+  gap: 20px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-`;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 
-const GridHeader = styled.div`
-  display: grid;
-  grid-template-columns: minmax(200px, 2fr) 120px 120px 120px 40px;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-`;
-
-const GridRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(200px, 2fr) 120px 120px 120px 40px;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
-  min-width: 900px;
-`;
-
-const ProductCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0; /* Important for text truncation */
-  flex: 1;
-`;
-
-const PriceCell = styled.div`
-  text-align: center;
-  padding: 0 10px;
-`;
-
-const QuantityCell = styled.div`
-  display: flex;
-  justify-content: center;
-`;
-
-const TotalCell = styled.div`
-  text-align: center;
-  padding: 0 10px;
-`;
-
-const DeleteCell = styled.div`
-  text-align: right;
-  cursor: pointer;
-  color: #999;
-  &:hover {
-    color: #ff4d4f;
+  @media (max-width: 768px) {
+    flex-direction: column;
   }
-`;
-
-const HeaderPrice = styled.div`
-  text-align: center;
-  font-weight: 500;
-`;
-
-const HeaderQuantity = styled.div`
-  text-align: center;
-  font-weight: 500;
-`;
-
-const HeaderTotal = styled.div`
-  text-align: center;
-  font-weight: 500;
-`;
-
-const HeaderDelete = styled.div`
-  /* Empty but maintains grid structure */
-  text-align: "right";
-`;
-
-const ProductImage = styled.img`
-  width: 60px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 4px;
-`;
-
-const ProductInfo = styled.div`
-  min-width: 0; /* Allows text truncation */
-`;
-
-const ProductName = styled.div`
-  font-weight: 600;
-  font-size: 14px;
-  width: 100%;
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Hiển thị tối đa 2 dòng */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-`;
-
-const ProductDetails = styled.div`
-  color: #666;
-  font-size: 12px;
-  margin-top: 4px;
-  line-height: 1.4;
 `;
 
 const LeftColumn = styled.div`
@@ -552,149 +509,375 @@ const RightColumn = styled.div`
   gap: 16px;
 `;
 
-const Section = styled(Card)`
-  margin-bottom: 0;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-  .ant-card-body {
-    padding: 16px;
-  }
-`;
-
-const SectionTitle = styled.h1`
+const SectionTitle = styled.h2`
+  font-size: 18px;
   font-weight: 600;
-  margin-bottom: 16px;
+  color: #333;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 8px 0;
 `;
 
-const ProductItem = styled.div`
+const CartSection = styled(Card)`
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+
+  .ant-card-body {
+    padding: 0;
+  }
+`;
+
+const GridHeader = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 40px;
+  grid-template-columns: minmax(190px, 2fr) 1fr 1fr 1fr 40px;
   align-items: center;
-  gap: 10px;
-  padding: 16px 0;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #fafafa;
   border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #666;
 `;
 
-const HeaderText = styled.div`
+const GridRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(277px, 2fr) 1fr 1fr 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #fafafa;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const ProductCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+`;
+
+const ProductImage = styled.img`
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+`;
+
+const ProductInfo = styled.div`
+  min-width: 0;
+  flex: 1;
+`;
+
+const ProductName = styled.div`
   font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #333;
+`;
+
+const ProductDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const DetailItem = styled.span`
+  font-size: 12px;
+  color: #666;
+`;
+
+const PriceCell = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   text-align: center;
 `;
 
-const PriceText = styled.div`
-  text-align: center;
+const OriginalPrice = styled.span`
+  font-size: 14px;
+  color: ${(props) => (props.hasDiscount ? "#999" : "#333")};
+  text-decoration: ${(props) => (props.hasDiscount ? "line-through" : "none")};
 `;
 
-const DeleteButton = styled.div`
-  text-align: right;
+const DiscountPrice = styled.span`
+  font-size: 14px;
+  color: #ff4d4f;
+  font-weight: 500;
+`;
+
+const QuantityCell = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
+const QuantityControl = styled.div`
+  display: flex;
+  align-items: center;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  overflow: hidden;
+  width: fit-content;
+`;
+
+const QuantityButton = styled.button`
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: none;
   cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f5f5f5;
+    color: #1890ff;
+  }
+
+  &:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+    background: #fafafa;
+  }
+`;
+
+const QuantityValue = styled.span`
+  width: 36px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+`;
+
+const TotalCell = styled.div`
+  position: relative;
+  text-align: right;
+  padding-right: 8px;
+`;
+
+const FinalPrice = styled.div`
+  font-weight: 500;
+  color: #ff4d4f;
+  font-size: 14px;
+`;
+
+const DiscountBadge = styled.span`
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-size: 11px;
+  background: #ff4d4f;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+`;
+
+const ActionCell = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`;
+
+const DeleteButton = styled(DeleteOutlined)`
   color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-size: 16px;
+
   &:hover {
     color: #ff4d4f;
   }
 `;
 
-const QuantityContainer = styled.div`
+const EmptyCartMessage = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  padding: 4px;
-  width: 70px;
-  margin: 0 auto;
-  user-select: none;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
+`;
 
-  .quantity-btn {
-    padding: 0 8px;
-    cursor: pointer;
-    color: #555;
-    user-select: none;
-    &:hover {
-      color: #1890ff;
-    }
-  }
+const PromotionSection = styled(Card)`
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+`;
 
-  .quantity-value {
-    width: 30px;
-    text-align: center;
-    user-select: none;
+const PromotionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #1890ff;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 8px 0;
+  font-size: 14px;
+
+  &:hover {
+    text-decoration: underline;
   }
 `;
 
 const PromotionTag = styled.div`
-  background-color: #f5f5f5;
-  padding: 8px 12px;
+  background-color: #f6f6f6;
+  padding: 12px;
   border-radius: 4px;
   font-size: 13px;
   display: flex;
   align-items: center;
+  margin-top: 8px;
+  color: #666;
 `;
 
-const AddressInfo = styled.div`
-  line-height: 1.6;
-  font-size: 14px;
+const SummarySection = styled(Card)`
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  position: sticky;
+  top: 20px;
 `;
 
-const PromotionItem = styled.div`
+const SectionHeader = styled.h3`
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const AddressCard = styled.div`
+  background: #fafafa;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+`;
+
+const AddressHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 8px;
+`;
+
+const ChangeAddressButton = styled.button`
+  background: none;
+  border: none;
+  color: #1890ff;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const AddressDetail = styled.div`
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+`;
+
+const PriceSummary = styled.div`
+  margin-bottom: 16px;
 `;
 
 const PriceRow = styled.div`
   display: flex;
   justify-content: space-between;
-  margin: 8px 0;
+  margin-bottom: 8px;
   font-size: 14px;
+  color: #666;
 `;
 
-const TotalPrice = styled.div`
-  font-size: 18px;
-  font-weight: 600;
-  color: #ff4d4f;
+const TotalPriceRow = styled(PriceRow)`
+  margin-top: 12px;
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
 `;
 
-const SavingsTag = styled(Tag)`
-  background-color: #fff2f0;
-  color: #ff4d4f;
-  border-color: #ffccc7;
-  margin-top: 8px;
-`;
-
-const VATText = styled.div`
-  color: #999;
+const SavingsNote = styled.div`
   font-size: 12px;
-  margin-top: 8px;
+  color: #ff4d4f;
+  text-align: right;
+  margin-top: 4px;
+`;
+
+const VATNote = styled.div`
+  font-size: 11px;
+  color: #999;
+  text-align: right;
+  margin-top: 4px;
 `;
 
 const CheckoutButton = styled(Button)`
-  width: 100%;
   height: 48px;
   font-weight: 600;
-  background-color: #ff4d4f;
-  border-color: #ff4d4f;
-  color: white;
+  font-size: 16px;
+  background: #ff4d4f;
+  border: none;
+  margin-top: 16px;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: #ff7875;
-    border-color: #ff7875;
-    color: white;
+    background: #ff7875;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: #f5f5f5;
+    color: rgba(0, 0, 0, 0.25);
+    transform: none;
   }
 `;
 
-const ArrowLink = styled.div`
-  color: #1890ff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
+const HeaderPrice = styled.div`
+  text-align: center;
+`;
 
-  &:hover {
-    text-decoration: underline;
-  }
+const HeaderQuantity = styled.div`
+  text-align: center;
+`;
+
+const HeaderTotal = styled.div`
+  text-align: center;
+`;
+
+const HeaderAction = styled.div`
+  text-align: center;
+`;
+
+const TotalPrice = styled.span`
+  font-size: 18px;
+  font-weight: 600;
+  color: #ff4d4f;
 `;
